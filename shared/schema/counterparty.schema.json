@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/counterparty.schema.json",
+  "title": "Counterparty",
+  "description": "A counterparty in the business address book (§8, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "businessId", "inn", "name"],
+  "properties": {
+    "id": { "type": "string" },
+    "businessId": { "type": "string" },
+    "inn": { "type": "string" },
+    "name": { "type": "string" },
+    "account": { "type": ["string", "null"] }
+  }
+}

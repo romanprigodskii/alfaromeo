@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/transaction.schema.json",
+  "title": "Transaction",
+  "description": "A money movement scoped to a Profile. Spec §11.3 (Payments/Transfers, Crypto, Business).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "kind", "status", "amount", "currency", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "enum": ["transfer", "payment", "convert", "trade", "payout", "acquire"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "processing", "completed", "failed", "declined"]
+    },
+    "amount": { "type": "number" },
+    "currency": { "type": "string" },
+    "counterparty": { "type": ["string", "null"] },
+    "fee": { "type": ["number", "null"] },
+    "fxRate": { "type": ["number", "null"], "description": "Applied FX/spread rate when converting." },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

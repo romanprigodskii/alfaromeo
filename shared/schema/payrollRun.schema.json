@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/payrollRun.schema.json",
+  "title": "PayrollRun",
+  "description": "A payroll run (items collapsed to a count + total for the mock) (§8, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "businessId", "status", "itemsCount", "totalAmount"],
+  "properties": {
+    "id": { "type": "string" },
+    "businessId": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "processing", "completed", "failed"]
+    },
+    "itemsCount": { "type": "integer" },
+    "totalAmount": { "type": "number" }
+  }
+}

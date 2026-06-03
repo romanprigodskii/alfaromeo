@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/invoice.schema.json",
+  "title": "Invoice",
+  "description": "An issued/received invoice (§8, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "businessId", "amount", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "businessId": { "type": "string" },
+    "counterpartyId": { "type": ["string", "null"] },
+    "amount": { "type": "number" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "sent", "paid", "overdue", "canceled"]
+    },
+    "due": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

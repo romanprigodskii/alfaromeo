@@ -1,0 +1,37 @@
+# Postgres + Redis for local development (§11, §12).
+# Optional for the Phase-0 scaffold: the backend boots and GET /health responds without these.
+# Start with:  docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alfa_romeo_postgres
+    environment:
+      POSTGRES_USER: alfa
+      POSTGRES_PASSWORD: alfa
+      POSTGRES_DB: alfa_romeo
+    ports:
+      - "5432:5432"
+    volumes:
+      - alfa_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alfa -d alfa_romeo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: alfa_romeo_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - alfa_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  alfa_pgdata:
+  alfa_redisdata:

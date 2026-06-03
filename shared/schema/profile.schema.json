@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/profile.schema.json",
+  "title": "Profile",
+  "description": "An isolated context under one User: personal / business / joint / child. All money entities are scoped by profileId. App theme is derived from `type`. Spec §5, §11.3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "userId", "type", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "userId": { "type": "string", "description": "Owning User.id (KYC root)." },
+    "type": {
+      "type": "string",
+      "enum": ["personal", "business", "joint", "child"],
+      "description": "Drives navigation mode and theme context (§5.2, §13.1)."
+    },
+    "displayName": { "type": "string", "description": "Human label shown in the profile switcher." },
+    "theme": {
+      "type": ["string", "null"],
+      "description": "Optional explicit theme override; otherwise resolved from `type`."
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

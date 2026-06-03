@@ -1,0 +1,28 @@
+# ── macOS ──────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Node / backend ──────────────────────────────────────────────────────────
+node_modules/
+dist/
+*.log
+.env
+.env.local
+*.tsbuildinfo
+
+# ── iOS / Xcode ──────────────────────────────────────────────────────────────
+# Build output & derived data
+ios/build/
+DerivedData/
+*.xcuserstate
+# Per-user Xcode state (keep shared schemes under xcshareddata/)
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# ── Editors / tooling ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp

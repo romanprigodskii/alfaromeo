@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/cardOrder.schema.json",
+  "title": "CardOrder",
+  "description": "A card order: virtual issues instantly; the optional physical card ships with mock tracking (§6.2/§6.4, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "cardType", "physicalStatus"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "cardType": {
+      "type": "string",
+      "enum": ["virtual", "plastic", "crypto", "disposable"]
+    },
+    "designId": { "type": ["string", "null"] },
+    "virtualIssuedAt": { "type": ["string", "null"], "format": "date-time" },
+    "physicalStatus": {
+      "type": "string",
+      "enum": ["none", "ordered", "printing", "shipping", "delivered"]
+    },
+    "tracking": { "type": ["string", "null"] },
+    "address": { "type": ["string", "null"] }
+  }
+}

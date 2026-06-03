@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/user.schema.json",
+  "title": "User",
+  "description": "One human, one KYC. Owns many Profiles (see profile.schema.json). Spec §11.3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "phone", "kycStatus", "investorStatus", "createdAt"],
+  "properties": {
+    "id": { "type": "string", "description": "Server-assigned identifier." },
+    "phone": { "type": "string", "description": "E.164 phone, primary login identity." },
+    "kycStatus": {
+      "type": "string",
+      "enum": ["none", "pending", "verified", "rejected"],
+      "description": "KYC verification state for the human."
+    },
+    "investorStatus": {
+      "type": "string",
+      "enum": ["none", "unqualified", "qualified"],
+      "description": "Crypto/investment qualification (§2.4 compliance narrative)."
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

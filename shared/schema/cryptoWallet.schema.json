@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/cryptoWallet.schema.json",
+  "title": "CryptoWallet",
+  "description": "A per-asset crypto wallet scoped to a Profile (§11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "asset", "chain", "address", "balance"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "asset": { "type": "string", "description": "BTC, ETH, USDT, …" },
+    "chain": { "type": "string", "description": "bitcoin, ethereum, tron, …" },
+    "address": { "type": "string" },
+    "balance": { "type": "number", "description": "In asset units." }
+  }
+}

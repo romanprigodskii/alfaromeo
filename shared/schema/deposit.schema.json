@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/deposit.schema.json",
+  "title": "Deposit",
+  "description": "A savings product: ruble deposit or crypto stake (the \"Приумножить\" hub, §10.6, §11.3). `kind` maps spec field `type[ruble|stake]`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "kind", "principal", "rateApy"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "enum": ["ruble", "stake"]
+    },
+    "asset": { "type": ["string", "null"], "description": "null for ruble deposits; the staked asset otherwise." },
+    "principal": { "type": "number" },
+    "rateApy": { "type": "number", "description": "Annual %, e.g. 16.5." },
+    "term": { "type": ["integer", "null"], "description": "Months; null for open-ended stakes." },
+    "lockUntil": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

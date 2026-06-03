@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/membership.schema.json",
+  "title": "Membership",
+  "description": "Role + permissions of a User within a Profile. Needed for business and joint profiles (team, multi-step signing). Spec §5.3, §11.3, §11.8.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["userId", "profileId", "role", "permissions"],
+  "properties": {
+    "userId": { "type": "string" },
+    "profileId": { "type": "string" },
+    "role": {
+      "type": "string",
+      "enum": ["owner", "admin", "accountant", "manager", "member"],
+      "description": "Authorization role within the profile."
+    },
+    "permissions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Fine-grained permission scopes (checked on every request, §11.8)."
+    }
+  }
+}

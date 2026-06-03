@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/fxRate.schema.json",
+  "title": "FxRate",
+  "description": "The unified USD→₽ rate behind every ₽ price (§11.4). Official Bank of Russia daily fixing, cached; served at GET /prices/fx. `source`: cbr = today's fix · cache = last cached · fallback = emergency constant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["usdRub", "source", "asOf", "stale"],
+  "properties": {
+    "usdRub": { "type": "number", "description": "₽ per 1 USD" },
+    "source": { "type": "string", "enum": ["cbr", "cache", "fallback"] },
+    "asOf": {
+      "type": "string",
+      "format": "date-time",
+      "description": "CBR fixing datetime (or when cached / fell back)"
+    },
+    "stale": {
+      "type": "boolean",
+      "description": "true if not freshly fetched from CBR this cycle"
+    }
+  }
+}

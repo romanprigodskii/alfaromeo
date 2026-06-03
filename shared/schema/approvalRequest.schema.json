@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/approvalRequest.schema.json",
+  "title": "ApprovalRequest",
+  "description": "A multi-step (2-of-N) approval request for a business operation (§8.2/§11.8, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "businessId", "opId", "required", "signedBy", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "businessId": { "type": "string" },
+    "opId": { "type": "string" },
+    "required": { "type": "integer" },
+    "signedBy": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "signed", "rejected"]
+    }
+  }
+}

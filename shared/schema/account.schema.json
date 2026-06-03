@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/account.schema.json",
+  "title": "Account",
+  "description": "A balance container scoped to a Profile: current / savings / crypto / digital ruble. Spec §11.3 (Accounts/Ledger).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "type", "currency", "balance"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": ["current", "savings", "crypto", "digital_ruble"]
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO-4217 for fiat (RUB) or asset/chain symbol for crypto (BTC, ETH, USDT)."
+    },
+    "balance": { "type": "number", "description": "Minor-unit-agnostic decimal balance for demo." }
+  }
+}

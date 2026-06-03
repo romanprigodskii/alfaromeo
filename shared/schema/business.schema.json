@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/business.schema.json",
+  "title": "Business",
+  "description": "A legal entity behind a business Profile (§8, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileId", "legalForm", "ogrn", "inn", "name"],
+  "properties": {
+    "profileId": { "type": "string" },
+    "legalForm": {
+      "type": "string",
+      "enum": ["ip", "ooo", "self_employed"]
+    },
+    "ogrn": { "type": "string" },
+    "inn": { "type": "string" },
+    "name": { "type": "string" }
+  }
+}

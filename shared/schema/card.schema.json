@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/card.schema.json",
+  "title": "Card",
+  "description": "A payment card scoped to a Profile/Account: virtual / plastic / crypto / disposable. NOTE: the PAN token never leaves the server — only `last4` is exposed to clients (§6.4, §11.8).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "accountId", "profileId", "type", "last4", "state", "isDefault"],
+  "properties": {
+    "id": { "type": "string" },
+    "accountId": { "type": "string" },
+    "profileId": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": ["virtual", "plastic", "crypto", "disposable"]
+    },
+    "last4": { "type": "string", "minLength": 4, "maxLength": 4 },
+    "state": {
+      "type": "string",
+      "enum": ["active", "frozen", "issuing", "shipping", "expired", "burned"]
+    },
+    "designId": { "type": ["string", "null"], "description": "Tier-bound design (§13.2)." },
+    "isDefault": { "type": "boolean" },
+    "assetLink": { "type": ["string", "null"], "description": "For crypto cards: linked crypto asset symbol." }
+  }
+}

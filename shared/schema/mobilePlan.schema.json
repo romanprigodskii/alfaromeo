@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/mobilePlan.schema.json",
+  "title": "MobilePlan",
+  "description": "Ромео Mobile (MVNO) plan for a Profile — mock operator (§7.1, §7.3, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileId", "msisdn", "esimId", "tariff", "dataGb", "minutes", "usedGb", "usedMin", "roaming"],
+  "properties": {
+    "profileId": { "type": "string" },
+    "msisdn": { "type": "string", "description": "Phone number." },
+    "esimId": { "type": "string" },
+    "tariff": { "type": "string", "description": "S / M / Unlimited, tied to tier (§7.1)." },
+    "dataGb": { "type": "number" },
+    "minutes": { "type": "integer" },
+    "usedGb": { "type": "number" },
+    "usedMin": { "type": "integer" },
+    "roaming": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/order.schema.json",
+  "title": "Order",
+  "description": "A crypto trading order (demo execution simulated against live prices, §11.4, §11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "profileId", "asset", "side", "type", "qty", "status", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "profileId": { "type": "string" },
+    "asset": { "type": "string" },
+    "side": {
+      "type": "string",
+      "enum": ["buy", "sell"]
+    },
+    "type": {
+      "type": "string",
+      "enum": ["market", "limit"]
+    },
+    "qty": { "type": "number" },
+    "price": { "type": ["number", "null"], "description": "null for market orders until filled." },
+    "status": {
+      "type": "string",
+      "enum": ["open", "filled", "partial", "canceled", "rejected"]
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

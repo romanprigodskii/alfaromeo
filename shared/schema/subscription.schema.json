@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/subscription.schema.json",
+  "title": "Subscription",
+  "description": "Membership tier for a Profile. Tier is a set of feature-flags + limits, not separate screens (§4). Spec §4, §11.3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileId", "tier", "status"],
+  "properties": {
+    "profileId": { "type": "string" },
+    "tier": {
+      "type": "string",
+      "enum": ["base", "pro", "infinite", "biz_start", "biz_pro", "biz_corp"],
+      "description": "3 personal + 3 business tiers (§4.1, §4.2)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "trialing", "canceled", "past_due"]
+    },
+    "renewsAt": { "type": ["string", "null"], "format": "date-time" },
+    "price": { "type": ["number", "null"], "description": "Monthly price in RUB; null for free tiers." }
+  }
+}

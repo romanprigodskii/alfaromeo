@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alfa-romeo.bank/schema/priceTick.schema.json",
+  "title": "PriceTick",
+  "description": "A price point for an asset. `price` is the unified ₽ equivalent (§11.4). REST snapshots from prices(assets:); live stream from PriceSocket (§11.3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["asset", "price", "ts"],
+  "properties": {
+    "asset": { "type": "string", "description": "BTC, ETH, USDT, …" },
+    "price": { "type": "number", "description": "₽" },
+    "changePct24h": { "type": ["number", "null"] },
+    "ts": { "type": "string", "format": "date-time" },
+    "usdRub": {
+      "type": ["number", "null"],
+      "description": "USD→₽ rate used for this tick (so clients can show «курс ЦБ ~XX ₽/$»). §11.4"
+    }
+  }
+}
