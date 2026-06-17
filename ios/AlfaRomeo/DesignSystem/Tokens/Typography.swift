@@ -22,9 +22,16 @@ enum BrandFont {
         .system(textStyle(for: size), design: .default).weight(weight)
     }
 
-    /// Monospaced face for amounts, rates, crypto addresses. (System: SF Mono.)
+    /// Monospaced face for rates, crypto addresses, card numbers, tabular columns. (System: SF Mono.)
     static func mono(_ size: CGFloat = 16, weight: Font.Weight = .medium) -> Font {
         .system(textStyle(for: size), design: .monospaced).weight(weight)
+    }
+
+    /// Face for displayed monetary **amounts** — a basic proportional face (more legible for big sums
+    /// than monospaced numerals). Pair with `.monospacedDigit()` at the call site for column alignment.
+    /// REVERT: change `design: .default` → `.monospaced` here to restore the old monospaced amounts.
+    static func amountFace(_ size: CGFloat = 28, weight: Font.Weight = .medium) -> Font {
+        .system(textStyle(for: size), design: .default).weight(weight)
     }
 
     /// Map a nominal point size to the closest Dynamic Type text style (the scaling anchor).
@@ -53,6 +60,6 @@ enum BrandFont {
     static let callout   = body(15)
     static let caption   = body(13)
     static let micro     = body(11, weight: .medium)
-    static let amount    = mono(28, weight: .semibold)
-    static let amountS   = mono(17, weight: .medium)
+    static let amount    = amountFace(28, weight: .semibold)
+    static let amountS   = amountFace(17, weight: .medium)
 }

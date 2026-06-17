@@ -47,7 +47,7 @@ struct InvestorStatusView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(unqualified ? "Неквалифицированный инвестор" : "Квалифицированный инвестор")
                         .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Text(unqualified ? "Лимит 300 000 ₽/год · только BTC/ETH+стейблы" : "Без лимитов на крипто-операции")
+                    Text(unqualified ? "Лимит 300 000 ₽/год · BTC/ETH/TON+стейблы" : "Без лимитов на крипто-операции")
                         .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
                 }
                 Spacer()
@@ -98,7 +98,7 @@ struct InvestorStatusView: View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("Что разрешено").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                bullet("checkmark.circle.fill", theme.success, "BTC, ETH и стейблкоины (USDT/USDC)")
+                bullet("checkmark.circle.fill", theme.success, "BTC, ETH, TON и стейблкоины (USDT/USDC)")
                 bullet("xmark.circle.fill", theme.danger, "Анонимные монеты (Monero, Zcash) — запрещены")
                 bullet("checkmark.circle.fill", theme.success, "Цифровой рубль и ЦФА — без крипто-лимитов")
             }

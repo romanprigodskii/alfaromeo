@@ -31,6 +31,22 @@ final class HomeViewModel {
 
     /// Fetch the dashboard for the active profile. Re-run on every profile switch via `.task(id:)`,
     /// so switching re-scopes all data to the new `profileId` (§5.3).
+    /// This phone's real crypto holdings (``WalletService``) as ``CryptoWallet`` rows — only the assets
+    /// it actually holds, so the dashboard crypto block differs per number.
+    private static func serverWallets(profileId: String) -> [CryptoWallet] {
+        let w = WalletService.shared
+        let tail = String((w.phone ?? "").filter(\.isNumber).suffix(4))
+        let meta: [(asset: String, chain: String, prefix: String)] = [
+            ("BTC", "bitcoin", "bc1q"), ("ETH", "ethereum", "0x"), ("USDT", "tron", "TQ"), ("TON", "ton", "EQ"),
+        ]
+        return meta.compactMap { m in
+            let bal = w.cryptoBalance(m.asset)
+            guard bal > 0 else { return nil }
+            return CryptoWallet(id: "w_\(m.asset.lowercased())", profileId: profileId, asset: m.asset,
+                                chain: m.chain, address: "\(m.prefix)…\(tail)", balance: bal)
+        }
+    }
+
     func load(api: any APIClient, session: AppSession) async {
         guard let profile = session.activeProfile else { return }
         let pid = profile.id
@@ -60,13 +76,28 @@ final class HomeViewModel {
                 uniquingKeysWith: { first, _ in first }
             )
             let baseTier = try await subscription.tier
+            // The current account's ₽ is the REAL backend wallet balance (``WalletService``) once
+            // registered — so different phones show different balances and it grows on a received transfer.
+            await WalletService.shared.refreshBalance()
+            var acctList = try await accounts
+            var walletList = try await wallets
+            if WalletService.shared.registered {
+                if let i = acctList.firstIndex(where: { $0.id == "acc_cur" }) {
+                    let a = acctList[i]
+                    acctList[i] = Account(id: a.id, profileId: a.profileId, type: a.type,
+                                          currency: a.currency, balance: WalletService.shared.balanceRub)
+                }
+                // Crypto holdings live on the backend too — show this phone's real coins on the dashboard.
+                walletList = Self.serverWallets(profileId: pid)
+            }
+
             let built = HomeDashboard(
                 profileId: pid,
                 profileType: profile.type,
-                accounts: try await accounts,
+                accounts: acctList,
                 cards: try await cards,
                 cardOrders: try await cardOrders,
-                wallets: try await wallets,
+                wallets: walletList,
                 deposits: try await deposits,
                 mobilePlan: try await mobile,
                 tier: session.currentTier(for: pid, fallback: baseTier),

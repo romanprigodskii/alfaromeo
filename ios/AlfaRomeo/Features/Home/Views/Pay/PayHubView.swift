@@ -4,8 +4,8 @@ import SwiftUI
 /// цифровой рубль. Каждый способ заводит на **реальный** флоу: QR / СБП / цифр.₽ → существующий
 /// ``TransferFlowView`` (через ``PaymentsRoute``), NFC → облегчённое tap-to-pay со статусом операции.
 ///
-/// Экран Home-стека: он сам регистрирует здесь `PaymentsRoute`, как крипто- / кредит-хабы регистрируют
-/// свои под-маршруты на этом же `NavigationStack` (единый one-stack seam). Биометрия и анимированный
+/// Экран Платежей (вход — `PaymentsRoute.pay` из ``PaymentsView``). `PaymentsRoute` регистрирует
+/// host-стек Платежей, поэтому рельсы переводов отсюда резолвятся на нём. Биометрия и анимированный
 /// статус живут в переиспользуемых компонентах Платежей — этот экран только выбирает рельс.
 struct PayHubView: View {
     @Environment(Router.self) private var router
@@ -55,8 +55,6 @@ struct PayHubView: View {
         .navigationTitle("Оплата")
         .navigationBarTitleDisplayMode(.inline)
         .contentMargins(.bottom, 96, for: .scrollContent)
-        // Реальные рельсы переводов — на этот же стек (как крипто / кредит-хабы регистрируют свои, §10.3).
-        .navigationDestination(for: PaymentsRoute.self) { $0.destination }
         .sheet(isPresented: $scanning) {
             // Переиспользуем sim-safe AVFoundation-сканер из Крипто (единый компонент, не дубль).
             QRScannerView(asset: "RUB") { _ in

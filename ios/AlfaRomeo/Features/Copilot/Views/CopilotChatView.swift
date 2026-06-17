@@ -132,6 +132,7 @@ struct CopilotChatView: View {
                         }
                         .id(message.id)
                     }
+                    if isFresh(model) { suggestions(model) }
                     Color.clear.frame(height: 1).id(Self.bottomAnchor)
                 }
                 .padding(Spacing.lg)
@@ -142,6 +143,76 @@ struct CopilotChatView: View {
             .onChange(of: model.messages.last?.text) { _, _ in scrollToBottom(proxy, animated: false) }
             .onChange(of: model.messages.count) { _, _ in scrollToBottom(proxy) }
             .onAppear { scrollToBottom(proxy, animated: false) }
+        }
+    }
+
+    // MARK: - Welcome empty state (starter prompts)
+
+    /// Fresh conversation: only the seeded greeting, no user turn yet → show starter prompts under it.
+    private func isFresh(_ model: CopilotChatModel) -> Bool {
+        model.messages.count == 1 && model.messages.first?.role == .assistant && !model.isStreaming
+    }
+
+    /// Tappable example prompts that fill + send via the existing model API (no new logic). They switch
+    /// with the active mode and disappear after the first turn.
+    private func suggestions(_ model: CopilotChatModel) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("Примеры запросов")
+                .font(BrandFont.micro.weight(.semibold))
+                .foregroundStyle(theme.textSecondary)
+                .padding(.leading, Spacing.xs)
+            ForEach(suggestionPrompts(for: model.mode), id: \.text) { item in
+                Button {
+                    model.input = item.text
+                    model.send()
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
+                            .frame(width: 30, height: 30)
+                            .background((theme.accentCrypto.first ?? theme.accent).opacity(0.12),
+                                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                        Text(item.text)
+                            .font(BrandFont.callout)
+                            .foregroundStyle(theme.textPrimary)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: Spacing.xs)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(theme.textSecondary)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, Spacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .stroke(theme.border, lineWidth: 1))
+                }
+                .buttonStyle(PressableButtonStyle())
+            }
+        }
+        .padding(.top, Spacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func suggestionPrompts(for mode: CopilotMode) -> [(icon: String, text: String)] {
+        switch mode {
+        case .support:
+            return [("magnifyingglass", "Сколько я потратил в этом месяце?"),
+                    ("creditcard", "Покажи мои подписки"),
+                    ("exclamationmark.bubble", "Как оспорить операцию?"),
+                    ("questionmark.circle", "Какие у меня лимиты и тариф?")]
+        case .coach:
+            return [("chart.line.uptrend.xyaxis", "Где я могу сэкономить?"),
+                    ("target", "Составь план накоплений"),
+                    ("banknote", "Куда вложить свободные деньги?"),
+                    ("calendar", "Разбор трат за месяц")]
+        case .agent:
+            return [("arrow.up.right", "Переведи 5 000 ₽ на карту маме"),
+                    ("banknote.fill", "Открой вклад на 100 000 ₽"),
+                    ("snowflake", "Заморозь мою карту"),
+                    ("iphone", "Оплати мобильный на 500 ₽")]
         }
     }
 

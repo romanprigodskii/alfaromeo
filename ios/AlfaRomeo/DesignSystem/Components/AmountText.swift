@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Monospaced monetary amount (§13.1: mono for sums / rates / addresses). Optional sign + coloring.
+/// Monetary amount in the basic ``BrandFont/amountFace`` with tabular (`.monospacedDigit()`) figures so
+/// columns still align. Optional sign + coloring. (Font swap point: ``BrandFont/amountFace``.)
 struct AmountText: View {
     var amount: Double
     var currency: String = "₽"
@@ -14,7 +15,7 @@ struct AmountText: View {
     private static let formatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}" // thin space
+        f.groupingSeparator = "\u{00A0}" // non-breaking space — a visible group gap in the proportional amount font (U+2009 thin space collapses there)
         f.maximumFractionDigits = 2
         f.minimumFractionDigits = 0
         return f
@@ -23,7 +24,7 @@ struct AmountText: View {
     private var formatted: String {
         let magnitude = Self.formatter.string(from: NSNumber(value: abs(amount))) ?? "\(abs(amount))"
         let sign = amount < 0 ? "\u{2212}" : (showsSign ? "+" : "") // U+2212 minus
-        return "\(sign)\(magnitude) \(currency)"
+        return "\(sign)\(magnitude)\u{00A0}\(currency)" // NBSP before currency so the amount never wraps before ₽
     }
 
     private var color: Color {
@@ -35,7 +36,7 @@ struct AmountText: View {
 
     var body: some View {
         Text(formatted)
-            .font(BrandFont.mono(size, weight: .semibold))
+            .font(BrandFont.amountFace(size, weight: .semibold))
             .monospacedDigit()
             .foregroundStyle(color)
             .contentTransition(reduceMotion ? .identity : .numericText())

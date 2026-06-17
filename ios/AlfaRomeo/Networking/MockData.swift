@@ -7,21 +7,86 @@ enum MockData {
     static let userId = "u_demo"
     static let personalProfileId = "p_personal"
     static let businessProfileId = "p_business"
-    static let childProfileId = "p_child"
 
-    static let user = User(
-        id: userId, phone: "+7 999 000-00-00",
-        kycStatus: .verified, investorStatus: .unqualified, createdAt: "2035-01-01T00:00:00Z"
-    )
+    // MARK: Persona (identity by phone, §5/§11.3)
 
-    static let profiles: [Profile] = [
-        Profile(id: personalProfileId, userId: userId, type: .personal,
-                displayName: "Личный", theme: nil, createdAt: "2035-01-01T00:00:00Z"),
-        Profile(id: businessProfileId, userId: userId, type: .business,
-                displayName: "ООО Ромашка", theme: nil, createdAt: "2035-02-01T00:00:00Z"),
-        Profile(id: childProfileId, userId: userId, type: .child,
-                displayName: "Детский · Артём", theme: nil, createdAt: "2035-03-01T00:00:00Z"),
+    /// The *visual* identity for a phone — name, card last4, business. Balances are NOT here: ₽ and
+    /// crypto come live from the backend (``WalletService``), so different numbers show different real
+    /// balances. IDs (profile/account/card) stay stable, only the displayed identity varies.
+    struct Persona {
+        let personName: String
+        let bizName: String
+        let bizInn: String
+        let bizOgrn: String
+        let cardV4: String      // personal virtual
+        let cardP4: String      // personal plastic
+        let bizCard4: String    // business virtual
+    }
+
+    /// Default identity for previews / before a phone is known (keeps the original «Личный»/«ООО Ромашка»).
+    static let defaultPersona = Persona(personName: "Личный", bizName: "ООО Ромашка",
+                                        bizInn: "7701234567", bizOgrn: "1157746000000",
+                                        cardV4: "4921", cardP4: "1180", bizCard4: "8800")
+
+    /// The four seeded demo identities, keyed by normalized phone (must match the backend seed names).
+    static let knownPersonas: [String: Persona] = [
+        "+79129257878": Persona(personName: "Виктор Алмазов", bizName: "ООО «Платина»",
+                                bizInn: "7705101010", bizOgrn: "1167746010101",
+                                cardV4: "7878", cardP4: "1290", bizCard4: "9001"),
+        "+79009009090": Persona(personName: "Лена Морозова", bizName: "ООО «Снежинка»",
+                                bizInn: "7804202020", bizOgrn: "1167847020202",
+                                cardV4: "9090", cardP4: "4417", bizCard4: "7012"),
+        "+79009000000": Persona(personName: "Тимур Рашидов", bizName: "ООО «Восток»",
+                                bizInn: "5404303030", bizOgrn: "1095404030303",
+                                cardV4: "0000", cardP4: "8890", bizCard4: "2204"),
+        "+79089009090": Persona(personName: "Аня Соловьёва", bizName: "ООО «Соловей»",
+                                bizInn: "7716404040", bizOgrn: "1127746040404",
+                                cardV4: "9091", cardP4: "1276", bizCard4: "6655"),
     ]
+
+    private(set) static var activePersona: Persona = defaultPersona
+    private(set) static var activePhone: String?
+
+    /// Normalize a phone to `+7XXXXXXXXXX` (mirrors the backend) so it matches `knownPersonas` keys.
+    static func normalizePhone(_ raw: String) -> String {
+        var d = raw.filter(\.isNumber)
+        if d.count == 11, d.hasPrefix("8") { d = "7" + d.dropFirst() }
+        if d.count == 10 { d = "7" + d }
+        return "+" + d
+    }
+
+    /// Bind the app's identity to a phone: a known phone → its seeded persona; any other → a
+    /// deterministic generated persona (so different numbers still look different). Called at login.
+    static func select(forPhone raw: String) {
+        let phone = normalizePhone(raw)
+        activePhone = phone
+        activePersona = knownPersonas[phone] ?? generatedPersona(forPhone: phone)
+    }
+
+    private static func generatedPersona(forPhone phone: String) -> Persona {
+        let digits = phone.filter(\.isNumber)
+        let last4 = String(digits.suffix(4))
+        let last3 = String(digits.suffix(3))
+        let last2 = String(digits.suffix(2))
+        return Persona(personName: "Гость ••\(last2)", bizName: "ИП ••\(last4)",
+                       bizInn: "77" + String(digits.suffix(8)),
+                       bizOgrn: "11" + String(digits.suffix(11)),
+                       cardV4: last4, cardP4: last3 + "1", bizCard4: last3 + "2")
+    }
+
+    static var user: User {
+        User(id: userId, phone: activePhone ?? "+7 999 000-00-00",
+             kycStatus: .verified, investorStatus: .unqualified, createdAt: "2035-01-01T00:00:00Z")
+    }
+
+    static var profiles: [Profile] {
+        [
+            Profile(id: personalProfileId, userId: userId, type: .personal,
+                    displayName: activePersona.personName, theme: nil, createdAt: "2035-01-01T00:00:00Z"),
+            Profile(id: businessProfileId, userId: userId, type: .business,
+                    displayName: activePersona.bizName, theme: nil, createdAt: "2035-02-01T00:00:00Z"),
+        ]
+    }
 
     static func membership(_ profileId: String) -> Membership {
         Membership(userId: userId, profileId: profileId, role: .owner, permissions: ["*"])
@@ -32,9 +97,6 @@ enum MockData {
         case businessProfileId:
             return Subscription(profileId: profileId, tier: .bizPro, status: .active,
                                 renewsAt: "2035-07-01T00:00:00Z", price: 2_900)
-        case childProfileId:
-            return Subscription(profileId: profileId, tier: .base, status: .active,
-                                renewsAt: nil, price: nil)
         case personalProfileId:
             return Subscription(profileId: profileId, tier: .pro, status: .trialing,
                                 renewsAt: "2035-07-01T00:00:00Z", price: 990)
@@ -62,15 +124,10 @@ enum MockData {
         Account(id: "bacc_trez", profileId: businessProfileId, type: .crypto,  currency: "USDT", balance: 50_000),
         Account(id: "bacc_usdc", profileId: businessProfileId, type: .crypto,  currency: "USDC", balance: 12_000),
     ]
-    static let childAccounts: [Account] = [
-        Account(id: "cacc_cur", profileId: childProfileId, type: .current, currency: "RUB", balance: 3_250),
-        Account(id: "cacc_sav", profileId: childProfileId, type: .savings, currency: "RUB", balance: 12_000),
-    ]
     static func accounts(_ profileId: String) -> [Account] {
         switch profileId {
         case personalProfileId: return personalAccounts
         case businessProfileId: return businessAccounts
-        case childProfileId:    return childAccounts
         default:                return []
         }
     }
@@ -79,21 +136,19 @@ enum MockData {
 
     // Two cards (consistent with the Pro 3-card limit) so the tier gate demos cleanly:
     // on Base (limit 1) ordering another is blocked; on Pro (limit 3) it is allowed.
-    static let personalCards: [Card] = [
-        Card(id: "card_v", accountId: "acc_cur", profileId: personalProfileId, type: .virtual, last4: "4921", state: .active, designId: "pro", isDefault: true, assetLink: nil),
-        Card(id: "card_p", accountId: "acc_cur", profileId: personalProfileId, type: .plastic, last4: "1180", state: .active, designId: "pro", isDefault: false, assetLink: nil),
-    ]
-    static let businessCards: [Card] = [
-        Card(id: "bcard_v", accountId: "bacc_cur", profileId: businessProfileId, type: .virtual, last4: "8800", state: .active, designId: "biz", isDefault: true, assetLink: nil),
-    ]
-    static let childCards: [Card] = [
-        Card(id: "ccard_v", accountId: "cacc_cur", profileId: childProfileId, type: .virtual, last4: "4242", state: .active, designId: "child", isDefault: true, assetLink: nil),
-    ]
+    static var personalCards: [Card] {
+        [
+            Card(id: "card_v", accountId: "acc_cur", profileId: personalProfileId, type: .virtual, last4: activePersona.cardV4, state: .active, designId: "pro", isDefault: true, assetLink: nil),
+            Card(id: "card_p", accountId: "acc_cur", profileId: personalProfileId, type: .plastic, last4: activePersona.cardP4, state: .active, designId: "pro", isDefault: false, assetLink: nil),
+        ]
+    }
+    static var businessCards: [Card] {
+        [Card(id: "bcard_v", accountId: "bacc_cur", profileId: businessProfileId, type: .virtual, last4: activePersona.bizCard4, state: .active, designId: "biz", isDefault: true, assetLink: nil)]
+    }
     static func cards(_ profileId: String) -> [Card] {
         switch profileId {
         case personalProfileId: return personalCards
         case businessProfileId: return businessCards
-        case childProfileId:    return childCards
         default:                return []
         }
     }
@@ -124,16 +179,10 @@ enum MockData {
         Transaction(id: "bt2", profileId: businessProfileId, kind: .payout, status: .processing, amount: -1_680_000, currency: "RUB", counterparty: "Зарплатный реестр", fee: 0, fxRate: nil, createdAt: "2035-06-02T06:00:00Z"),
         Transaction(id: "bt3", profileId: businessProfileId, kind: .convert, status: .completed, amount: 460_000, currency: "RUB", counterparty: "USDT → ₽ (трежери)", fee: 900, fxRate: 92, createdAt: "2035-05-28T13:00:00Z"),
     ]
-    static let childTransactions: [Transaction] = [
-        Transaction(id: "ct1", profileId: childProfileId, kind: .transfer, status: .completed, amount: 1_000, currency: "RUB", counterparty: "Перевод от мамы", fee: 0, fxRate: nil, createdAt: "2035-06-01T10:00:00Z"),
-        Transaction(id: "ct2", profileId: childProfileId, kind: .payment, status: .completed, amount: -150, currency: "RUB", counterparty: "Самокат", fee: 0, fxRate: nil, createdAt: "2035-06-01T14:20:00Z"),
-        Transaction(id: "ct3", profileId: childProfileId, kind: .payment, status: .completed, amount: -320, currency: "RUB", counterparty: "Кафе", fee: 0, fxRate: nil, createdAt: "2035-05-31T13:05:00Z"),
-    ]
     static func transactions(_ profileId: String) -> [Transaction] {
         switch profileId {
         case personalProfileId: return personalTransactions
         case businessProfileId: return businessTransactions
-        case childProfileId:    return childTransactions
         default:                return []
         }
     }
@@ -231,7 +280,7 @@ enum MockData {
     static func business(_ profileId: String) -> Business? {
         guard profileId == businessProfileId else { return nil }
         return Business(profileId: businessProfileId, legalForm: .ooo,
-                        ogrn: "1157746000000", inn: "7701234567", name: "ООО Ромашка")
+                        ogrn: activePersona.bizOgrn, inn: activePersona.bizInn, name: activePersona.bizName)
     }
     static func counterparties(_ businessId: String) -> [Counterparty] {
         guard businessId == businessProfileId else { return [] }

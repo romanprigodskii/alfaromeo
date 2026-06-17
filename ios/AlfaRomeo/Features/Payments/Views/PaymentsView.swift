@@ -15,6 +15,7 @@ struct PaymentsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
+                payEntry
                 quickTiles
                 offers
                 transfers
@@ -27,6 +28,19 @@ struct PaymentsView: View {
         .contentMargins(.bottom, 96, for: .scrollContent)
         .navigationDestination(for: PaymentsRoute.self) { $0.destination }
         .task { await model.load(api: api, session: session) }
+    }
+
+    // MARK: Оплата (§10.3 / §9.2) — точка входа в хаб «Оплата», перенесена сюда с дашборда (Home)
+
+    private var payEntry: some View {
+        Button { router.push(PaymentsRoute.pay) } label: {
+            SurfaceCard(padding: Spacing.sm) {
+                ListRow(icon: "qrcode.viewfinder", title: "Оплата",
+                        subtitle: "QR · NFC · СБП · цифровой ₽", showsChevron: true)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, Spacing.lg)
     }
 
     // MARK: Quick tiles (§9.2 «плитки»)

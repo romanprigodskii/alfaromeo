@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// Drives the login screen: phone+OTP (mock code 1111) with failure backoff, biometrics, passkey,
@@ -80,6 +81,11 @@ final class LoginViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
+            // Restore the persona + wallet bound to the persisted phone (returning user doesn't re-type it).
+            if let saved = UserDefaults.standard.string(forKey: "ar_user_phone") {
+                MockData.select(forPhone: saved)
+                await WalletService.shared.register(phone: saved, displayName: MockData.activePersona.personName)
+            }
             let user = try await api.currentUser()
             let profiles = try await api.profiles()
             guard let personal = profiles.first(where: { $0.type == .personal }) ?? profiles.first else {

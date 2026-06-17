@@ -8,7 +8,6 @@ import SwiftUI
 /// below (crypto / deposits / credits / mobile) resolve to stubs this phase; the owning modules
 /// (Фаза 2) replace the destinations.
 enum HomeRoute: Hashable {
-    case pay                               // Оплата (QR / NFC / СБП / цифр.₽)
     case accountDetail(accountId: String)  // Счёт (детейл)
     case openProduct                       // Открытие продукта
     case branches                          // Отделения / банкоматы
@@ -20,7 +19,6 @@ enum HomeRoute: Hashable {
 
     var stubTitle: String {
         switch self {
-        case .pay:           return "Оплата"
         case .accountDetail: return "Счёт"
         case .openProduct:   return "Открытие продукта"
         case .branches:      return "Отделения / банкоматы"
@@ -35,7 +33,6 @@ enum HomeRoute: Hashable {
     /// Stub note with the §-reference for the module that fills this route later.
     fileprivate var stubNote: String {
         switch self {
-        case .pay:           return "Оплата (QR / NFC / СБП / цифр.₽) — §9.1."
         case .accountDetail: return "Детейл счёта соберёт следующий промпт (§9.1)."
         case .openProduct:   return "Витрина продуктов — §9.1."
         case .branches:      return "Отделения и банкоматы на карте — §9.1."
@@ -52,17 +49,11 @@ extension HomeRoute {
     /// Destination for each route. Owning modules swap these stubs for real screens.
     @ViewBuilder var destination: some View {
         switch self {
-        case .pay:
-            // §10.3 — быстрая оплата (QR / NFC / СБП / цифр.₽). Owned here in Features/Home; the hub
-            // registers `PaymentsRoute` on this stack and funnels into the real `TransferFlowView`
-            // (same one-stack seam as crypto / credit / accountDetail).
-            PayHubView()
         case .crypto:
             // §9.6 — Crypto/ЦФА hub, owned by the Crypto module (Features/Crypto). This is the single
             // integration seam: the hub registers its own `CryptoRoute` destinations on the Home stack.
-            // `.cryptoHubChrome()` makes the whole hub dark «проф-режим» (same as the «Биржа» tab root);
-            // it's scoped to this pushed stack item, so the dashboard is light again on pop.
-            CryptoHubView().cryptoHubChrome()
+            // Light like the rest of the app (no special chrome — just the ambient DesignSystem theme).
+            CryptoHubView()
         case .benefits:
             // §9.3 — Выгода/кэшбек hub. Moved off the personal tab bar to this dashboard block-entry; the
             // view is unchanged and its three screens push via its own destination-based `NavigationLink`s

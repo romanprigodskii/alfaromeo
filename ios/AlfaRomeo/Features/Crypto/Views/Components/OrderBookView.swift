@@ -4,7 +4,7 @@ import SwiftUI
 /// asks (sell) on top in **red**, bids (buy) below in **green**, the large live price centred with an
 /// `≈ $` line under it, cumulative-depth bars behind each row, and a B%/S% ratio bar. Depth is mocked
 /// around the live mid (``OrderBook``, §11.4). Tapping a level pushes the order ticket prefilled at
-/// that price (ask → buy, bid → sell). Reads dark `theme.*` from the surrounding ``proTradingChrome()``.
+/// that price (ask → buy, bid → sell). Reads the ambient `theme.*` tokens (light, like the rest of the app).
 struct OrderBookView: View {
     let symbol: String
     /// (price, side) for the tapped level — ask = buy into the offer, bid = sell into the bid.

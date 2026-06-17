@@ -19,6 +19,11 @@ export default () => ({
   redis: {
     url: process.env.REDIS_URL ?? 'redis://localhost:6379',
   },
+  // Closed demo economy (§11.3) — conditional ₽ balances + P2P transfers between registered users.
+  // NOT real money / SBP. The starting balance is credited once per phone on register-demo.
+  wallet: {
+    startBalanceRub: num(process.env.DEMO_START_BALANCE_RUB, 50000),
+  },
   // AI-orchestration (§11.7) — Anthropic API on the backend only; the key never leaves the server,
   // is never logged, and is never returned to the client (which only ever talks to /ai/*).
   ai: {

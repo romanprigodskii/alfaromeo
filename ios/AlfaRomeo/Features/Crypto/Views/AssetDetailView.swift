@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Крипто-актив (детейл) (§9.6) in the dark «professional mode» (applied from ``CryptoRoute`` via
-/// ``proTradingChrome()``): a live price header, the exchange-style ``TradingChartView`` (таймфреймы +
+/// Крипто-актив (детейл) (§9.6), light like the rest of the app: a live price header, the
+/// exchange-style ``TradingChartView`` (таймфреймы +
 /// свечи + индикатор), the order book (``OrderBookView``), Купить/Продать (зелёная/красная,
-/// compliance-gated to BTC/ETH + стейблы), asset info and the staking teaser. Non-tradable held assets
-/// (SOL/TON) stay view-only: chart yes, order book / trading no — a soft compliance note instead (§2.4).
+/// compliance-gated to BTC/ETH/TON + стейблы), asset info and the staking teaser. Non-tradable held
+/// assets (SOL) stay view-only: chart yes, order book / trading no — a soft compliance note (§2.4).
 struct AssetDetailView: View {
     let symbol: String
 
@@ -115,7 +115,7 @@ struct AssetDetailView: View {
                         .foregroundStyle(theme.warning)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Торговля недоступна в РФ-режиме").font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Text("Доступны только BTC, ETH и стейблы (§2.4). \(symbol) можно держать и просматривать.")
+                        Text("Доступны BTC, ETH, TON и стейблы (§2.4). \(symbol) можно держать и просматривать.")
                             .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                 }

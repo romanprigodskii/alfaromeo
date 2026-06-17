@@ -73,18 +73,8 @@ struct HomeView: View {
 
             BalanceHero(dashboard: dashboard, live: model.livePrices)
 
-            // Быстрая оплата (§10.3 / §9.1) — вход в хаб «Оплата» (QR / NFC / СБП / цифровой ₽).
-            Button { router.push(HomeRoute.pay) } label: {
-                SurfaceCard(padding: Spacing.sm) {
-                    ListRow(icon: "qrcode.viewfinder", title: "Оплата",
-                            subtitle: "QR · NFC · СБП · цифровой ₽", showsChevron: true)
-                }
-            }
-            .buttonStyle(.plain)
-
             CardsCarousel(
                 cards: dashboard.cards,
-                pendingDelivery: dashboard.pendingCardDelivery,
                 onTapCard: { router.push(CardsRoute.detail(cardId: $0.id)) },
                 onOrder: { router.push(CardsRoute.order) },
                 onSeeAll: { router.push(CardsRoute.list) }
@@ -154,12 +144,4 @@ private struct HomePreviewHost: View {
 
 #Preview("Личный профиль") {
     HomePreviewHost(session: .mockAuthenticated())
-}
-
-#Preview("Детский профиль") {
-    let session = AppSession.mockAuthenticated()
-    if let child = session.profiles.first(where: { $0.type == .child }) {
-        session.switchProfile(child)
-    }
-    return HomePreviewHost(session: session)
 }

@@ -7,8 +7,8 @@ import SwiftUI
 /// the *views*, not this file:
 /// - Главный → ``HomeView`` (§9.1, prompt 1.1)
 /// - Платежи → ``PaymentsView`` (§9.2, prompt 1.3)
-/// - Биржа → ``CryptoHubView`` (§9.6 — the live-prices crypto/ЦФА exchange; `.cryptoHubChrome()` makes
-///   the whole hub dark «проф-режим». Выгода (§9.3) moved to a dashboard block, `HomeRoute.benefits`.)
+/// - Биржа → ``CryptoHubView`` (§9.6 — the live-prices crypto/ЦФА exchange; light like the rest of the
+///   app. Выгода (§9.3) moved to a dashboard block, `HomeRoute.benefits`.)
 /// - История → ``HistoryView`` (§9.4, prompt 1.4)
 /// - Чаты → ``ChatsHubView`` (§9.5 — AI-поддержка (Claude) channel + operators/обращения)
 struct MainTabView: View {
@@ -33,10 +33,9 @@ struct MainTabView: View {
         switch tab {
         case .home:     HomeView()
         case .payments: PaymentsView()
-        // §9.6 — the Crypto/ЦФА hub as a first-class tab. `.cryptoHubChrome()` (applied here, from
-        // outside the view, like the other crypto entry point `HomeRoute.crypto`) makes the whole hub
-        // dark «проф-режим»; the hub registers its own `CryptoRoute` destinations on this tab's stack.
-        case .market:   CryptoHubView().cryptoHubChrome()
+        // §9.6 — the Crypto/ЦФА hub as a first-class tab, light like the rest of the app (no special
+        // chrome). The hub registers its own `CryptoRoute` destinations on this tab's stack.
+        case .market:   CryptoHubView()
         case .history:  HistoryView()
         case .chats:    ChatsHubView()
         }

@@ -1,0 +1,43 @@
+# Co-host the Альфа-Ромео backend on the shared box WITHOUT touching the gluline stack.
+#
+# app + its OWN Postgres, both attached to the EXISTING external `gluline` Caddy network so the
+# gluline Caddy can reverse-proxy api.alfa-romeo.uk → alfa-romeo-api:4000 by container name. No host
+# ports are published (the app is only reachable through Caddy). gluline's own containers, data,
+# Postgres and Redis are left completely untouched; pricing uses an in-memory cache (REDIS_URL empty)
+# so gluline-redis is never shared.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alfa-romeo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alfa
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: alfa_romeo
+    volumes:
+      - alfa_pgdata:/var/lib/postgresql/data
+    networks: [gluline]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alfa -d alfa_romeo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    image: alfa-romeo-api:latest
+    container_name: alfa-romeo-api
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [gluline]
+
+# The Caddy network already created by the gluline compose project (Caddy is attached to it).
+networks:
+  gluline:
+    external: true
+
+volumes:
+  alfa_pgdata:

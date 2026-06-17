@@ -8,6 +8,7 @@ enum CryptoDeclineReason: Hashable, Sendable {
     case canceled
     case networkBusy
     case quoteExpired
+    case failed(String)   // a backend error surfaced verbatim (friendly text), e.g. recipient not found
 
     var title: String {
         switch self {
@@ -15,6 +16,7 @@ enum CryptoDeclineReason: Hashable, Sendable {
         case .canceled:          return "Операция отменена"
         case .networkBusy:       return "Сеть перегружена"
         case .quoteExpired:      return "Курс устарел"
+        case .failed:            return "Не удалось отправить"
         }
     }
 
@@ -24,6 +26,7 @@ enum CryptoDeclineReason: Hashable, Sendable {
         case .canceled:          return "Подтверждение не пройдено. Средства не списаны."
         case .networkBusy:       return "Сеть временно перегружена, комиссия высокая. Попробуйте позже или смените сеть."
         case .quoteExpired:      return "Курс изменился за время подтверждения. Обновите котировку."
+        case .failed(let m):     return m
         }
     }
 
@@ -33,6 +36,7 @@ enum CryptoDeclineReason: Hashable, Sendable {
         case .canceled:          return "xmark"
         case .networkBusy:       return "wifi.exclamationmark"
         case .quoteExpired:      return "clock.arrow.circlepath"
+        case .failed:            return "exclamationmark.triangle.fill"
         }
     }
 }

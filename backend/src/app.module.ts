@@ -9,6 +9,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { CreditModule } from './modules/credit/credit.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
@@ -31,6 +32,8 @@ import { SupportModule } from './modules/support/support.module';
     SubscriptionsModule,
     AccountsModule,
     PaymentsModule,
+    // Closed demo economy (§11.3): real Postgres-backed ₽ balances + atomic P2P transfers.
+    WalletModule,
     CardsModule,
     CreditModule,
     DepositsModule,

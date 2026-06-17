@@ -16,7 +16,7 @@ enum PortfolioSegment: String, CaseIterable, Identifiable, Hashable {
 
     var caption: String {
         switch self {
-        case .crypto: return "BTC · ETH · стейблы · внешние кошельки"
+        case .crypto: return "BTC · ETH · TON · стейблы · внешние кошельки"
         case .cfa:    return "Токенизированные активы · 259-ФЗ"
         }
     }

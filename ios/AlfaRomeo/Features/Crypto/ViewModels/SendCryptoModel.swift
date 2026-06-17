@@ -46,6 +46,9 @@ final class SendCryptoModel {
     var authorizing = false
     var outcome: CryptoOutcome?
 
+    /// Registered recipients from the backend (`/users`) — a crypto move targets a real user by phone.
+    var registeredContacts: [PaymentContact] = []
+
     private var retriedAfterCongestion = false
 
     init(asset: String) {
@@ -57,6 +60,14 @@ final class SendCryptoModel {
 
     func load(session: AppSession) {
         investorStatus = session.currentUser?.investorStatus ?? .unqualified
+    }
+
+    /// Pull the registered users so the contact picker offers real recipients (excluding me).
+    func refreshRecipients() async {
+        await WalletService.shared.refreshUsers()
+        registeredContacts = WalletService.shared.recipients.map {
+            PaymentContact(id: $0.phone, name: $0.displayName, phone: $0.phone, bank: "Ромео")
+        }
     }
 
     // MARK: Derived
@@ -144,6 +155,22 @@ final class SendCryptoModel {
         guard ok else { outcome = .declined(.canceled); step = .status; return }
         outcome = .processing
         step = .status
+
+        // Sending to a registered contact → REAL server move via /crypto-transfer (the coin actually
+        // moves to the recipient's device). Address/QR modes have no registered phone → local demo.
+        if mode == .contact, let toPhone = selectedContact?.phone {
+            do {
+                _ = try await WalletService.shared.cryptoTransfer(toPhone: toPhone, asset: asset, amount: assetAmount)
+                await CryptoStore.shared.reloadServerBalances()
+                outcome = .success
+            } catch let e as WalletService.WalletError {
+                outcome = .declined(Self.mapError(e))
+            } catch {
+                outcome = .declined(.failed("Не удалось отправить. Попробуйте ещё раз."))
+            }
+            return
+        }
+
         try? await Task.sleep(for: .seconds(1.4))
         let result = computeSettlement()
         if case .success = result {
@@ -151,6 +178,14 @@ final class SendCryptoModel {
                                     to: recipientLabel, network: network?.name ?? "")
         }
         outcome = result
+    }
+
+    private static func mapError(_ e: WalletService.WalletError) -> CryptoDeclineReason {
+        switch e {
+        case .insufficientAsset, .insufficientFunds: return .insufficientFunds
+        case .network:                               return .networkBusy
+        default:                                     return .failed(e.errorDescription ?? "Ошибка перевода.")
+        }
     }
 
     func retry() {

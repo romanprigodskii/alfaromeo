@@ -121,8 +121,8 @@ struct TransferFlowView: View {
                 .buttonStyle(PressableButtonStyle())
                 .disabled(model.phone.filter(\.isNumber).count < 10)
             }
-            Text("Недавние контакты").font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
-            ContactPickerList(contacts: PaymentsMockData.contacts) { contact in
+            Text("Зарегистрированные пользователи").font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            ContactPickerList(contacts: model.registeredContacts) { contact in
                 withAnimation(Motion.smooth) { model.selectContactSBP(contact) }
             }
         }
@@ -144,10 +144,10 @@ struct TransferFlowView: View {
                 get: { model.cardNumber },
                 set: { model.cardNumber = String($0.filter(\.isNumber).prefix(16)) }
             ), placeholder: "0000 0000 0000 0000", keyboard: .numberPad, mono: true)
-            PrimaryButton(title: "Далее", icon: "arrow.right") {
-                withAnimation(Motion.smooth) { model.commitCard() }
+            Text("Или выберите получателя").font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            ContactPickerList(contacts: model.registeredContacts) { contact in
+                withAnimation(Motion.smooth) { model.selectRegisteredRecipient(contact) }
             }
-            .disabled(model.cardNumber.filter(\.isNumber).count < 16)
         }
     }
 

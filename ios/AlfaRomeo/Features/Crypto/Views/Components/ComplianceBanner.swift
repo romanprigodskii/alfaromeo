@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Soft crypto-compliance note (§2.4): only BTC/ETH + стейблы, no anonymous coins. Informative, never
+/// Soft crypto-compliance note (§2.4): BTC/ETH/TON + стейблы, no anonymous coins. Informative, never
 /// a wall. Applies to **crypto** only — ЦФА (the legal path) is never gated by it. Optional tap opens
 /// the investor status / limits screen.
 struct ComplianceBanner: View {

@@ -83,7 +83,14 @@ final class CryptoStore {
         do {
             let wallets = try await api.cryptoWallets(profileId: profileId)
             async let ordersR = (try? await api.orders(profileId: profileId)) ?? []
-            bankWallets = wallets
+            // Real crypto holdings live on the backend (``WalletService``): once registered, the portfolio
+            // shows the server's balances (so different phones differ), not the local mock wallets.
+            if WalletService.shared.registered {
+                await WalletService.shared.refreshBalance()
+                bankWallets = Self.serverWallets(profileId: profileId)
+            } else {
+                bankWallets = wallets
+            }
             orders = await ordersR
             // Seed the feature-local (no-backend) state per profile.
             cfaHoldings = MockCryptoData.seededCDFAHoldings
@@ -105,6 +112,27 @@ final class CryptoStore {
         bankWallets.first { $0.asset.caseInsensitiveCompare(asset) == .orderedSame }
     }
     func bankBalance(asset: String) -> Double { bankWallet(asset: asset)?.balance ?? 0 }
+
+    /// Rebuild the bank wallets from the live server holdings (``WalletService``) — call after a crypto
+    /// transfer so the portfolio reflects the move immediately.
+    func reloadServerBalances() async {
+        await WalletService.shared.refreshBalance()
+        if WalletService.shared.registered { bankWallets = Self.serverWallets(profileId: profileId) }
+    }
+
+    /// One ``CryptoWallet`` per server-tracked asset, valued from ``WalletService`` (a demo address keyed
+    /// to the phone). Zero-balance assets are kept out of the portfolio by the existing `balance > 0` filter.
+    private static func serverWallets(profileId: String) -> [CryptoWallet] {
+        let w = WalletService.shared
+        let tail = String((w.phone ?? "").filter(\.isNumber).suffix(4))
+        let meta: [(asset: String, chain: String, prefix: String)] = [
+            ("BTC", "bitcoin", "bc1q"), ("ETH", "ethereum", "0x"), ("USDT", "tron", "TQ"), ("TON", "ton", "EQ"),
+        ]
+        return meta.map { m in
+            CryptoWallet(id: "w_\(m.asset.lowercased())", profileId: profileId, asset: m.asset, chain: m.chain,
+                         address: "\(m.prefix)…\(tail)", balance: w.cryptoBalance(m.asset))
+        }
+    }
     func cfaHolding(cdfaId: String) -> CDFAHolding? { cfaHoldings.first { $0.cdfaId == cdfaId } }
     func cfaUnits(cdfaId: String) -> Double { cfaHolding(cdfaId: cdfaId)?.units ?? 0 }
 

@@ -13,7 +13,7 @@ enum CryptoFormat {
         f.maximumFractionDigits = fraction
         let magnitude = f.string(from: NSNumber(value: abs(value))) ?? "\(Int(abs(value)))"
         let sign = value < 0 ? "\u{2212}" : ""
-        return "\(sign)\(magnitude) ₽"
+        return "\(sign)\(magnitude)\u{00A0}₽"
     }
 
     /// `1,2 млн ₽` / `320 тыс ₽` — compact, for chart axes and tight chips.
@@ -109,6 +109,7 @@ enum CryptoFormat {
     static func parse(_ text: String) -> Double {
         let cleaned = text
             .replacingOccurrences(of: "\u{2009}", with: "")
+            .replacingOccurrences(of: "\u{00A0}", with: "")   // NBSP group separator
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: ",", with: ".")
         return Double(cleaned) ?? 0
@@ -122,12 +123,12 @@ enum CryptoFormat {
 
     private static let rubFormatter: NumberFormatter = {
         let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.minimumFractionDigits = 0
+        f.groupingSeparator = "\u{00A0}"; f.minimumFractionDigits = 0  // NBSP — visible group gap in the proportional amount font
         return f
     }()
     private static let qtyFormatter: NumberFormatter = {
         let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.minimumFractionDigits = 0
+        f.groupingSeparator = "\u{00A0}"; f.minimumFractionDigits = 0  // NBSP — visible group gap in the proportional amount font
         return f
     }()
     private static let pctFormatter: NumberFormatter = {

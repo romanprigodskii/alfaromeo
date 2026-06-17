@@ -1,9 +1,9 @@
 import Foundation
 
-/// A tradable crypto asset and its compliance status (§2.4). The demo's compliant set is
-/// **BTC / ETH + стейблы (USDT, USDC)** — the only instruments a licensed RF venue may offer in the
-/// 2026 regime. SOL / TON are *priced* (live) and *held* (bank legacy / external wallets) but are not
-/// offered for new trades — the asset detail surfaces that as a soft compliance note, not a dead end.
+/// A tradable crypto asset and its compliance status (§2.4). The demo's tradable set is
+/// **BTC / ETH / TON + стейблы (USDT, USDC)**. SOL is *priced* (live) and *held* (bank legacy /
+/// external wallets) but is not offered for new trades — the asset detail surfaces that as a soft
+/// compliance note, not a dead end.
 struct CryptoAsset: Identifiable, Hashable, Sendable {
     let symbol: String          // BTC, ETH, USDT, …
     let name: String            // Bitcoin, Ethereum, …
@@ -25,7 +25,7 @@ enum CryptoCatalog {
         CryptoAsset(symbol: "USDT", name: "Tether",    chain: "Tron",     isStablecoin: true,  tradable: true),
         CryptoAsset(symbol: "USDC", name: "USD Coin",  chain: "Ethereum", isStablecoin: true,  tradable: true),
         CryptoAsset(symbol: "SOL",  name: "Solana",    chain: "Solana",   isStablecoin: false, tradable: false),
-        CryptoAsset(symbol: "TON",  name: "Toncoin",   chain: "TON",      isStablecoin: false, tradable: false),
+        CryptoAsset(symbol: "TON",  name: "Toncoin",   chain: "TON",      isStablecoin: false, tradable: true),
     ]
 
     /// Assets we subscribe to for live ₽ pricing (backend-tracked symbols).
@@ -46,7 +46,7 @@ enum CryptoCatalog {
     /// Anonymous / privacy coins barred for licensed venues (§2.4) — used in the compliance note.
     static let bannedAnonymous = ["XMR", "ZEC", "DASH"]
     static let complianceNote =
-        "Доступны только BTC, ETH и стейблкоины (USDT/USDC). Анонимные монеты (Monero, Zcash) запрещены для лицензированных площадок."
+        "Доступны BTC, ETH, TON и стейблкоины (USDT/USDC). Анонимные монеты (Monero, Zcash) запрещены для лицензированных площадок."
 
     // MARK: - Networks (send / receive)
 

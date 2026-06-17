@@ -29,6 +29,10 @@ final class TransferFlowModel {
     // MARK: Recipient (finalized) + entry fields
     var recipient: Recipient?
     var phone = ""
+    /// The normalized recipient phone for a real ₽ move (СБП / by-card) via /transfer.
+    var recipientPhone: String?
+    /// Registered recipients from the backend (`/users`).
+    var registeredContacts: [PaymentContact] = []
     var selectedContactId: String?
     var cardNumber = ""
     var account = ""
@@ -101,7 +105,16 @@ final class TransferFlowModel {
         let fallback = (try? await api.subscription(profileId: profileId))?.tier ?? .base
         let tier = session.currentTier(for: profileId, fallback: fallback)
         freeAbroad = Entitlements.make(for: tier).freeAbroadTransfers
+
+        // Real registered recipients (for СБП / by-card P2P moves through /transfer).
+        await WalletService.shared.refreshUsers()
+        registeredContacts = WalletService.shared.recipients.map {
+            PaymentContact(id: $0.phone, name: $0.displayName, phone: $0.phone, bank: "СБП")
+        }
     }
+
+    /// True for the rails that move real ₽ between two registered users via the backend `/transfer`.
+    private var isRealRubRail: Bool { kind == .byPhone || kind == .byCard }
 
     private func defaultFiatSource() -> Account? {
         switch kind {
@@ -170,9 +183,11 @@ final class TransferFlowModel {
     /// Total ₽ leaving a fiat source (amount + fee). Crypto debits the wallet in asset units.
     var totalDebitRub: Double { rubAmount + fee }
 
-    /// Available balance for the current source, in its own units.
+    /// Available balance for the current source, in its own units. For the real ₽ rails the source of
+    /// truth is the live backend wallet (``WalletService``), so «Доступно» matches what /transfer enforces.
     var availableBalance: Double {
-        kind.isCrypto ? (sourceWallet?.balance ?? 0) : (sourceAccount?.balance ?? 0)
+        if isRealRubRail, WalletService.shared.registered { return WalletService.shared.balanceRub }
+        return kind.isCrypto ? (sourceWallet?.balance ?? 0) : (sourceAccount?.balance ?? 0)
     }
 
     var sourceSymbol: String {
@@ -243,13 +258,35 @@ final class TransferFlowModel {
         }
         outcome = .processing
         step = .status
+
+        // Real ₽ move between two registered users (СБП by phone / by card) → backend /transfer; the
+        // recipient's balance actually grows on their device. Other rails stay local demo (unchanged).
+        if isRealRubRail, let toPhone = recipientPhone {
+            do {
+                _ = try await WalletService.shared.transfer(toPhone: toPhone, amountRub: rubAmount)
+                outcome = .success
+            } catch let e as WalletService.WalletError {
+                outcome = .declined(Self.mapError(e))
+            } catch {
+                outcome = .declined(.failed("Не удалось перевести. Попробуйте ещё раз."))
+            }
+            return
+        }
+
         try? await Task.sleep(for: .seconds(1.4))   // «в обработке»
         outcome = settle()
     }
 
-    /// Deterministic settlement: declines on insufficient funds (the reference case), else succeeds.
+    /// Deterministic settlement (non-backend rails): declines on insufficient funds, else succeeds.
     private func settle() -> OperationOutcome {
         insufficientFunds ? .declined(.insufficientFunds) : .success
+    }
+
+    private static func mapError(_ e: WalletService.WalletError) -> DeclineReason {
+        switch e {
+        case .insufficientFunds, .insufficientAsset: return .insufficientFunds
+        default:                                     return .failed(e.errorDescription ?? "Ошибка перевода.")
+        }
     }
 
     /// From a declined status: a cancel returns to confirm (re-authorize); a money decline returns to
@@ -265,7 +302,18 @@ final class TransferFlowModel {
     func selectContactSBP(_ contact: PaymentContact) {
         selectedContactId = contact.id
         phone = contact.phone
+        recipientPhone = MockData.normalizePhone(contact.phone)
         recipient = contact.sbpRecipient()
+        step = .amount
+    }
+
+    /// Pick a registered user as the recipient (used by the by-card rail so the move still lands on a
+    /// real account through /transfer). The card number stays a cosmetic input.
+    func selectRegisteredRecipient(_ contact: PaymentContact) {
+        selectedContactId = contact.id
+        phone = contact.phone
+        recipientPhone = MockData.normalizePhone(contact.phone)
+        recipient = Recipient(name: contact.name, detail: contact.phone, icon: "creditcard", bank: "карта")
         step = .amount
     }
 
@@ -278,6 +326,7 @@ final class TransferFlowModel {
 
     func commitTypedPhone() {
         guard phone.filter(\.isNumber).count >= 10 else { return }
+        recipientPhone = MockData.normalizePhone(phone)
         recipient = Recipient(name: "Перевод по номеру", detail: phone, icon: "person.fill", bank: "СБП")
         step = .amount
     }

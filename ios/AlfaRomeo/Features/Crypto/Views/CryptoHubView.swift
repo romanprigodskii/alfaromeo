@@ -7,10 +7,9 @@ import SwiftUI
 /// A ₽/$ denomination toggle on the hero re-expresses the whole portfolio (display-only).
 ///
 /// Reached two ways — as the **Биржа** tab root (``MainTabView``, wrapped by ``SectionScaffold``) or
-/// pushed as `HomeRoute.crypto` from the dashboard. In both cases the entry point wraps it in
-/// `.cryptoHubChrome()` (dark «проф-режим») and it registers the crypto routes on the active section
-/// stack, so every sub-screen pushes via that section's ``Router`` (light flows reclaim light via
-/// `.cryptoLightChrome()`, see ``CryptoRoute``).
+/// pushed as `HomeRoute.crypto` from the dashboard. It is light like the rest of the app (no special
+/// chrome — just the ambient DesignSystem `\.theme`) and registers the crypto routes on the active
+/// section stack, so every sub-screen pushes via that section's ``Router`` (see ``CryptoRoute``).
 struct CryptoHubView: View {
     @Environment(Router.self) private var router
     @Environment(AppSession.self) private var session
@@ -26,7 +25,7 @@ struct CryptoHubView: View {
     private var profileId: String { session.activeProfile?.id ?? "" }
     private var investorStatus: InvestorStatus { session.currentUser?.investorStatus ?? .unqualified }
     private var defaultAsset: String { store.bankWallets.first?.asset ?? "BTC" }
-    /// Buy/convert must target a compliant asset (§2.4: BTC/ETH + стейблы only) — never SOL/TON.
+    /// Buy/convert must target a tradable asset (§2.4: BTC/ETH/TON + стейблы) — never SOL.
     private var tradableDefault: String {
         store.bankWallets.first(where: { CryptoCatalog.isTradable($0.asset) })?.asset ?? "BTC"
     }

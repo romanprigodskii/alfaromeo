@@ -59,7 +59,7 @@ struct TradeOrderView: View {
                     Image(systemName: "shield.lefthalf.filled").font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.warning)
                     Text("Торговля недоступна").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                 }
-                Text("\(model.symbol) нельзя торговать в РФ-режиме. Доступны только BTC, ETH и стейблкоины (§2.4). Актив можно держать и просматривать.")
+                Text("\(model.symbol) нельзя торговать в РФ-режиме. Доступны BTC, ETH, TON и стейблкоины (§2.4). Актив можно держать и просматривать.")
                     .font(BrandFont.callout).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
         }

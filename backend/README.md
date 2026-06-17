@@ -1,9 +1,11 @@
 # `/backend` — Альфа-Ромео (NestJS)
 
-A NestJS modular monolith with one module per §11.2 service. Two modules carry real logic so far:
+A NestJS modular monolith with one module per §11.2 service. Three modules carry real logic so far:
 **Pricing** (§11.4) serves live crypto prices over REST + WebSocket with the unified ₽ equivalent
-computed server-side, and **AI-orchestration** (§11.7) is the server-side copilot between the client
-and the Anthropic API (the key never leaves the backend). The remaining modules are still stubs.
+computed server-side, **AI-orchestration** (§11.7) is the server-side copilot between the client
+and the Anthropic API (the key never leaves the backend), and **Wallet** (§11.3) is the closed demo
+economy — real Postgres-backed ₽ balances and atomic P2P transfers between registered users. The
+remaining modules are still stubs.
 
 ## Run
 
@@ -207,6 +209,80 @@ transfer under the nominal ceiling.
 | `AI_DRAFT_SECRET` | _(random)_ | HMAC secret for signing action drafts |
 | `AI_DRAFT_TTL_SEC` | `600` | how long a signed draft stays valid |
 
+## Wallet — closed demo economy (§11.3)
+
+A small **real** ledger: registered users hold a single ₽ balance and can send money to each other.
+This is **conditional / demo money** between app users — **not real funds, not SBP, not a regulated
+payment rail.** Unlike the rest of §14's mock flows, balances and transfers are **persisted in
+Postgres** and a transfer is a real, atomic DB transaction — so the iOS demo can show money actually
+moving between two phones.
+
+- **Storage:** two tables, created automatically on boot (idempotent `CREATE TABLE IF NOT EXISTS`):
+  - `demo_users(id, phone UNIQUE, display_name, balance NUMERIC(14,2) CHECK (balance >= 0), created_at)`
+  - `demo_transfers(id, from_user_id, to_user_id, from_phone, to_phone, amount, created_at)` — an
+    append-only P2P log (every move is durably auditable).
+- **Money:** held as `NUMERIC(14,2)`; all arithmetic runs **in SQL** (exact, no float drift). The
+  `CHECK (balance >= 0)` is defence-in-depth — the DB itself refuses to let a balance go negative.
+- **Atomic transfer:** inside one `BEGIN/COMMIT` transaction both rows are locked (`FOR UPDATE`, in a
+  deterministic `id` order so opposite-direction transfers can't deadlock), the sender's funds are
+  verified, then debit + credit + log row all commit together or roll back together.
+- **Idempotent registration:** `INSERT … ON CONFLICT (phone) DO NOTHING` — re-registering the same
+  number returns the existing user and **never** re-credits the starting balance.
+- **Phone normalization:** `+7 900 111-22-33`, `89001112233`, `9001112233` all canonicalise to
+  `+79001112233`, so one human is one row and lookups/transfers are reliable.
+- **Auth:** phone only, no tokens — **by design, for the demo** (everything is served through our own
+  gateway/backend, §11.1).
+- **Infra convention:** if Postgres is down the wallet routes return **503** and the rest of the
+  backend still boots (same "green offline" rule as Pricing's Redis fallback). It self-heals once
+  Postgres comes up — no restart needed.
+
+### Endpoints
+
+```bash
+# Register by phone + one-time starting balance (default 50 000 ₽). Idempotent per phone.
+curl -s -X POST http://localhost:4000/auth/register-demo -H 'Content-Type: application/json' \
+  -d '{"phone":"+7 900 111 22 33","displayName":"Алиса"}'
+# {"id":"…","phone":"+79001112233","displayName":"Алиса","balance":50000,"createdAt":"…","created":true}
+#   → calling it again with the same number returns "created":false and the SAME balance (no re-credit)
+
+# Current balance for a phone (404 if not registered)
+curl -s "http://localhost:4000/balance?phone=89001112233"
+# {"id":"…","phone":"+79001112233","displayName":"Алиса","balance":50000,"createdAt":"…"}
+
+# All registered users — so the client can pick a real recipient
+curl -s http://localhost:4000/users
+# {"users":[{"phone":"+79001112233","displayName":"Алиса"},{"phone":"+79002223344","displayName":"Боб"}]}
+
+# Atomic P2P transfer — returns both updated balances
+curl -s -X POST http://localhost:4000/transfer -H 'Content-Type: application/json' \
+  -d '{"fromPhone":"+79001112233","toPhone":"+79002223344","amount":12000.50}'
+# {"transferId":"…","amount":12000.5,"createdAt":"…",
+#  "from":{…,"balance":37999.5},"to":{…,"balance":62000.5}}
+```
+
+**Errors** (machine-readable `{ "error": "<code>", "message": "…" }`):
+
+| Case | HTTP | `error` |
+|---|---|---|
+| Sender can't cover the amount | `422` | `insufficient_funds` (echoes `balance` + `required`) |
+| Recipient phone not registered | `404` | `recipient_not_found` |
+| Sender phone not registered | `404` | `sender_not_found` |
+| `fromPhone == toPhone` | `400` | `same_account` |
+| Amount ≤ 0 / not a number / sub-kopeck | `400` | `invalid_amount` |
+| Malformed phone | `400` | `invalid_phone` |
+| Postgres unavailable | `503` | `db_unavailable` |
+
+Failed transfers roll back fully — the sender's balance is untouched and **no** `demo_transfers` row
+is written. Invariant: with no external credit, `SUM(balance)` stays constant (money is moved, never
+created or destroyed).
+
+### Config (`.env`)
+
+| Var | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | `postgres://alfa:alfa@localhost:5432/alfa_romeo` | Postgres connection (matches `docker-compose.yml`) |
+| `DEMO_START_BALANCE_RUB` | `50000` | one-time ₽ credited per phone on `register-demo` |
+
 ## Layout
 
 ```
@@ -216,8 +292,8 @@ src/
 ├── config/              # typed env configuration
 ├── health/             # GET /health
 ├── contracts/          # TS API contract (mirror of /shared — codegen later)
-└── modules/            # service modules (§11.2) — pricing + ai implemented, rest are stubs:
-    auth · identity · subscriptions · accounts · payments · cards · credit ·
+└── modules/            # service modules (§11.2) — pricing + ai + wallet implemented, rest are stubs:
+    auth · identity · subscriptions · accounts · payments · wallet · cards · credit ·
     deposits · crypto · pricing · mobile · business · analytics · ai ·
     notifications · support
 ```
@@ -230,7 +306,8 @@ Module boundaries are the future microservice boundaries (§11.1). Each module i
 - **Modular monolith** — one module per §11.2 service; `@Module({})` stubs gain controllers/
   providers per phase (§14).
 - **Config via `@nestjs/config`** — environment values have safe local defaults (`config/`).
-- **No DB connection at boot** — Postgres/Redis are wired in a later phase so the scaffold stays
-  green offline.
+- **Infra is optional at boot** — the scaffold stays green offline. Pricing falls back from Redis to
+  an in-memory cache; Wallet (§11.3) uses Postgres but, if it's down, returns 503 on its own routes
+  and self-heals when Postgres comes up — the rest of the app boots regardless.
 - **API contract** lives in `src/contracts` (mirrors `/shared/schema`). The PAN token is
   server-only and never appears in the contract.

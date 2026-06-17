@@ -22,8 +22,7 @@ extension EnvironmentValues {
 ///
 /// `scheme` is optional: `nil` means **follow the device** (the «Система» theme preference, §9.8) — the
 /// palette is then resolved from the ambient `\.colorScheme` and no `preferredColorScheme` is pinned.
-/// A non-nil value pins light or dark explicitly. The app root passes the user's persisted preference;
-/// scoped overrides (e.g. crypto `proTradingChrome`) still force their own scheme locally.
+/// A non-nil value pins light or dark explicitly. The app root passes the user's persisted preference.
 struct ThemeProvider<Content: View>: View {
     var profileType: ProfileType?
     var scheme: ColorScheme?

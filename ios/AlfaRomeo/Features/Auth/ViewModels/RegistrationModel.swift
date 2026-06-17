@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// State machine for the KYC registration stepper (§9.0/§10.1):
@@ -114,12 +115,19 @@ final class RegistrationModel {
 
     func finish(api: any APIClient, session: AppSession) async {
         do {
+            // Bind the identity to the typed phone: persona (name/cards/business) is deterministic, and
+            // ₽ + crypto balances come live from the backend wallet (``WalletService``).
+            MockData.select(forPhone: phone)
+            let normalized = MockData.normalizePhone(phone)
+            UserDefaults.standard.set(normalized, forKey: "ar_user_phone")
+
             let auth = try await api.signIn(phone: phone, code: code)
             let profiles = try await api.profiles()
             guard let personal = profiles.first(where: { $0.type == .personal }) ?? profiles.first else {
                 error = "Профиль не найден."
                 return
             }
+            await WalletService.shared.register(phone: normalized, displayName: MockData.activePersona.personName)
             session.demoPIN = pin
             session.completeAuthentication(user: auth.user, profile: personal, profiles: profiles)
         } catch {

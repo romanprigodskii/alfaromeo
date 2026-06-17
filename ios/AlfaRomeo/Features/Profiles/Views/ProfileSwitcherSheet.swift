@@ -140,7 +140,7 @@ struct ProfileSwitcherSheet: View {
         } label: {
             SurfaceCard(padding: Spacing.sm) {
                 ListRow(icon: "plus", title: "Добавить профиль",
-                        subtitle: "Личный · Бизнес · Семейный · Детский", showsChevron: true)
+                        subtitle: "Личный · Бизнес", showsChevron: true)
             }
         }
         .buttonStyle(.plain)

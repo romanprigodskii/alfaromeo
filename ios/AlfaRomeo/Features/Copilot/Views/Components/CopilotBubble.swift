@@ -2,7 +2,7 @@ import SwiftUI
 
 /// One message row: a right-aligned accent bubble for the user; for the assistant, a cold-gradient
 /// avatar beside a surface bubble that can also host an action card, a result receipt, or an escalation
-/// pill (§10.9).
+/// pill (§10.9). Bubbles carry a small tail on the sender's side and a generous opposite-side inset.
 struct CopilotBubble: View {
     let message: CopilotMessage
     var onConfirm: (AIToolDraft) -> Void
@@ -16,15 +16,26 @@ struct CopilotBubble: View {
         }
     }
 
+    /// Speech-bubble corners: rounded on three corners with a small tail on the sender's side.
+    private func bubbleShape(isUser: Bool) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: Radius.lg,
+            bottomLeadingRadius: isUser ? Radius.lg : Radius.xs,
+            bottomTrailingRadius: isUser ? Radius.xs : Radius.lg,
+            topTrailingRadius: Radius.lg,
+            style: .continuous)
+    }
+
     private var userBubble: some View {
         HStack {
-            Spacer(minLength: 44)
+            Spacer(minLength: 56)
             Text(message.text)
                 .font(BrandFont.body())
                 .foregroundStyle(theme.onAccent)
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.sm)
-                .background(theme.accent, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .textSelection(.enabled)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(theme.accent, in: bubbleShape(isUser: true))
         }
     }
 
@@ -35,20 +46,19 @@ struct CopilotBubble: View {
                 if showsTyping {
                     CopilotTypingIndicator()
                         .padding(.horizontal, Spacing.md)
-                        .padding(.vertical, Spacing.md)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                        .padding(.vertical, 14)
+                        .background(theme.surface, in: bubbleShape(isUser: false))
+                        .overlay(bubbleShape(isUser: false).stroke(theme.border, lineWidth: 1))
                 } else if !message.text.isEmpty {
                     Text(message.text)
                         .font(BrandFont.body())
                         .foregroundStyle(theme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, Spacing.md)
-                        .padding(.vertical, Spacing.sm)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                                .stroke(theme.border, lineWidth: 1)
-                        )
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(theme.surface, in: bubbleShape(isUser: false))
+                        .overlay(bubbleShape(isUser: false).stroke(theme.border, lineWidth: 1))
                 }
 
                 if let draft = message.draft {
@@ -61,7 +71,7 @@ struct CopilotBubble: View {
                     StatusPill(status: .pending, text: "Оператор подключится")
                 }
             }
-            Spacer(minLength: 28)
+            Spacer(minLength: 44)
         }
     }
 

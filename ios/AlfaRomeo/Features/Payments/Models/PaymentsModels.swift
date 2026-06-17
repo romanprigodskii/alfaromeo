@@ -150,11 +150,13 @@ struct Autopayment: Identifiable, Hashable {
 enum DeclineReason: Hashable {
     case insufficientFunds
     case canceled
+    case failed(String)   // a backend error surfaced verbatim (friendly text), e.g. recipient not found
 
     var title: String {
         switch self {
         case .insufficientFunds: return "Операция отклонена"
         case .canceled:          return "Операция отменена"
+        case .failed:            return "Не удалось перевести"
         }
     }
 
@@ -164,6 +166,8 @@ enum DeclineReason: Hashable {
             return "Проверьте, достаточно ли денег на счёте, и попробуйте снова."
         case .canceled:
             return "Подтверждение не пройдено. Средства не списаны."
+        case .failed(let m):
+            return m
         }
     }
 
@@ -171,6 +175,7 @@ enum DeclineReason: Hashable {
         switch self {
         case .insufficientFunds: return "exclamationmark.triangle.fill"
         case .canceled:          return "xmark"
+        case .failed:            return "exclamationmark.triangle.fill"
         }
     }
 }

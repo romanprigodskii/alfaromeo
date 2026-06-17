@@ -45,6 +45,7 @@ struct SendCryptoView: View {
         .overlay { if model.step == .status { statusOverlay } }
         .task {
             model.load(session: session)
+            await model.refreshRecipients()
             let profileId = session.activeProfile?.id ?? ""
             let fallback = (try? await api.subscription(profileId: profileId))?.tier ?? .base
             let tier = session.currentTier(for: profileId, fallback: fallback)
@@ -111,7 +112,7 @@ struct SendCryptoView: View {
         case .contact:
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.md) {
-                    ForEach(PaymentsMockData.contacts) { contact in
+                    ForEach(model.registeredContacts) { contact in
                         contactChip(contact)
                     }
                 }

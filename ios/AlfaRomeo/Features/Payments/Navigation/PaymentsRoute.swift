@@ -12,6 +12,7 @@ enum PaymentsRoute: Hashable {
     case templates                        // Шаблоны / Автоплатежи
     case newTemplate                      // создание шаблона / автоплатежа
     case investorStatus                   // статус инвестора / лимиты / тест — из лимит-гейта (§2.4); Payments не пушит CryptoRoute
+    case pay                              // 🆕 Оплата (QR / NFC / СБП / цифр.₽) — точка входа перенесена с дашборда (Home)
 }
 
 extension PaymentsRoute {
@@ -37,6 +38,10 @@ extension PaymentsRoute {
             NewTemplateView()
         case .investorStatus:
             InvestorStatusView()
+        case .pay:
+            // §10.3 — хаб «Оплата» (QR / NFC / СБП / цифр.₽). Экран не меняется; host-стек Платежей
+            // (``PaymentsView``) уже регистрирует `PaymentsRoute`, так что рельсы внутри хаба резолвятся тут.
+            PayHubView()
         }
     }
 }

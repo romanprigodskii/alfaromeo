@@ -26,3 +26,8 @@ xcuserdata/
 .idea/
 .vscode/
 *.swp
+# Claude Code harness state (scheduled-task locks, settings, transcripts)
+.claude/
+
+# Server runtime snapshot (DB dump + real .env secrets) — never commit
+_server-snapshot-*/

@@ -127,9 +127,19 @@ struct ScreenshotHost: View {
         case "settingsDark":
             Themed(.dark) { NavigationStack { SettingsView() } }
 
-        // ── Оплата (§10.3) — Home-owned hub; the screen funnels into the real TransferFlowView ──
+        // ── Оплата (§10.3) — Payments hub; the screen funnels into the real TransferFlowView ──
         case "payHub":
-            NavigationStack { PayHubView().navigationTitle("Оплата").navigationBarTitleDisplayMode(.inline) }
+            NavigationStack {
+                PayHubView().navigationTitle("Оплата").navigationBarTitleDisplayMode(.inline)
+                    .navigationDestination(for: PaymentsRoute.self) { $0.destination }
+            }
+
+        // ── Платежи (§9.2) — hub root; the «Оплата» (QR) entry now lives here (moved off the dashboard) ──
+        case "paymentsHub":
+            NavigationStack { PaymentsView().navigationTitle("Платежи").navigationBarTitleDisplayMode(.inline) }
+        // ── Профиль-переключатель (§5.2) — only Личный + Бизнес; the child profile is gone ──
+        case "profileSwitcher":
+            ProfileSwitcherSheet()
 
         // ── Чаты (§9.5) — Обращения reuse the shared DisputeTicket; seed() disputes t7 so there's one ──
         case "chatsHub":
@@ -145,12 +155,16 @@ struct ScreenshotHost: View {
             // The AI-insight bar now opens this with the .search context (instead of a stub screen).
             NavigationStack { CopilotChatView(launch: .search, embedded: true) }
 
-        // ── Биржа / Crypto hub (§9.6) — the whole hub is dark «проф-режим»; a money-movement flow
-        //    (Обмен) pushed on top reclaims light, proving the dark doesn't leak. ──
+        // ── Биржа / Crypto hub (§9.6) — light like the rest of the app; ₽/$ toggle + a pushed Обмен flow. ──
         case "marketHub":
-            CryptoShot()                                   // dark hub + ₽/$ toggle
+            CryptoShot()                                   // light hub + ₽/$ toggle (needs live prices)
         case "marketHubConvert":
-            CryptoShot(push: .convert(asset: "BTC"))       // light Обмен over the dark hub
+            CryptoShot(push: .convert(asset: "BTC"))       // Обмен flow pushed on the hub
+        case "marketHubMock":
+            // Same hub, rendered without the live-price gate so it shows offline too (proves it's light).
+            NavigationStack { CryptoHubView() }
+        case "coins":
+            CoinGalleryShot()   // brand coin logos (BTC/ETH/USDT/USDC/SOL/TON) + ЦФА/ticker fallbacks
 
         default:
             Text("unknown shot: \(name)")
@@ -171,7 +185,7 @@ struct ScreenshotHost: View {
         if name.hasPrefix("benefits") || name.hasPrefix("credit") || name.hasPrefix("settings")
             || name.hasPrefix("profile") || name.hasPrefix("home") || name.hasPrefix("security")
             || name.hasPrefix("notif") || name.hasPrefix("theme") || name.hasPrefix("biz")
-            || name.hasPrefix("market") { ready = true; return }
+            || name.hasPrefix("market") || name == "coins" { ready = true; return }
 
         let pid = MockData.personalProfileId
         let store = HistoryStore.shared
@@ -272,11 +286,34 @@ private struct BizShot<Content: View>: View {
     }
 }
 
-/// Hosts the dark Crypto hub for a screenshot: pre-loads live prices + the portfolio store so the hero
-/// and positions render fully, then optionally pushes one ``CryptoRoute`` on top. Pushing `.convert`
-/// proves a light money-movement flow over the dark hub doesn't leak (the §13.1 bug). It owns the
-/// `NavigationStack`, so the hub's own `.cryptoHubChrome()` + the route's chrome resolve exactly as in
-/// the app. Reuses the harness-injected AppSession / Router / mock client / theme. Market-shot only.
+/// Renders the brand coin logos through the real ``AssetGlyph`` path (known coins → ``CoinLogo``), plus
+/// the ЦФА `systemImage` and unknown-ticker fallbacks, at a few sizes — so a screenshot proves the
+/// hand-drawn ETH/SOL/TON marks and the ₿/₮/$ glyphs look right. Coins-shot only.
+private struct CoinGalleryShot: View {
+    private let coins = ["BTC", "ETH", "USDT", "USDC", "SOL", "TON"]
+    var body: some View {
+        VStack(spacing: Spacing.xl) {
+            ForEach([CGFloat(64), 44, 28], id: \.self) { sz in
+                HStack(spacing: Spacing.md) {
+                    ForEach(coins, id: \.self) { AssetGlyph(symbol: $0, size: sz) }
+                }
+            }
+            Divider()
+            HStack(spacing: Spacing.md) {
+                AssetGlyph(symbol: "AURUM", size: 44)                                  // unknown → ticker
+                AssetGlyph(symbol: "CFA", systemImage: "building.columns.fill", size: 44) // ЦФА glyph
+            }
+        }
+        .padding(Spacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.default.background)
+    }
+}
+
+/// Hosts the Crypto hub for a screenshot: pre-loads live prices + the portfolio store so the hero and
+/// positions render fully, then optionally pushes one ``CryptoRoute`` on top. The hub is light like the
+/// rest of the app (no chrome). It owns the `NavigationStack`, so routes resolve exactly as in the app.
+/// Reuses the harness-injected AppSession / Router / mock client / theme. Market-shot only.
 private struct CryptoShot: View {
     var push: CryptoRoute? = nil
 
@@ -287,7 +324,7 @@ private struct CryptoShot: View {
         Group {
             if ready {
                 NavigationStack(path: $path) {
-                    CryptoHubView().cryptoHubChrome()
+                    CryptoHubView()
                 }
             } else {
                 ProgressView().controlSize(.large)
@@ -298,8 +335,7 @@ private struct CryptoShot: View {
             await CryptoStore.shared.load(api: MockAPIClient(),
                                           profileId: MockData.personalProfileId, force: true)
             if let push {
-                // Skip the unqualified-investor risk-test gate so the pushed flow's own (light) screen
-                // is what renders over the dark hub — the point of this shot is the leak check.
+                // Skip the unqualified-investor risk-test gate so the pushed flow's own screen renders.
                 CryptoStore.shared.passRiskTest()
                 path.append(push)
             }

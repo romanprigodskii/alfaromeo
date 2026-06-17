@@ -45,7 +45,15 @@ enum BiometricAuthenticator {
         let context = LAContext()
         context.localizedFallbackTitle = "Ввести код устройства"
         var error: NSError?
-        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return false }
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            #if targetEnvironment(simulator)
+            // The simulator has no enrolled biometrics, so the prompt is unavailable. In a sim build
+            // treat that as success so the demo's transfers complete (real device → real Face ID).
+            return true
+            #else
+            return false
+            #endif
+        }
         do {
             return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
         } catch {

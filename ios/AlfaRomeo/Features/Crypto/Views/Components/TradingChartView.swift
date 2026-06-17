@@ -6,8 +6,8 @@ import Charts
 /// optional bottom indicator panel (Объём / MACD) that shares the price panel's x-scale.
 ///
 /// `.d1` renders the **real** backend candles from ``AssetDetailModel`` (range `.day`); the intraday
-/// frames are synthesized around the **live** price (``SyntheticMarket``). Reads dark `theme.*` from
-/// the surrounding ``proTradingChrome()``.
+/// frames are synthesized around the **live** price (``SyntheticMarket``). Reads the ambient `theme.*`
+/// tokens (light, like the rest of the app).
 struct TradingChartView: View {
     let symbol: String
     var model: AssetDetailModel

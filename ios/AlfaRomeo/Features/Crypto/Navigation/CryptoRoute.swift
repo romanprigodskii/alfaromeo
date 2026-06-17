@@ -19,29 +19,20 @@ enum CryptoRoute: Hashable {
 extension CryptoRoute {
     @ViewBuilder var destination: some View {
         switch self {
-        // The whole hub is now dark «проф-режим» (§13.1: биржа целиком тёмная). The hub itself gets
-        // `.cryptoHubChrome()` at its entry points (the «Биржа» tab root + `HomeRoute.crypto`), so these
-        // pushed children inherit dark `\.theme`. Chrome is (re)applied here, from outside each view, so
-        // each screen's own `@Environment(\.theme)` resolves correctly:
-        //
-        // • DARK — the exchange surfaces you stay *inside* (актив / ордер / история сделок / статус
-        //   инвестора / ЦФА / привязка кошелька). `.cryptoHubChrome()`/`.proTradingChrome()` are the same
-        //   dark chrome; both pin it so the screen is dark regardless of how it was reached.
-        // • LIGHT — the money-movement flows that leave the exchange feel (Обмен / Отправить / Принять)
-        //   and the cross-module стейкинг (→ Savings). These MUST `.cryptoLightChrome()`: it resets
-        //   `\.theme` back to light *and* reclaims a light window, so the dark never leaks and the app is
-        //   light again on pop. (Resetting only `.preferredColorScheme(.light)` would leave a dark theme.)
-        case .assetDetail(let symbol):      AssetDetailView(symbol: symbol).proTradingChrome()
+        // The whole crypto module is light, like the rest of the app (§9.6): every screen just uses the
+        // ambient DesignSystem `\.theme` — no per-route chrome. (The exchange was briefly a dark «проф-
+        // режим»; that decision was reverted.)
+        case .assetDetail(let symbol):      AssetDetailView(symbol: symbol)
         case .trade(let symbol, let side, let price):
-            TradeOrderView(symbol: symbol, side: side, prefilledPrice: price).proTradingChrome()
-        case .tradeHistory:                 TradeHistoryView().cryptoHubChrome()
-        case .investorStatus:               InvestorStatusView().cryptoHubChrome()
-        case .cfaDetail(let id):            CDFADetailView(cdfaId: id).cryptoHubChrome()
-        case .linkExternalWallet:           ExternalWalletLinkView().cryptoHubChrome()
-        case .convert(let asset):           ConvertView(asset: asset).cryptoLightChrome()
-        case .send(let asset):              SendCryptoView(asset: asset).cryptoLightChrome()
-        case .receive(let asset):           ReceiveCryptoView(asset: asset).cryptoLightChrome()
-        case .staking(let symbol):          StakeFlowView(symbol: symbol).cryptoLightChrome()
+            TradeOrderView(symbol: symbol, side: side, prefilledPrice: price)
+        case .tradeHistory:                 TradeHistoryView()
+        case .investorStatus:               InvestorStatusView()
+        case .cfaDetail(let id):            CDFADetailView(cdfaId: id)
+        case .linkExternalWallet:           ExternalWalletLinkView()
+        case .convert(let asset):           ConvertView(asset: asset)
+        case .send(let asset):              SendCryptoView(asset: asset)
+        case .receive(let asset):           ReceiveCryptoView(asset: asset)
+        case .staking(let symbol):          StakeFlowView(symbol: symbol)
         }
     }
 }

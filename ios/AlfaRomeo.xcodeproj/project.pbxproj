@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXFileReference section */
@@ -11,11 +11,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AAFA0000000000000000F004 /* AlfaRomeo */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AlfaRomeo;
-			sourceTree = "<group>";
-		};
+		AAFA0000000000000000F004 /* AlfaRomeo */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AlfaRomeo; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,7 +89,6 @@
 			);
 			mainGroup = AAFA0000000000000000F002;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = AAFA0000000000000000F003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -250,9 +245,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HVFQ9X332Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Альфа-Ромео";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Сканирование QR-кодов для платежей и крипто-операций";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Вход и подтверждение операций по Face ID";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -279,9 +276,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HVFQ9X332Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Альфа-Ромео";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Сканирование QR-кодов для платежей и крипто-операций";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Вход и подтверждение операций по Face ID";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
