@@ -66,10 +66,10 @@ struct DeliveryTrackingContent: View {
             }
             .animation(reduceMotion ? nil : Motion.smooth, value: order.status)
             .animation(reduceMotion ? nil : Motion.smooth, value: activated)
-            // Gentle auto-progression up to «в пути»; delivery + activation stay manual.
+            // Gentle auto-progression; activation stays manual.
             .task(id: order.status) {
-                guard order.status == .ordered || order.status == .printing else { return }
-                try? await Task.sleep(for: .seconds(1.8))
+                guard let delay = autoAdvanceDelay(order.status) else { return }
+                try? await Task.sleep(for: delay)
                 guard !Task.isCancelled else { return }
                 store.advanceDelivery(orderId: orderId)
             }
@@ -103,6 +103,7 @@ struct DeliveryTrackingContent: View {
                 withAnimation(Motion.smooth) { activating = false }
             }
         } else {
+            #if DEBUG
             VStack(spacing: Spacing.sm) {
                 PrimaryButton(title: "Продвинуть статус (демо)") {
                     store.advanceDelivery(orderId: orderId)
@@ -113,6 +114,20 @@ struct DeliveryTrackingContent: View {
                     }
                 }
             }
+            #endif
+        }
+    }
+
+    /// Заказана и печать move on by themselves. A release build has no demo controls, so «в пути»
+    /// also arrives on its own there and activation stays reachable; a debug build keeps «в пути»
+    /// for the manual controls above.
+    private func autoAdvanceDelay(_ status: PhysicalCardStatus) -> Duration? {
+        switch status {
+        case .ordered, .printing: return .seconds(1.8)
+        #if !DEBUG
+        case .shipping: return .seconds(6)
+        #endif
+        default: return nil
         }
     }
 
