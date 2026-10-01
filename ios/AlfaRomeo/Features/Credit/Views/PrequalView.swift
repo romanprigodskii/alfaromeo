@@ -25,14 +25,14 @@ struct PrequalView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 hero
                 factorsSection
                 simulatorSection
-                rateNote
                 footer
             }
-            .padding(Spacing.md)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.xxl)
         }
         .background(theme.background.ignoresSafeArea())
@@ -42,48 +42,39 @@ struct PrequalView: View {
         .task(id: profileId) { store.load(profileId: profileId) }
     }
 
-    // MARK: Hero — simulated limit + Δ
+    // MARK: Hero: simulated limit + Δ
 
     private var hero: some View {
-        VStack(spacing: Spacing.sm) {
-            LimitGauge(
-                title: hasApplied ? "Лимит с учётом изменений" : "Ваш одобренный лимит",
-                amount: simulatedLimit,
-                ceiling: product.maxAmount,
-                rateLabel: "≈ \(CreditFormat.percent(simulatedRate))",
-                delta: simulatedLimit - baseLimit)
-            Text("Решение объяснимо: вот из чего складывается лимит и что на него влияет.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        LimitGauge(
+            title: hasApplied ? "Лимит с учётом изменений" : "Одобренный лимит",
+            amount: simulatedLimit,
+            ceiling: product.maxAmount,
+            rateLabel: "≈ \(CreditFormat.percent(simulatedRate))",
+            delta: simulatedLimit - baseLimit)
     }
 
-    // MARK: Factors (§10.5 факторы решения)
+    // MARK: Factors (§10.5 факторы решения) + personal rate
 
     private var factorsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Почему такое решение", subtitle: "Три фактора — нажмите, чтобы раскрыть")
+        GroupedSection("Факторы решения", footer: rateFooter) {
             ForEach(store.factors(simulated: true)) { factor in
                 FactorRow(factor: factor)
             }
         }
     }
 
-    // MARK: Simulator (§10.5 «если закрыть карту X — лимит +Y»)
+    private var rateFooter: String {
+        "Персональная ставка \(CreditFormat.rate(simulatedRate)). Чем выше скоринг и ниже нагрузка, "
+        + "тем ближе ставка к минимальной по продукту: \(CreditFormat.rate(product.minRate))."
+    }
+
+    // MARK: Simulator (§10.5 «если закрыть карту X, лимит +Y»)
 
     private var simulatorSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                sectionHeader("Что если…", subtitle: "Подберите шаги — лимит пересчитается")
-                if hasApplied {
-                    Button("Сбросить") {
-                        withAnimation(Motion.snappy) { store.appliedLevers.removeAll() }
-                    }
-                    .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.accent)
-                    .buttonStyle(PressableButtonStyle())
-                }
-            }
+        GroupedSection("Симулятор лимита",
+                       actionTitle: hasApplied ? "Сбросить" : nil,
+                       action: resetAction,
+                       footer: "Это моделирование: оформление считается по текущему лимиту, без неподтверждённых шагов.") {
             ForEach(store.levers) { lever in
                 SimulatorLeverRow(
                     lever: lever,
@@ -93,48 +84,24 @@ struct PrequalView: View {
                     withAnimation(Motion.snappy) { store.toggleLever(lever.id) }
                 }
             }
-            Text("Это моделирование: оформление считается по текущему лимиту, без учёта неподтверждённых шагов.")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var rateNote: some View {
-        SurfaceCard {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Image(systemName: "percent").foregroundStyle(theme.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Персональная ставка \(CreditFormat.rate(simulatedRate))")
-                        .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                    Text("Чем выше скоринг и ниже нагрузка — тем ближе ставка к минимальной по продукту (\(CreditFormat.rate(product.minRate))).")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
+    private var resetAction: (() -> Void)? {
+        guard hasApplied else { return nil }
+        return { withAnimation(Motion.snappy) { store.appliedLevers.removeAll() } }
     }
 
     private var footer: some View {
-        VStack(spacing: Spacing.xs) {
-            PrimaryButton(title: "Оформить — выбрать сумму", icon: "arrow.right") {
+        VStack(spacing: Spacing.sm) {
+            PrimaryButton(title: "Выбрать сумму") {
                 router.push(CreditRoute.apply(productId: product.id))
             }
-            Text("Преодобрено \(CreditFormat.rub(baseLimit)) · в заявке можно выбрать сумму до \(CreditFormat.rub(requestable))")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Предодобрено \(CreditFormat.rub(baseLimit)). В заявке можно выбрать сумму до \(CreditFormat.rub(requestable)).")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, Spacing.xs)
-    }
-
-    private func sectionHeader(_ title: String, subtitle: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            if let subtitle {
-                Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

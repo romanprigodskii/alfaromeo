@@ -21,14 +21,15 @@ struct CreditView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 hero
                 productsSection
                 obligationsSection
                 if !store.openedCredits.isEmpty { activeSection }
                 disclaimer
             }
-            .padding(Spacing.md)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
             .padding(.bottom, Spacing.xxl)
         }
         .background(theme.background.ignoresSafeArea())
@@ -39,32 +40,24 @@ struct CreditView: View {
         .task(id: profileId) { store.load(profileId: profileId) }
     }
 
-    // MARK: Hero — preapproved limit + explainable entry
+    // MARK: Hero: preapproved limit + explainable entry
 
     private var hero: some View {
-        VStack(spacing: Spacing.sm) {
-            HStack {
-                StatusPill(status: .success, text: "Преодобрено")
-                Spacer()
-            }
-            LimitGauge(
-                title: "Вам предодобрено",
-                amount: store.heroLimit,
-                ceiling: CreditCatalog.primary.maxAmount,
-                rateLabel: "≈ \(CreditFormat.percent(store.personalRate(for: CreditCatalog.primary)))")
-            SecondaryButton(title: "Почему такая сумма?", icon: "sparkles") {
-                router.push(CreditRoute.prequal)
-            }
-        }
+        LimitGauge(
+            title: "Предодобрено",
+            amount: store.heroLimit,
+            ceiling: CreditCatalog.primary.maxAmount,
+            rateLabel: "≈ \(CreditFormat.percent(store.personalRate(for: CreditCatalog.primary)))",
+            actionTitle: "Почему такая сумма",
+            action: { router.push(CreditRoute.prequal) })
     }
 
     // MARK: Product shelf (§10.5 наличные / карта / рассрочка)
 
     private var productsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Кредитные продукты", subtitle: "Ставка и лимит — под ваш профиль")
+        GroupedSection("Продукты") {
             ForEach(CreditCatalog.products) { product in
-                CreditProductCard(
+                CreditProductRow(
                     product: product,
                     approvedLimit: store.approvedLimit(for: product),
                     rate: store.personalRate(for: product)
@@ -76,97 +69,43 @@ struct CreditView: View {
     // MARK: Current obligations → ПДН (and the simulator's «close X» levers)
 
     private var obligationsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Текущие обязательства", subtitle: "Влияют на лимит через долговую нагрузку")
-            SurfaceCard(padding: Spacing.xs) {
-                VStack(spacing: 0) {
-                    ForEach(store.obligations) { ob in
-                        obligationRow(ob)
-                        if ob.id != store.obligations.last?.id { Divider().overlay(theme.border) }
-                    }
-                }
+        GroupedSection("Обязательства",
+                       footer: "Платежи входят в долговую нагрузку и влияют на лимит. Обеспеченные кредиты в симуляторе не закрываются.") {
+            ForEach(store.obligations) { ob in
+                ListRow(icon: ob.kind.systemImage,
+                        title: ob.lender,
+                        subtitle: "\(CreditFormat.rub(ob.monthlyPayment))/мес, остаток \(CreditFormat.rub(ob.balance))")
             }
-            HStack(spacing: Spacing.xs) {
-                Image(systemName: "gauge.with.dots.needle.bottom.50percent").foregroundStyle(theme.warning)
-                Text("ПДН \(Int((store.dti() * 100).rounded()))% · платежи \(CreditFormat.rub(store.baseInputs.monthlyDebt))/мес")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                Spacer()
+            Button { router.push(CreditRoute.prequal) } label: {
+                ListRow(icon: "slider.horizontal.3",
+                        title: "Долговая нагрузка",
+                        subtitle: "Платежи \(CreditFormat.rub(store.baseInputs.monthlyDebt))/мес",
+                        value: "ПДН \(MoneyFormat.percent(fraction: store.dti(), maxFractionDigits: 0))",
+                        showsChevron: true)
             }
-            SecondaryButton(title: "Открыть симулятор", icon: "slider.horizontal.3") {
-                router.push(CreditRoute.prequal)
-            }
+            .buttonStyle(.row)
+            .accessibilityHint("Открыть симулятор лимита")
         }
-    }
-
-    private func obligationRow(_ ob: Obligation) -> some View {
-        HStack(spacing: Spacing.sm) {
-            ZStack {
-                Circle().fill(theme.elevated).frame(width: 36, height: 36)
-                Image(systemName: ob.kind.systemImage).font(.system(size: 15)).foregroundStyle(theme.textSecondary)
-            }
-            VStack(alignment: .leading, spacing: 1) {
-                Text(ob.lender).font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                Text("остаток \(CreditFormat.rub(ob.balance))").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 1) {
-                Text("\(CreditFormat.rub(ob.monthlyPayment))/мес")
-                    .font(BrandFont.mono(14, weight: .medium)).foregroundStyle(theme.textPrimary)
-                if !ob.kind.isClosableLever {
-                    Text("обеспеченный").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                }
-            }
-        }
-        .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.sm)
     }
 
     // MARK: Opened credits (demo)
 
     private var activeSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Мои кредиты")
-            SurfaceCard(padding: Spacing.xs) {
-                VStack(spacing: 0) {
-                    ForEach(store.openedCredits) { credit in
-                        HStack(spacing: Spacing.sm) {
-                            ZStack {
-                                Circle().fill(theme.accent.opacity(0.14)).frame(width: 36, height: 36)
-                                Image(systemName: credit.kind.systemImage).font(.system(size: 15)).foregroundStyle(theme.accent)
-                            }
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(credit.kind.title).font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                                Text("\(CreditFormat.rub(credit.monthlyPayment))/мес · \(CreditFormat.term(credit.termMonths))")
-                                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                            }
-                            Spacer()
-                            AmountText(amount: credit.amount, size: 17)
-                        }
-                        .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.sm)
-                        if credit.id != store.openedCredits.last?.id { Divider().overlay(theme.border) }
-                    }
-                }
+        GroupedSection("Мои кредиты") {
+            ForEach(store.openedCredits) { credit in
+                ListRow(icon: credit.kind.systemImage,
+                        title: CreditCatalog.product(id: credit.productId)?.name ?? credit.kind.title,
+                        subtitle: "\(CreditFormat.rub(credit.monthlyPayment))/мес · \(CreditFormat.term(credit.termMonths))",
+                        value: CreditFormat.rub(credit.amount))
             }
         }
     }
 
     private var disclaimer: some View {
         Text("Не является публичной офертой. Итоговые условия определяются по результатам рассмотрения заявки. Демо-расчёт.")
-            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            .multilineTextAlignment(.center)
+            .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, Spacing.md)
-    }
-
-    // MARK: Building blocks
-
-    private func sectionHeader(_ title: String, subtitle: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            if let subtitle {
-                Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, Spacing.xs)
     }
 }
 

@@ -1,51 +1,71 @@
 import SwiftUI
 
-/// The «одобрено до X» hero (§10.5 преодобренные суммы). A big monospaced amount over a fill that
-/// shows the limit against the product ceiling, an optional personalised rate, and — in the
-/// simulator — an animated signed Δ vs the base limit. Numerics animate, so toggling a what-if lever
-/// visibly moves the number (honest, derived Δ).
+/// The «одобрено до X» hero (§10.5 преодобренные суммы): the screen's one summary card. A hero
+/// amount over a fill that shows the limit against the product ceiling, an optional personalised
+/// rate, and, in the simulator, an animated signed Δ vs the base limit. Numerics animate, so toggling
+/// a what-if lever visibly moves the number (honest, derived Δ). An optional trailing row opens the
+/// explanation.
 struct LimitGauge: View {
     var title: String
     var amount: Double
     var ceiling: Double
     var rateLabel: String? = nil
     var delta: Double = 0            // signed Δ vs base; 0 → hidden
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
 
     @Environment(\.theme) private var theme
 
     private var fill: Double { ceiling > 0 ? min(1, amount / ceiling) : 0 }
 
     var body: some View {
-        SurfaceCard(elevated: true) {
+        SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text(title).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     Spacer()
                     if delta != 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: delta > 0 ? "arrow.up.right" : "arrow.down.right")
-                                .font(.system(size: 11, weight: .bold))
-                            Text(CreditFormat.signedRub(delta)).font(BrandFont.caption.weight(.semibold))
-                                .contentTransition(.numericText())
-                        }
-                        .foregroundStyle(delta > 0 ? theme.success : theme.danger)
-                        .transition(.opacity)
+                        Text(CreditFormat.signedRub(delta))
+                            .font(BrandFont.subheadline.weight(.medium))
+                            .monospacedDigit()
+                            .foregroundStyle(delta > 0 ? theme.success : theme.textPrimary)
+                            .contentTransition(.numericText())
+                            .transition(.opacity)
                     }
                 }
 
-                AmountText(amount: amount, size: 34)
+                AmountText(amount: amount, size: 40, splitsKopecks: true)
                     .contentTransition(.numericText())
 
-                ProgressBar(value: fill, tint: theme.accent, height: 6)
+                ProgressBar(value: fill, tint: theme.accent, height: 4)
+                    .padding(.top, Spacing.xs)
 
-                HStack {
-                    Text("Лимит продукта \(CreditFormat.rub(ceiling))")
-                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Лимит продукта \(MoneyFormat.compact(ceiling))")
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                     Spacer()
                     if let rateLabel {
-                        Text(rateLabel).font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.textPrimary)
+                        Text(rateLabel)
+                            .font(BrandFont.footnote).monospacedDigit()
+                            .foregroundStyle(theme.textPrimary)
                             .contentTransition(.numericText())
                     }
+                }
+
+                if let actionTitle, let action {
+                    Hairline().padding(.top, Spacing.xs)
+                    Button(action: action) {
+                        HStack {
+                            Text(actionTitle).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(theme.textTertiary)
+                        }
+                        .frame(minHeight: 36)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressableButtonStyle())
                 }
             }
         }

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Payment + amortisation preview (§10.5 «расчёт платежа/графика»). Three summary tiles (платёж /
+/// Payment + amortisation preview (§10.5 «расчёт платежа/графика»). A grouped summary (платёж /
 /// переплата / всего) over the first months of the schedule, with the principal/interest split and
-/// the running balance. Compact, monospaced numerals.
+/// the running balance in tabular figures.
 struct ScheduleTable: View {
     let monthlyPayment: Double
     let overpay: Double
@@ -16,85 +16,72 @@ struct ScheduleTable: View {
     private var shown: [ScheduleRow] { Array(rows.prefix(previewCount)) }
 
     var body: some View {
-        VStack(spacing: Spacing.md) {
-            HStack(spacing: Spacing.sm) {
-                summaryTile(title: "Платёж/мес", value: CreditFormat.rub(monthlyPayment), tint: theme.accent)
-                summaryTile(title: interestFree ? "Без переплаты" : "Переплата",
-                            value: interestFree ? "0 ₽" : CreditFormat.rub(overpay),
-                            tint: interestFree ? theme.success : theme.warning)
-                summaryTile(title: "Всего", value: CreditFormat.rub(total), tint: theme.textPrimary)
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            GroupedSection {
+                ListRow(title: "Платёж в месяц", value: CreditFormat.rub(monthlyPayment))
+                ListRow(title: "Переплата", value: interestFree ? CreditFormat.rub(0) : CreditFormat.rub(overpay))
+                ListRow(title: "Всего выплат", value: CreditFormat.rub(total))
             }
 
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    headerRow
-                    Divider().overlay(theme.border)
-                    ForEach(shown) { row in
-                        scheduleRow(row)
-                        if row.id != shown.last?.id { Divider().overlay(theme.border.opacity(0.5)) }
+            VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+                SectionHeader("График")
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        headerRow
+                        Hairline()
+                        ForEach(shown) { row in
+                            scheduleRow(row)
+                            if row.id != shown.last?.id { Hairline() }
+                        }
                     }
-                    if rows.count > previewCount {
-                        Text("…ещё \(rows.count - previewCount) " + monthsWord(rows.count - previewCount))
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, Spacing.sm)
-                    }
+                }
+                if rows.count > previewCount {
+                    Text("Ещё \(rows.count - previewCount) " + monthsWord(rows.count - previewCount))
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                        .padding(.horizontal, Spacing.md)
                 }
             }
         }
     }
 
-    private func summaryTile(title: String, value: String, tint: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(title).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            Text(value).font(BrandFont.mono(15, weight: .semibold)).foregroundStyle(tint)
-                .minimumScaleFactor(0.7).lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.sm)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-    }
-
     private var headerRow: some View {
-        HStack(spacing: Spacing.xs) {
-            cell("Мес", width: 34, align: .leading)
+        HStack(spacing: Spacing.sm) {
+            cell("Мес", width: 30, align: .leading)
             cell("Платёж", align: .trailing)
             cell("Долг", align: .trailing)
-            cell("%", align: .trailing)
+            cell("Проценты", align: .trailing)
             cell("Остаток", align: .trailing)
         }
         .font(BrandFont.micro)
         .foregroundStyle(theme.textSecondary)
-        .padding(.vertical, Spacing.xs)
+        .padding(.bottom, Spacing.sm)
     }
 
     private func scheduleRow(_ row: ScheduleRow) -> some View {
-        HStack(spacing: Spacing.xs) {
-            cell("\(row.index)", width: 34, align: .leading)
+        HStack(spacing: Spacing.sm) {
+            cell("\(row.index)", width: 30, align: .leading)
+                .foregroundStyle(theme.textSecondary)
             cell(short(row.payment), align: .trailing)
             cell(short(row.principalPart), align: .trailing)
             cell(short(row.interestPart), align: .trailing)
             cell(short(row.balance), align: .trailing)
         }
-        .font(BrandFont.mono(12, weight: .medium))
+        .font(BrandFont.body(13))
+        .monospacedDigit()
         .foregroundStyle(theme.textPrimary)
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, Spacing.sm + 2)
     }
 
     private func cell(_ text: String, width: CGFloat? = nil, align: Alignment) -> some View {
         Text(text)
-            .lineLimit(1).minimumScaleFactor(0.6)
+            .lineLimit(1).minimumScaleFactor(0.7)
             .frame(width: width, alignment: align)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: align)
     }
 
-    /// Compact ₽ for the dense table: «24,6 т» / «1,82 млн».
+    /// Whole rubles with Russian grouping for the dense table: «24 612», «1 196 300».
     private func short(_ value: Double) -> String {
-        switch value {
-        case 1_000_000...: return String(format: "%.2f млн", value / 1_000_000)
-        case 1_000...:     return String(format: "%.1f т", value / 1_000)
-        default:           return "\(Int(value.rounded()))"
-        }
+        MoneyFormat.number(value.rounded(), maxFractionDigits: 0)
     }
 
     private func monthsWord(_ n: Int) -> String {

@@ -7,7 +7,7 @@ struct CreditAmountPreset: Identifiable, Hashable {
     let value: Double
 }
 
-/// Big monospaced ₽ amount input + a drag-to-choose slider + quick presets for the application wizard
+/// Hero-size ₽ amount input + a drag-to-choose slider + quick presets for the application wizard
 /// (§10.5 «сумма»). You can type a precise sum OR drag the slider up to the requestable ceiling.
 /// Module-local by the repo's per-feature convention (Savings has its own ``SavingsAmountField``).
 struct CreditAmountField: View {
@@ -38,7 +38,7 @@ struct CreditAmountField: View {
                     .foregroundStyle(theme.textPrimary)
                     .fixedSize()
                 Text("₽")
-                    .font(BrandFont.mono(22, weight: .medium))
+                    .font(BrandFont.heroKopecks)
                     .foregroundStyle(theme.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -48,10 +48,12 @@ struct CreditAmountField: View {
                     Slider(value: sliderBinding, in: range, step: step)
                         .tint(theme.accent)
                     HStack {
-                        Text(CreditFormat.rub(range.lowerBound)).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                        Text(CreditFormat.rub(range.lowerBound))
                         Spacer()
-                        Text("до \(CreditFormat.rub(range.upperBound))").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                        Text("до \(CreditFormat.rub(range.upperBound))")
                     }
+                    .font(BrandFont.footnote).monospacedDigit()
+                    .foregroundStyle(theme.textSecondary)
                 }
             }
 
@@ -60,11 +62,13 @@ struct CreditAmountField: View {
                     ForEach(presets) { preset in
                         Button { amount = preset.value } label: {
                             Text(preset.label)
-                                .font(BrandFont.caption)
+                                .font(BrandFont.footnote.weight(.medium))
+                                .lineLimit(1)
                                 .foregroundStyle(isSelected(preset) ? theme.onAccent : theme.textPrimary)
-                                .padding(.horizontal, Spacing.md)
-                                .padding(.vertical, Spacing.xs)
-                                .background(isSelected(preset) ? theme.accent : theme.elevated, in: Capsule())
+                                .padding(.horizontal, Spacing.sm + 2)
+                                .frame(height: 32)
+                                .background(isSelected(preset) ? theme.accent : theme.fill,
+                                            in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                         }
                         .buttonStyle(PressableButtonStyle())
                     }
@@ -74,26 +78,4 @@ struct CreditAmountField: View {
     }
 
     private func isSelected(_ preset: CreditAmountPreset) -> Bool { abs(amount - preset.value) < 0.5 }
-}
-
-/// A compact info chip used across the credit hub (срок, грейс, уровень…).
-struct CreditChip: View {
-    let text: String
-    var systemImage: String? = nil
-    var tint: Color? = nil
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        HStack(spacing: Spacing.xs) {
-            if let systemImage {
-                Image(systemName: systemImage).font(.system(size: 10, weight: .semibold))
-            }
-            Text(text).font(BrandFont.micro)
-        }
-        .foregroundStyle(tint ?? theme.textSecondary)
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background((tint ?? theme.textSecondary).opacity(0.12), in: Capsule())
-    }
 }

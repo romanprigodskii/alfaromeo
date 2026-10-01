@@ -83,21 +83,21 @@ final class CreditStore {
             .map { ob in
                 SimulatorLever(
                     id: "lv_close_\(ob.id)",
-                    title: "Закрыть «\(ob.lender)»",
-                    subtitle: "−\(CreditFormat.rub(ob.monthlyPayment))/мес нагрузки",
+                    title: ob.lender,
+                    subtitle: "Закрыть досрочно, \(CreditFormat.signedRub(-ob.monthlyPayment))/мес",
                     systemImage: ob.kind.systemImage,
                     effect: .closeObligation(id: ob.id, monthlyPayment: ob.monthlyPayment))
             }
         result.append(SimulatorLever(
             id: "lv_income",
             title: "Подтвердить доход 2-НДФЛ",
-            subtitle: "+\(CreditFormat.rub(45_000))/мес к подтверждённому доходу",
+            subtitle: "\(CreditFormat.signedRub(45_000))/мес к доходу",
             systemImage: "doc.text.fill",
             effect: .confirmIncome(extra: 45_000)))
         result.append(SimulatorLever(
             id: "lv_history",
             title: "Без просрочек 6 месяцев",
-            subtitle: "скоринг +40 пунктов",
+            subtitle: "Скоринг +40 пунктов",
             systemImage: "checkmark.seal.fill",
             effect: .cleanHistory(scoreBoost: 40)))
         return result

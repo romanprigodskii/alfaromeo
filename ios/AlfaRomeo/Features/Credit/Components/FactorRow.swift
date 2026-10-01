@@ -1,79 +1,65 @@
 import SwiftUI
 
-/// One explainable decision factor (§10.5 «факторы решения»): label + status + a contribution bar,
-/// tappable to reveal the plain-language «почему так» and a «что улучшить» hint. The bar fill is the
-/// factor's support for the limit, colored by status — so the weak factor visibly drags.
+/// One explainable decision factor (§10.5 «факторы решения») as a row of the grouped section:
+/// label, value, status pill and a contribution bar, tappable to reveal the plain-language
+/// «почему так» and a «что улучшить» hint. The bar fill is the factor's support for the limit.
 struct FactorRow: View {
     let factor: DecisionFactor
     @State private var expanded = false
 
     @Environment(\.theme) private var theme
 
-    private var statusColor: Color {
+    private var pillStatus: StatusPill.Status {
         switch factor.status {
-        case .good: return theme.success
-        case .ok:   return theme.warning
-        case .weak: return theme.danger
+        case .good: return .success
+        case .ok:   return .warning
+        case .weak: return .declined
         }
     }
 
     var body: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Button {
-                    withAnimation(Motion.snappy) { expanded.toggle() }
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        ZStack {
-                            Circle().fill(statusColor.opacity(0.14)).frame(width: 38, height: 38)
-                            Image(systemName: factor.kind.systemImage)
-                                .font(.system(size: 16, weight: .semibold)).foregroundStyle(statusColor)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack {
-                                Text(factor.kind.title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                                Spacer()
-                                statusBadge
-                            }
-                            HStack {
-                                Text(factor.valueLabel).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                                Spacer()
-                                Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.textSecondary)
-                            }
-                        }
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Button {
+                withAnimation(Motion.snappy) { expanded.toggle() }
+            } label: {
+                HStack(spacing: ListRow.glyphSpacing) {
+                    GlyphCircle(systemImage: factor.kind.systemImage)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(factor.kind.title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        Text(factor.valueLabel).font(BrandFont.subheadline).monospacedDigit()
+                            .foregroundStyle(theme.textSecondary)
                     }
+                    Spacer(minLength: Spacing.sm)
+                    StatusPill(status: pillStatus, text: factor.status.label)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.textTertiary)
+                        .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
-                .buttonStyle(PressableButtonStyle())
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityHint(expanded ? "Свернуть" : "Подробнее")
 
-                ProgressBar(value: factor.contribution, tint: statusColor, height: 6)
+            ProgressBar(value: factor.contribution, tint: theme.textPrimary, height: 4)
+                .padding(.leading, ListRow.glyphSize + ListRow.glyphSpacing)
 
-                if expanded {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text(factor.explanation)
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            if expanded {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text(factor.explanation)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let improvement = factor.improvement {
+                        Text("Что улучшить: \(improvement)")
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
-                        if let improvement = factor.improvement {
-                            HStack(alignment: .top, spacing: Spacing.xs) {
-                                Image(systemName: "lightbulb.fill").font(.system(size: 11))
-                                    .foregroundStyle(theme.accent)
-                                Text(improvement).font(BrandFont.caption.weight(.medium))
-                                    .foregroundStyle(theme.textPrimary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+                .padding(.leading, ListRow.glyphSize + ListRow.glyphSpacing)
+                .transition(.opacity)
             }
         }
-    }
-
-    private var statusBadge: some View {
-        Text(factor.status.label)
-            .font(BrandFont.micro.weight(.semibold))
-            .foregroundStyle(statusColor)
-            .padding(.horizontal, Spacing.sm).padding(.vertical, 3)
-            .background(statusColor.opacity(0.14), in: Capsule())
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 }

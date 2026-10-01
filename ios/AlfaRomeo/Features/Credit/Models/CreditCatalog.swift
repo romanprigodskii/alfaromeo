@@ -47,7 +47,7 @@ struct CreditProduct: Identifiable, Hashable, Sendable {
     let maxAmount: Double          // верхняя граница продукта (до пре-квалификации)
     let highlights: [String]
 
-    var rateLabel: String { kind.isInterestFree ? "0%" : "от \(CreditFormat.rate(minRate))" }
+    var rateLabel: String { kind.isInterestFree ? CreditFormat.rate(0) : "от \(CreditFormat.rate(minRate))" }
     /// Default to the longest term — it gives the lowest, affordable payment and is consistent with
     /// how the approved limit is capitalised (at the reference term), so the default never shows an
     /// over-capacity payment.
@@ -60,22 +60,22 @@ enum CreditCatalog {
     static let products: [CreditProduct] = [
         CreditProduct(
             id: "cr_cash", kind: .cash, name: "Кредит наличными",
-            tagline: "Деньги на счёт за пару минут — без залога и поручителей",
+            tagline: "Без залога и поручителей",
             minRate: 18.9, maxRate: 39.9, termOptionsMonths: [6, 12, 24, 36, 48, 60],
             maxAmount: 5_000_000,
             highlights: ["Без справок до 1 млн ₽", "Досрочное погашение без штрафа", "Ставка зависит от истории"]),
         CreditProduct(
             id: "cr_card", kind: .card, name: "Кредитная карта 120",
-            tagline: "Грейс-период 120 дней, кешбэк на тарифе Ромео",
+            tagline: "Грейс-период 120 дней",
             minRate: 24.9, maxRate: 49.9, termOptionsMonths: [6, 12, 24],
             maxAmount: 1_000_000,
-            highlights: ["Грейс 120 дней без %", "Снятие наличных без комиссии", "Лимит растёт с историей"]),
+            highlights: ["Грейс 120 дней без процентов", "Снятие наличных без комиссии", "Лимит растёт с историей"]),
         CreditProduct(
-            id: "cr_installment", kind: .installment, name: "Рассрочка 0%",
-            tagline: "Покупки у партнёров частями — без переплаты",
+            id: "cr_installment", kind: .installment, name: "Рассрочка 0\u{00A0}%",
+            tagline: "Покупки у партнёров частями",
             minRate: 0, maxRate: 0, termOptionsMonths: [3, 6, 10, 12],
             maxAmount: 600_000,
-            highlights: ["0% и без комиссий", "Платёж = сумма ÷ срок", "Сотни магазинов-партнёров"]),
+            highlights: ["Без процентов и комиссий", "Платёж = сумма ÷ срок", "Сотни магазинов-партнёров"]),
     ]
 
     static func product(id: String) -> CreditProduct? { products.first { $0.id == id } }
@@ -86,25 +86,20 @@ enum CreditCatalog {
 /// Formatting helpers shared across the credit module (mirrors ``SavingsFormat``'s look).
 enum CreditFormat {
     static func rub(_ value: Double) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = value < 1_000 ? 2 : 0
-        f.groupingSeparator = "\u{2009}"
-        let n = f.string(from: NSNumber(value: value)) ?? "\(Int(value))"
-        return "\(n) ₽"
+        MoneyFormat.fiat(value >= 1_000 ? value.rounded() : value)
     }
     /// Signed ₽ for simulator deltas, e.g. «+448 000 ₽».
     static func signedRub(_ value: Double) -> String {
-        (value >= 0 ? "+" : "\u{2212}") + rub(abs(value))
+        MoneyFormat.signed(abs(value) >= 1_000 ? value.rounded() : value)
     }
-    static func rate(_ value: Double) -> String { String(format: "%.1f%%", value) }
-    static func percent(_ value: Double) -> String { String(format: "%.1f%% годовых", value) }
+    static func rate(_ value: Double) -> String { MoneyFormat.percent(value, maxFractionDigits: 1) }
+    static func percent(_ value: Double) -> String { "\(rate(value)) годовых" }
     static func term(_ months: Int) -> String {
         let years = months / 12, rem = months % 12
         switch (years, rem) {
-        case (0, _): return "\(months) мес"
+        case (0, _): return "\(months)\u{00A0}мес"
         case (_, 0): return "\(years) \(yearWord(years))"
-        default:     return "\(years) \(yearWord(years)) \(rem) мес"
+        default:     return "\(years) \(yearWord(years)) \(rem)\u{00A0}мес"
         }
     }
     private static func yearWord(_ n: Int) -> String {

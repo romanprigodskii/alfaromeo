@@ -121,29 +121,29 @@ enum PrequalEngine {
             valueLabel: "\(CreditFormat.rub(inp.monthlyIncome))/мес",
             contribution: min(1, inp.monthlyIncome / 300_000),
             weight: 0.40,
-            explanation: "Подтверждённый доход задаёт потолок: банк закладывает платёж не выше \(Int(maxDTI * 100))% от дохода.",
+            explanation: "Подтверждённый доход задаёт потолок: банк закладывает платёж не выше \(MoneyFormat.percent(fraction: maxDTI, maxFractionDigits: 0)) от дохода.",
             improvement: inp.monthlyIncome >= 120_000 ? nil
-                : "Подтвердите доход справкой 2-НДФЛ или выпиской — потолок платежа вырастет.")
+                : "Подтвердите доход справкой 2-НДФЛ или выпиской, и потолок платежа вырастет.")
         // Долговая нагрузка (ПДН)
         let debt = DecisionFactor(
             kind: .debtLoad,
             status: d < 0.25 ? .good : (d <= 0.40 ? .ok : .weak),
-            valueLabel: "ПДН \(Int((d * 100).rounded()))%",
+            valueLabel: "ПДН \(MoneyFormat.percent(fraction: d, maxFractionDigits: 0))",
             contribution: max(0, 1 - d / maxDTI),
             weight: 0.30,
-            explanation: "Текущие платежи \(CreditFormat.rub(inp.monthlyDebt))/мес уже занимают часть дохода. Чем меньше нагрузка — тем больше свободного платежа под новый кредит.",
+            explanation: "Текущие платежи \(CreditFormat.rub(inp.monthlyDebt))/мес уже занимают часть дохода. Чем меньше нагрузка, тем больше свободного платежа под новый кредит.",
             improvement: d < 0.25 ? nil
-                : "Закройте кредитную карту или микрозайм — снизит ПДН и поднимет лимит.")
+                : "Закройте кредитную карту или микрозайм: ПДН снизится, лимит вырастет.")
         // Кредитная история (скоринг)
         let history = DecisionFactor(
             kind: .history,
             status: inp.creditScore >= 740 ? .good : (inp.creditScore >= 660 ? .ok : .weak),
-            valueLabel: "\(inp.creditScore) — \(scoreWord(inp.creditScore))",
+            valueLabel: "\(inp.creditScore), \(scoreWord(inp.creditScore))",
             contribution: min(1, historyMultiplier(score: inp.creditScore) / 1.0),
             weight: 0.30,
             explanation: "Скоринг по данным БКИ влияет и на ставку, и на множитель лимита. Без просрочек он растёт.",
             improvement: inp.creditScore >= 740 ? nil
-                : "Гасите платежи вовремя 6 месяцев — скоринг вырастет, ставка снизится.")
+                : "Гасите платежи вовремя 6 месяцев: скоринг вырастет, ставка снизится.")
         return [income, debt, history]
     }
 

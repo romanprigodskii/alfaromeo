@@ -62,7 +62,9 @@ struct CreditApplyView: View {
                             progressDots
                             stepBody
                         }
-                        .padding(Spacing.md)
+                        .padding(.horizontal, Spacing.screen)
+                        .padding(.top, Spacing.sm)
+                        .padding(.bottom, Spacing.lg)
                     }
                     footer
                 }
@@ -98,48 +100,61 @@ struct CreditApplyView: View {
     }
 
     private var paramsStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text(product.kind.amountNoun).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard {
-                CreditAmountField(amount: $draft.amount, presets: amountPresets,
-                                  range: product.minAmount...requestable)
-            }
-            amountStatusBanner
-
-            Text("Срок").font(BrandFont.headline).foregroundStyle(theme.textPrimary).padding(.top, Spacing.xs)
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Spacing.sm) {
-                        ForEach(product.termOptionsMonths, id: \.self) { months in
-                            selectChip(label: CreditFormat.term(months), selected: draft.termMonths == months) {
-                                withAnimation(Motion.snappy) { draft.termMonths = months }
-                            }
-                            .id(months)
-                        }
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+                SectionHeader(product.kind.amountNoun)
+                SurfaceCard {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        CreditAmountField(amount: $draft.amount, presets: amountPresets,
+                                          range: product.minAmount...requestable)
+                        Hairline()
+                        amountStatus
                     }
-                    .padding(.vertical, 2)
                 }
-                .onAppear { proxy.scrollTo(draft.termMonths, anchor: .trailing) }
+            }
+
+            VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+                SectionHeader("Срок")
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Spacing.sm) {
+                            ForEach(product.termOptionsMonths, id: \.self) { months in
+                                selectChip(label: CreditFormat.term(months), selected: draft.termMonths == months) {
+                                    withAnimation(Motion.snappy) { draft.termMonths = months }
+                                }
+                                .id(months)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, Spacing.screen)
+                    }
+                    .padding(.horizontal, -Spacing.screen)
+                    .onAppear { proxy.scrollTo(draft.termMonths, anchor: .center) }
+                }
             }
 
             paymentPreview
         }
     }
 
+    private var rateText: String {
+        product.kind.isInterestFree ? CreditFormat.rate(0) : CreditFormat.rate(rate)
+    }
+
     private var paymentPreview: some View {
         SurfaceCard {
-            HStack {
+            HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Ежемесячный платёж").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Text("\(CreditFormat.rub(monthlyPayment))")
-                        .font(BrandFont.mono(24, weight: .semibold)).foregroundStyle(theme.accent)
+                    Text("Платёж в месяц").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    Text(CreditFormat.rub(monthlyPayment))
+                        .font(BrandFont.mono(28, weight: .semibold)).foregroundStyle(theme.textPrimary)
                         .contentTransition(.numericText())
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("Ставка").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Text(product.kind.isInterestFree ? "0%" : CreditFormat.rate(rate))
-                        .font(BrandFont.mono(18, weight: .medium)).foregroundStyle(theme.textPrimary)
+                    Text("Ставка").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    Text(rateText)
+                        .font(BrandFont.mono(17)).foregroundStyle(theme.textPrimary)
                 }
             }
             .animation(Motion.snappy, value: monthlyPayment)
@@ -148,93 +163,62 @@ struct CreditApplyView: View {
 
     /// Honest status for the chosen amount: within the instant pre-approval, or above it (needs
     /// verification). Either way the user is free to pick any amount up to `requestable`.
-    @ViewBuilder private var amountStatusBanner: some View {
+    @ViewBuilder private var amountStatus: some View {
         if abovePreApproved {
-            SurfaceCard {
-                HStack(alignment: .top, spacing: Spacing.sm) {
-                    Image(systemName: "info.circle").foregroundStyle(theme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Выше преодобренного \(CreditFormat.rub(preApproved))")
-                            .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Text("Сумму сверх преодобренной банк подтвердит по доходу — итоговое решение по заявке. Можно подтвердить доход и поднять преодобренный лимит.")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button("Поднять лимит — симулятор") { router.push(CreditRoute.prequal) }
-                            .font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.accent)
-                            .buttonStyle(PressableButtonStyle())
-                    }
-                }
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Выше предодобренных \(CreditFormat.rub(preApproved))")
+                    .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                Text("Сумму сверх предодобренной банк подтвердит по доходу, итоговое решение по заявке. Подтвердите доход, чтобы поднять предодобренный лимит.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Поднять лимит") { router.push(CreditRoute.prequal) }
+                    .font(BrandFont.body(15, weight: .medium)).foregroundStyle(theme.accent)
+                    .buttonStyle(PressableButtonStyle())
+                    .padding(.top, Spacing.xxs)
             }
         } else {
-            SurfaceCard {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "checkmark.circle").foregroundStyle(theme.success)
-                    Text("В пределах преодобренного \(CreditFormat.rub(preApproved)) — решение мгновенное.")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                }
-            }
+            Text("В пределах предодобренных \(CreditFormat.rub(preApproved)), решение мгновенное.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var scheduleStep: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Расчёт платежей").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             ScheduleTable(
                 monthlyPayment: monthlyPayment,
                 overpay: LoanMath.overpay(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths),
                 total: LoanMath.totalPaid(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths),
                 rows: LoanMath.schedule(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths),
                 interestFree: product.kind.isInterestFree)
-            hint("Аннуитет: платёж фиксирован, доля процентов уменьшается к концу срока. Досрочное погашение — без штрафа.")
+            hint("Платёж фиксирован, доля процентов уменьшается к концу срока. Досрочное погашение без штрафа.")
         }
     }
 
     private var consentsStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Согласия").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    CreditConsentRow(title: "Запрос кредитной истории в БКИ",
-                               subtitle: "Разрешаю запросить отчёт в бюро кредитных историй.",
-                               isOn: $draft.consentBureau)
-                    Divider().overlay(theme.border)
-                    CreditConsentRow(title: "Обработка персональных данных",
-                               subtitle: "Согласие на обработку данных для оценки заявки (152-ФЗ).",
-                               isOn: $draft.consentData)
-                    Divider().overlay(theme.border)
-                    CreditConsentRow(title: "Индивидуальные условия договора",
-                               subtitle: "Ознакомлен и принимаю условия кредитного договора.",
-                               isOn: $draft.consentTerms)
-                }
-            }
-            if !draft.allConsentsGiven {
-                hint("Все три согласия обязательны для оформления.", tint: theme.warning)
-            }
+        GroupedSection(footer: "Все три согласия обязательны для оформления.") {
+            CreditConsentRow(title: "Запрос кредитной истории в БКИ",
+                             subtitle: "Разрешаю запросить отчёт в бюро кредитных историй.",
+                             isOn: $draft.consentBureau)
+            CreditConsentRow(title: "Обработка персональных данных",
+                             subtitle: "Согласие на обработку данных для оценки заявки (152-ФЗ).",
+                             isOn: $draft.consentData)
+            CreditConsentRow(title: "Индивидуальные условия договора",
+                             subtitle: "Ознакомлен и принимаю условия кредитного договора.",
+                             isOn: $draft.consentTerms)
         }
     }
 
     private var confirmStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Проверьте условия").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard {
-                VStack(spacing: Spacing.sm) {
-                    summaryRow("Продукт", product.name)
-                    summaryRow(product.kind.amountNoun, CreditFormat.rub(clampedAmount), tint: theme.accent)
-                    summaryRow("Срок", CreditFormat.term(draft.termMonths))
-                    summaryRow("Ставка", product.kind.isInterestFree ? "0%" : CreditFormat.rate(rate))
-                    Divider().overlay(theme.border)
-                    summaryRow("Платёж в месяц", CreditFormat.rub(monthlyPayment))
-                    summaryRow(product.kind.isInterestFree ? "Без переплаты" : "Переплата",
-                               product.kind.isInterestFree ? "0 ₽"
-                               : CreditFormat.rub(LoanMath.overpay(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths)))
-                }
-            }
-            HStack(spacing: Spacing.xs) {
-                Image(systemName: bio.systemImage).foregroundStyle(theme.accent)
-                Text("Подтверждение операции \(bio.label) (§10.1)").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            }
+        GroupedSection("Условия", footer: "Заявка подтверждается через \(bio.label).") {
+            ListRow(title: "Продукт", value: product.name)
+            ListRow(title: product.kind.amountNoun, value: CreditFormat.rub(clampedAmount))
+            ListRow(title: "Срок", value: CreditFormat.term(draft.termMonths))
+            ListRow(title: "Ставка", value: rateText)
+            ListRow(title: "Платёж в месяц", value: CreditFormat.rub(monthlyPayment))
+            ListRow(title: "Переплата",
+                    value: product.kind.isInterestFree ? CreditFormat.rub(0)
+                        : CreditFormat.rub(LoanMath.overpay(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths)))
         }
     }
 
@@ -254,19 +238,19 @@ struct CreditApplyView: View {
         VStack(spacing: Spacing.sm) {
             PrimaryButton(title: footerTitle, icon: footerIcon, isLoading: authorizing) { advance() }
                 .disabled(!canAdvance || authorizing)
-                .opacity(canAdvance ? 1 : 0.5)
             if step != .params {
                 SecondaryButton(title: "Назад") { goBack() }
             }
         }
-        .padding(Spacing.md)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.vertical, Spacing.sm)
         .background(theme.background)
     }
 
     private var footerTitle: String {
-        step == .confirm ? "Подтвердить · \(bio.label)" : "Далее"
+        step == .confirm ? "Подтвердить" : "Далее"
     }
-    private var footerIcon: String { step == .confirm ? bio.systemImage : "arrow.right" }
+    private var footerIcon: String? { step == .confirm ? bio.systemImage : nil }
 
     private var canAdvance: Bool {
         switch step {
@@ -327,7 +311,7 @@ struct CreditApplyView: View {
     private var progressDots: some View {
         HStack(spacing: Spacing.xs) {
             ForEach(0..<4, id: \.self) { i in
-                Capsule().fill(i <= step.rawValue ? theme.accent : theme.border).frame(height: 4)
+                Capsule().fill(i <= step.rawValue ? theme.accent : theme.fill).frame(height: 4)
             }
         }
     }
@@ -337,7 +321,7 @@ struct CreditApplyView: View {
     private var amountPresets: [CreditAmountPreset] {
         guard requestable > 0 else { return [] }
         let candidates: [(Double, String)] = [
-            (preApproved, "Преодобрено"),
+            (preApproved, "Предодобрено"),
             (1_000_000, "1 млн"),
             (1_500_000, "1,5 млн"),
             (requestable, "Макс"),
@@ -353,27 +337,21 @@ struct CreditApplyView: View {
     private func selectChip(label: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(BrandFont.callout)
+                .font(BrandFont.subheadline.weight(.medium))
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
                 .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
-                .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm)
-                .background(selected ? theme.accent : theme.elevated, in: Capsule())
+                .padding(.horizontal, Spacing.md).frame(height: 36)
+                .background(selected ? theme.accent : theme.surface,
+                            in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
     }
 
-    private func summaryRow(_ label: String, _ value: String, tint: Color? = nil) -> some View {
-        HStack {
-            Text(label).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-            Spacer()
-            Text(value).font(BrandFont.body().weight(.semibold)).foregroundStyle(tint ?? theme.textPrimary)
-        }
-    }
-
     private func hint(_ text: String, tint: Color? = nil) -> some View {
-        Text(text).font(BrandFont.caption).foregroundStyle(tint ?? theme.textSecondary)
+        Text(text).font(BrandFont.footnote).foregroundStyle(tint ?? theme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, Spacing.md)
     }
 }
 

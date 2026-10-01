@@ -28,7 +28,7 @@ enum CreditDecline: Equatable {
     var message: String {
         switch self {
         case .overDebtLoad:
-            return "Текущие платежи уже близки к половине дохода — свободного платежа под новый кредит почти не осталось."
+            return "Текущие платежи уже близки к половине дохода, свободного платежа под новый кредит почти не осталось."
         case .thinFile:
             return "По данным БКИ пока мало истории, чтобы оценить риск. Это поправимо."
         case .noConsent:
@@ -41,8 +41,8 @@ enum CreditDecline: Equatable {
     /// «Что улучшить» — the actionable next step shown under a decline (§10.5).
     var improvement: String {
         switch self {
-        case .overDebtLoad: return "Закройте кредитную карту или микрозайм и вернитесь — лимит откроется. Откройте симулятор, чтобы увидеть, насколько."
-        case .thinFile:     return "Пользуйтесь картой и гасите платежи вовремя 3–6 месяцев — скоринг подрастёт."
+        case .overDebtLoad: return "Закройте кредитную карту или микрозайм, и лимит откроется. Насколько, покажет симулятор."
+        case .thinFile:     return "Пользуйтесь картой и гасите платежи вовремя 3–6 месяцев, и скоринг подрастёт."
         case .noConsent:    return "Вернитесь к шагу согласий и отметьте обязательные пункты."
         case .canceled:     return "Повторите подтверждение Face ID или введите код устройства."
         }

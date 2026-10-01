@@ -28,24 +28,22 @@ struct CreditStatusView: View {
             medallion
 
             VStack(spacing: Spacing.sm) {
-                Text(headline).font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                Text(headline).font(BrandFont.title1).foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
-                Text(subtitle).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
+                Text(subtitle).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
             }
 
             if case .success = outcome {
-                VStack(spacing: Spacing.xxs) {
-                    AmountText(amount: amount, size: 26)
-                    Text(caption).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                VStack(spacing: Spacing.xs) {
+                    AmountText(amount: amount, size: 34)
+                    Text(caption).font(BrandFont.subheadline).monospacedDigit().foregroundStyle(theme.textSecondary)
                 }
-                .padding(.top, Spacing.xs)
             }
 
             if case .declined(let reason) = outcome {
-                improvementCard(reason.improvement)
+                improvementNote(reason.improvement)
             }
 
             Spacer(minLength: Spacing.lg)
@@ -53,7 +51,8 @@ struct CreditStatusView: View {
             actions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.vertical, Spacing.lg)
         .background(theme.background.ignoresSafeArea())
         .onAppear { startAnimations() }
         .onChange(of: outcomeKey) { _, _ in startAnimations() }
@@ -64,40 +63,31 @@ struct CreditStatusView: View {
 
     private var medallion: some View {
         ZStack {
-            Circle().fill(tint.opacity(0.14)).frame(width: 132, height: 132)
-                .scaleEffect(isProcessing && !reduceMotion ? (spin ? 1.06 : 0.94) : 1)
-                .animation(isProcessing && !reduceMotion
-                           ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : nil, value: spin)
+            Circle().fill(tint.opacity(0.12)).frame(width: 96, height: 96)
 
             if isProcessing {
                 Circle().trim(from: 0, to: 0.72)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 104, height: 104)
+                    .stroke(tint, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .frame(width: 96, height: 96)
                     .rotationEffect(.degrees(spin ? 360 : 0))
                     .animation(reduceMotion ? nil : .linear(duration: 1).repeatForever(autoreverses: false), value: spin)
-            } else {
-                Circle().stroke(tint, lineWidth: 4).frame(width: 104, height: 104)
             }
 
             Image(systemName: symbol)
-                .font(.system(size: 46, weight: .bold)).foregroundStyle(tint)
-                .scaleEffect(pop ? 1 : 0.4).opacity(pop ? 1 : 0)
+                .font(.system(size: 40, weight: .semibold)).foregroundStyle(tint)
+                .scaleEffect(pop ? 1 : 0.85).opacity(pop ? 1 : 0)
         }
         .accessibilityLabel(headline)
     }
 
-    private func improvementCard(_ text: String) -> some View {
-        SurfaceCard {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Image(systemName: "lightbulb.fill").foregroundStyle(theme.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Что улучшить").font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                    Text(text).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+    /// «Что улучшить» under a decline: plain text, no card.
+    private func improvementNote(_ text: String) -> some View {
+        VStack(spacing: Spacing.xs) {
+            Text("Что улучшить").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            Text(text).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, Spacing.lg)
     }
 
     @ViewBuilder private var actions: some View {
@@ -105,17 +95,17 @@ struct CreditStatusView: View {
         case .processing:
             EmptyView()
         case .success:
-            PrimaryButton(title: "Готово", icon: "checkmark") { onDone() }
+            PrimaryButton(title: "Готово") { onDone() }
         case .declined(let reason):
             VStack(spacing: Spacing.sm) {
                 // A canceled biometric retries the prompt → biometric glyph; other declines reload.
                 // The glyph is derived from the device's actual biometry (not a hardcoded "faceid").
                 PrimaryButton(title: "Повторить",
-                              icon: reason == .canceled ? BiometricAuthenticator.available().systemImage : "arrow.clockwise") { onRetry() }
-                SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+                              icon: reason == .canceled ? BiometricAuthenticator.available().systemImage : nil) { onRetry() }
+                SecondaryButton(title: "Спросить у AI") {
                     shell?.showCopilot(.declined(reason: reason.copilotReason))
                 }
-                SecondaryButton(title: "Закрыть") { onDone() }
+                TertiaryButton("Закрыть") { onDone() }
             }
         }
     }
@@ -135,7 +125,7 @@ struct CreditStatusView: View {
     private var symbol: String {
         switch outcome {
         case .processing: return "arrow.triangle.2.circlepath"
-        case .success:    return productKind == .card ? "creditcard.fill" : "checkmark"
+        case .success:    return productKind == .card ? "creditcard" : "checkmark"
         case .declined(let reason): return reason.systemImage
         }
     }
@@ -172,7 +162,7 @@ struct CreditStatusView: View {
     private func startAnimations() {
         spin = false; pop = false
         if !reduceMotion { withAnimation(.linear(duration: 1)) { spin = true } }
-        withAnimation(reduceMotion ? nil : Motion.bouncy.delay(0.05)) { pop = true }
+        withAnimation(reduceMotion ? nil : Motion.smooth) { pop = true }
         notifyHaptic()
     }
 
@@ -190,7 +180,7 @@ struct CreditStatusView: View {
 
 #Preview("success") {
     CreditStatusView(outcome: .success, productKind: .cash, amount: 840_000,
-                     caption: "Платёж 24 600 ₽/мес · 36 мес", onDone: {}, onRetry: {})
+                     caption: "Платёж 24 600 ₽/мес · 3 года", onDone: {}, onRetry: {})
         .environment(\.theme, .default)
 }
 
