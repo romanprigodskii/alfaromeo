@@ -1,8 +1,9 @@
 import SwiftUI
 import Charts
 
-/// Category breakdown as a donut (§9.4 «диаграмма — Swift Charts: круговая»). Each sector is colored
-/// by its ``TransactionCategory`` tint; the hole shows the period total + a caption.
+/// Category breakdown as a donut (§9.4 круговая диаграмма на Swift Charts). Each sector is coloured by
+/// its category tint, which is the chart's legend: the category list repeats it on each row's bar.
+/// The hole shows the period total and a caption.
 struct CategoryDonutChart: View {
     let slices: [CategorySlice]
     let total: Double
@@ -25,13 +26,13 @@ struct CategoryDonutChart: View {
         .overlay {
             VStack(spacing: 2) {
                 Text(centerCaption)
-                    .font(BrandFont.caption)
+                    .font(BrandFont.footnote)
                     .foregroundStyle(theme.textSecondary)
                 AmountText(amount: total, size: 22)
             }
         }
         .accessibilityLabel("Диаграмма по категориям")
-        .accessibilityValue(slices.map { "\($0.category.title): \(Int($0.percent(of: total) * 100)) процентов" }
+        .accessibilityValue(slices.map { "\($0.category.title): \(Int(($0.percent(of: total) * 100).rounded())) процентов" }
             .joined(separator: ", "))
     }
 }

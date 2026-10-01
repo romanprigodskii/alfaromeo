@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Отчёты / экспорт (§9.4) — real PDF/CSV statements over a chosen period, handed to the system share
+/// Отчёты и экспорт (§9.4): real PDF/CSV statements over a chosen period, handed to the system share
 /// sheet (открыть / сохранить в Файлы / отправить). Operations come from ``HistoryStore`` so manually
 /// added expenses are included; nothing depends on a backend.
 struct ReportsView: View {
@@ -53,52 +53,47 @@ struct ReportsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Text("Сформируйте выписку по операциям активного профиля за выбранный период.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text("Период").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        Picker("Период", selection: $period) {
-                            ForEach(Period.allCases) { Text($0.title).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        Text("Операций за период: \(periodTransactions.count)")
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            VStack(alignment: .leading, spacing: Spacing.section) {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader("Период")
+                    Picker("Период", selection: $period) {
+                        ForEach(Period.allCases) { Text($0.title).tag($0) }
                     }
+                    .pickerStyle(.segmented)
+                    Text("Выписка по операциям активного профиля: \(HistoryFormatting.operations(periodTransactions.count)).")
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 }
 
                 VStack(spacing: Spacing.sm) {
-                    PrimaryButton(title: "Экспорт в PDF", icon: "doc.richtext") { exportPDF() }
+                    PrimaryButton(title: "Экспорт в PDF") { exportPDF() }
                         .disabled(periodTransactions.isEmpty)
-                    SecondaryButton(title: "Экспорт в CSV", icon: "tablecells") { exportCSV() }
+                    SecondaryButton(title: "Экспорт в CSV") { exportCSV() }
                         .disabled(periodTransactions.isEmpty)
                 }
 
                 if let lastExport {
-                    SurfaceCard {
-                        HStack(spacing: Spacing.md) {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.success)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(lastExport.format) сформирован")
-                                    .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                                Text("\(lastExport.count) операций · \(period.title)")
-                                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            }
-                            Spacer()
-                            Button { sharePayload = SharePayload(url: lastExport.url) } label: {
-                                Image(systemName: "square.and.arrow.up").foregroundStyle(theme.accent)
-                            }
-                            .accessibilityLabel("Поделиться снова")
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                        Image(systemName: "checkmark.circle").foregroundStyle(theme.success)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(lastExport.format) сформирован")
+                                .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                            Text("\(HistoryFormatting.operations(lastExport.count)), \(period.title.lowercased())")
+                                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                         }
+                        Spacer()
+                        Button("Отправить") { sharePayload = SharePayload(url: lastExport.url) }
+                            .font(BrandFont.subheadline.weight(.medium))
+                            .foregroundStyle(theme.accent)
+                            .accessibilityLabel("Поделиться снова")
                     }
+                    .padding(.horizontal, Spacing.md)
                 }
 
                 Text("Файлы формируются на устройстве и открываются в системном окне «Поделиться».")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())

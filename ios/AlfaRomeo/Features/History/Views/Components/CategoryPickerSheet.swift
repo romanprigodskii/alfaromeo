@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Editable-category picker for the operation detail screen (§9.4 «категория (редактируемая)»).
-/// Presented as a themed sheet; tapping a category writes the binding and dismisses. The change is
-/// session-local (the contract has no `category` field yet) — labeled honestly by the caller.
+/// A plain grouped list (monochrome glyph, title, accent checkmark on the current one); tapping a
+/// category writes the binding and dismisses. The change is session-local (the contract has no
+/// `category` field yet).
 struct CategoryPickerSheet: View {
     @Binding var selection: CategoryRef
 
@@ -10,52 +11,46 @@ struct CategoryPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = HistoryStore.shared
 
-    private let columns = [GridItem(.adaptive(minimum: 96), spacing: Spacing.sm)]
-
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Категория операции")
-                .font(BrandFont.title)
-                .foregroundStyle(theme.textPrimary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                Text("Категория операции")
+                    .font(BrandFont.title1)
+                    .foregroundStyle(theme.textPrimary)
 
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: Spacing.sm) {
+                GroupedSection {
                     ForEach(store.allCategories) { category in
                         let isSelected = category == selection
                         Button {
                             selection = category
                             dismiss()
                         } label: {
-                            VStack(spacing: Spacing.xs) {
-                                Image(systemName: category.icon)
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(category.tint)
-                                    .frame(width: 44, height: 44)
-                                    .background(category.tint.opacity(0.16),
-                                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                            HStack(spacing: ListRow.glyphSpacing) {
+                                GlyphCircle(systemImage: category.icon, size: ListRow.glyphSize)
                                 Text(category.title)
-                                    .font(BrandFont.micro)
+                                    .font(BrandFont.bodyM)
                                     .foregroundStyle(theme.textPrimary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
+                                Spacer(minLength: Spacing.sm)
+                                if isSelected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(theme.accent)
+                                }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(Spacing.sm)
-                            .background(
-                                (isSelected ? theme.accent.opacity(0.14) : theme.surface),
-                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                    .stroke(isSelected ? theme.accent : theme.border, lineWidth: isSelected ? 1.5 : 1)
-                            )
+                            .frame(minHeight: Spacing.rowMinHeight)
+                            .contentShape(Rectangle())
+                            .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
                         }
-                        .buttonStyle(PressableButtonStyle())
+                        .buttonStyle(.row)
+                        .accessibilityAddTraits(isSelected ? .isSelected : [])
                     }
                 }
             }
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.lg)
+            .padding(.bottom, Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(theme.background)
@@ -68,7 +63,6 @@ struct CategoryPickerSheet: View {
         var body: some View {
             Color.clear.sheet(isPresented: .constant(true)) {
                 CategoryPickerSheet(selection: $category)
-                    .padding(Spacing.lg)
                     .environment(\.theme, .default)
             }
         }

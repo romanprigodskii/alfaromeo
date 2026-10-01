@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Helper-month stepper for the analytics screen (§9.4 «помесячно — как реф-скрин „Июнь"»).
-/// Centered month label flanked by prev/next chevrons; ends disable at the data bounds.
+/// Month stepper for the analytics screen (§9.4 «помесячно»). A centred month label flanked by
+/// prev/next chevrons in ink, flat on the screen background; ends disable at the data bounds.
 struct MonthNavigator: View {
     let title: String
     var canGoPrev: Bool = true
@@ -13,31 +13,29 @@ struct MonthNavigator: View {
 
     var body: some View {
         HStack {
-            stepper(system: "chevron.left", enabled: canGoPrev, action: onPrev)
+            stepper(system: "chevron.left", enabled: canGoPrev, label: "Предыдущий месяц", action: onPrev)
             Spacer()
             Text(title)
                 .font(BrandFont.headline)
                 .foregroundStyle(theme.textPrimary)
                 .contentTransition(.opacity)
             Spacer()
-            stepper(system: "chevron.right", enabled: canGoNext, action: onNext)
+            stepper(system: "chevron.right", enabled: canGoNext, label: "Следующий месяц", action: onNext)
         }
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background(theme.surface, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).stroke(theme.border, lineWidth: 1))
     }
 
-    private func stepper(system: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func stepper(system: String, enabled: Bool, label: String,
+                         action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(enabled ? theme.accent : theme.textSecondary.opacity(0.4))
-                .frame(width: 40, height: 36)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(enabled ? theme.textPrimary : theme.textTertiary)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .accessibilityLabel(label)
     }
 }
 

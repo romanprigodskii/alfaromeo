@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A capsule filter chip used as the label of the «Счета» / «Даты» menus in the feed header.
-/// Reads as "active" (accent-tinted) when a non-default value is selected.
+/// A flat filter chip used as the label of the «Счета» / «Даты» menus in the feed header.
+/// Neutral `fill` at rest; an active (non-default) value inverts to ink so the state reads at a glance
+/// without tinting the header in accent.
 struct FilterChip: View {
     let title: String
     var icon: String? = nil
@@ -10,37 +11,31 @@ struct FilterChip: View {
 
     @Environment(\.theme) private var theme
 
-    private var fg: Color { isActive ? theme.accent : theme.textSecondary }
+    private var fg: Color { isActive ? theme.background : theme.textPrimary }
+    private var bg: Color { isActive ? theme.textPrimary : theme.fill }
 
     var body: some View {
         HStack(spacing: Spacing.xs) {
             if let icon {
-                Image(systemName: icon).font(.system(size: 12, weight: .semibold))
+                Image(systemName: GlyphCircle.outlineSymbol(icon)).font(.system(size: 13, weight: .regular))
             }
-            Text(title).font(BrandFont.caption.weight(.semibold)).lineLimit(1)
+            Text(title).font(BrandFont.subheadline).lineLimit(1)
             if showsChevron {
-                Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
+                Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
             }
         }
         .foregroundStyle(fg)
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
-        .background(
-            (isActive ? theme.accent.opacity(0.16) : theme.elevated),
-            in: Capsule(style: .continuous)
-        )
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(isActive ? theme.accent.opacity(0.5) : theme.border, lineWidth: 1)
-        )
-        .contentShape(Capsule())
+        .padding(.horizontal, 12)
+        .frame(height: 32)
+        .background(bg, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
     }
 }
 
 #Preview {
     HStack(spacing: Spacing.sm) {
-        FilterChip(title: "Все счета", icon: "creditcard")
-        FilterChip(title: "Этот месяц", icon: "calendar", isActive: true)
+        FilterChip(title: "Счета")
+        FilterChip(title: "Этот месяц", isActive: true)
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)

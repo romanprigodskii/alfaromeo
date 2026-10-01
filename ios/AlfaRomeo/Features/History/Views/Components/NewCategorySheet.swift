@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Create a custom category (§9.4 «добавить категорию»): name + icon + color. On save it's persisted
+/// Create a custom category (§9.4 «добавить категорию»): name, icon and chart colour. On save it's persisted
 /// in ``HistoryStore`` and becomes available wherever categories are picked (operation detail / add
 /// expense) and in the «Мои категории» catalog.
 struct NewCategorySheet: View {
@@ -31,16 +31,22 @@ struct NewCategorySheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 Text("Новая категория")
-                    .font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                    .font(BrandFont.title1).foregroundStyle(theme.textPrimary)
 
-                preview
-
-                field("Название") {
-                    TextField("Например, Питомцы", text: $title)
-                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                GroupedSection(footer: "Цвет обозначает категорию на диаграммах аналитики.") {
+                    HStack(spacing: ListRow.glyphSpacing) {
+                        GlyphCircle(systemImage: icon, size: ListRow.glyphSize)
+                        TextField("Название, например Питомцы", text: $title)
+                            .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        Circle().fill(Color(hex: tintHex)).frame(width: 12, height: 12)
+                            .accessibilityHidden(true)
+                    }
+                    .frame(minHeight: Spacing.rowMinHeight)
+                    .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
                 }
 
-                section("Иконка") {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader("Иконка")
                     LazyVGrid(columns: iconColumns, spacing: Spacing.sm) {
                         ForEach(Self.icons, id: \.self) { name in
                             iconCell(name)
@@ -48,22 +54,25 @@ struct NewCategorySheet: View {
                     }
                 }
 
-                section("Цвет") {
-                    HStack(spacing: Spacing.sm) {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader("Цвет")
+                    HStack(spacing: 0) {
                         ForEach(Self.palette, id: \.self) { hex in
-                            colorCell(hex)
+                            colorCell(hex).frame(maxWidth: .infinity)
                         }
                     }
                 }
 
-                PrimaryButton(title: "Создать категорию", icon: "checkmark") {
+                PrimaryButton(title: "Создать категорию") {
                     let created = store.addCustomCategory(title: trimmed, icon: icon, tintHex: tintHex)
                     onCreate(created)
                     dismiss()
                 }
                 .disabled(trimmed.isEmpty)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.lg)
+            .padding(.bottom, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background)
@@ -71,38 +80,18 @@ struct NewCategorySheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private var preview: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color(hex: tintHex))
-                .frame(width: 52, height: 52)
-                .background(Color(hex: tintHex).opacity(0.16),
-                            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            Text(trimmed.isEmpty ? "Без названия" : trimmed)
-                .font(BrandFont.headline)
-                .foregroundStyle(trimmed.isEmpty ? theme.textSecondary : theme.textPrimary)
-            Spacer()
-        }
-        .padding(Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
-    }
-
     private func iconCell(_ name: String) -> some View {
         let selected = name == icon
         return Button { icon = name } label: {
-            Image(systemName: name)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(selected ? Color(hex: tintHex) : theme.textSecondary)
+            Image(systemName: GlyphCircle.outlineSymbol(name))
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
                 .frame(width: 52, height: 52)
-                .background((selected ? Color(hex: tintHex).opacity(0.16) : theme.surface),
-                            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(selected ? Color(hex: tintHex) : theme.border, lineWidth: selected ? 1.5 : 1))
+                .background(selected ? theme.accent : theme.surface,
+                            in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func colorCell(_ hex: UInt32) -> some View {
@@ -110,25 +99,12 @@ struct NewCategorySheet: View {
         return Button { tintHex = hex } label: {
             Circle()
                 .fill(Color(hex: hex))
-                .frame(width: 34, height: 34)
-                .overlay(Circle().stroke(theme.textPrimary.opacity(selected ? 0.9 : 0), lineWidth: 2).padding(-3))
+                .frame(width: 26, height: 26)
+                .overlay(Circle().stroke(theme.textPrimary.opacity(selected ? 0.9 : 0), lineWidth: 2).padding(-4))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressableButtonStyle())
-    }
-
-    private func field<Content: View>(_ label: String, @ViewBuilder content: @escaping () -> Content) -> some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                content()
-            }
-        }
-    }
-
-    private func section<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(label.uppercased()).font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
-            content()
-        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

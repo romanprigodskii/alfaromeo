@@ -41,7 +41,7 @@ struct BudgetAnalyticsView: View {
 
                 if scope != .all, !months.isEmpty {
                     MonthNavigator(
-                        title: selectedMonth.map(HistoryFormatting.monthYear) ?? "—",
+                        title: selectedMonth.map(HistoryFormatting.monthYear) ?? "",
                         canGoPrev: monthIndex < months.count - 1,
                         canGoNext: monthIndex > 0,
                         onPrev: { if monthIndex < months.count - 1 { monthIndex += 1 } },
@@ -50,14 +50,18 @@ struct BudgetAnalyticsView: View {
                 }
 
                 if !loaded {
-                    ProgressView().controlSize(.large).tint(theme.accent).padding(.top, Spacing.xxl)
+                    // Skeleton rows instead of a centred spinner (docs/DESIGN.md §5).
+                    GroupedSection {
+                        ForEach(0..<5, id: \.self) { _ in SkeletonRow() }
+                    }
                 } else {
                     scopeContent
                     insightsSection
                     footerLinks
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Аналитика бюджета")
@@ -86,42 +90,42 @@ struct BudgetAnalyticsView: View {
     }
 
     private var categoryList: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                ForEach(Array(slices.enumerated()), id: \.element.id) { index, slice in
-                    categoryRow(slice)
-                    if index < slices.count - 1 { Divider().overlay(theme.border) }
-                }
+        GroupedSection("Категории") {
+            ForEach(slices) { slice in
+                categoryRow(slice)
             }
         }
     }
 
+    /// Monochrome glyph, title and amount; below, the count and share, then a bar in the category's
+    /// chart colour so the list doubles as the donut's legend.
     private func categoryRow(_ slice: CategorySlice) -> some View {
-        let percent = Int((slice.percent(of: total) * 100).rounded())
-        return VStack(spacing: Spacing.sm) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: slice.category.icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(slice.category.tint)
-                    .frame(width: 36, height: 36)
-                    .background(slice.category.tint.opacity(0.16),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
+        let share = slice.percent(of: total)
+        return HStack(alignment: .top, spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: slice.category.icon, size: ListRow.glyphSize)
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                HStack(alignment: .firstTextBaseline) {
                     Text(slice.category.title)
-                        .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Text("\(slice.count) \(operationsWord(slice.count))")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Spacer(minLength: Spacing.sm)
+                    AmountText(amount: slice.amount, size: 17)
+                        .fixedSize()
                 }
-                Spacer(minLength: Spacing.sm)
-                VStack(alignment: .trailing, spacing: 2) {
-                    AmountText(amount: slice.amount, size: 15)
-                    Text("\(percent)%").font(BrandFont.caption.weight(.semibold))
-                        .foregroundStyle(theme.textSecondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(HistoryFormatting.operations(slice.count))
+                    Spacer(minLength: Spacing.sm)
+                    Text(MoneyFormat.percent(share * 100, maxFractionDigits: 0))
+                        .monospacedDigit()
                 }
+                .font(BrandFont.subheadline)
+                .foregroundStyle(theme.textSecondary)
+                ProgressBar(value: share, tint: slice.category.tint, height: 4)
+                    .padding(.top, 2)
             }
-            ProgressBar(value: slice.percent(of: total), tint: slice.category.tint, height: 6)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private var allAnalytics: some View {
@@ -135,51 +139,43 @@ struct BudgetAnalyticsView: View {
                     MonthlyBarChart(summaries: summaries)
                 }
             }
-            SurfaceCard {
-                VStack(spacing: Spacing.md) {
-                    summaryRow("Доходы", income, color: theme.success)
-                    Divider().overlay(theme.border)
-                    summaryRow("Расходы", expense, color: theme.danger)
-                    Divider().overlay(theme.border)
-                    summaryRow("Сбережения", income - expense,
-                               color: income - expense >= 0 ? theme.success : theme.danger)
-                }
+            GroupedSection("Итого") {
+                summaryRow("Доходы", income, colorBySign: true)
+                summaryRow("Расходы", expense)
+                summaryRow("Сбережения", income - expense, showsSign: true, colorBySign: true)
             }
         }
     }
 
-    private func summaryRow(_ title: String, _ value: Double, color: Color) -> some View {
+    private func summaryRow(_ title: String, _ value: Double,
+                            showsSign: Bool = false, colorBySign: Bool = false) -> some View {
         HStack {
-            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
             Spacer()
-            AmountText(amount: value, size: 18).foregroundStyle(color)
+            AmountText(amount: value, size: 17, showsSign: showsSign, colorBySign: colorBySign)
         }
+        .frame(minHeight: Spacing.rowMinHeight)
     }
 
     @ViewBuilder
     private var insightsSection: some View {
         if !insights.isEmpty {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("AI-инсайты").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            GroupedSection("Подсказки", footer: "Демо: подсказки AI рассчитаны по вашим операциям на устройстве.") {
                 ForEach(insights) { AIInsightCard(insight: $0) }
             }
         }
     }
 
     private var footerLinks: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                linkRow(icon: "square.and.arrow.up", title: "Отчёты и экспорт", subtitle: "PDF / CSV") {
-                    router.push(HistoryRoute.reports)
-                }
-                Divider().overlay(theme.border)
-                linkRow(icon: "square.grid.2x2", title: "Мои категории", subtitle: nil) {
-                    router.push(HistoryRoute.categories)
-                }
-                Divider().overlay(theme.border)
-                linkRow(icon: "plus", title: "Добавить расход", subtitle: "Ручной учёт") {
-                    router.push(HistoryRoute.addExpense)
-                }
+        GroupedSection {
+            linkRow(icon: "square.and.arrow.up", title: "Отчёты и экспорт", subtitle: "PDF и CSV") {
+                router.push(HistoryRoute.reports)
+            }
+            linkRow(icon: "square.grid.2x2", title: "Мои категории", subtitle: nil) {
+                router.push(HistoryRoute.categories)
+            }
+            linkRow(icon: "plus", title: "Добавить расход", subtitle: "Ручной учёт") {
+                router.push(HistoryRoute.addExpense)
             }
         }
     }
@@ -188,29 +184,18 @@ struct BudgetAnalyticsView: View {
         Button(action: action) {
             ListRow(icon: icon, title: title, subtitle: subtitle, showsChevron: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
     }
 
     private var emptyMonth: some View {
         VStack(spacing: Spacing.sm) {
-            Image(systemName: "chart.pie")
-                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textSecondary)
+            GlyphCircle(systemImage: "chart.pie", size: 56)
             Text("Нет данных за этот месяц")
                 .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             Text("Выберите другой месяц или вкладку.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity).padding(.vertical, Spacing.xxl)
-    }
-
-    private func operationsWord(_ n: Int) -> String {
-        let rem100 = n % 100, rem10 = n % 10
-        if rem100 >= 11 && rem100 <= 14 { return "операций" }
-        switch rem10 {
-        case 1:        return "операция"
-        case 2, 3, 4:  return "операции"
-        default:       return "операций"
-        }
     }
 
     private func load() async {

@@ -55,6 +55,22 @@ enum HistoryFormatting {
         return (sameYear ? dayMonthFmt : dayMonthYrFmt).string(from: day)
     }
 
+    /// «1 операция», «3 операции», «12 операций» (grouped count, Russian plural).
+    static func operations(_ n: Int) -> String {
+        "\(MoneyFormat.integer(n)) \(operationsWord(n))"
+    }
+
+    /// The bare plural noun for `n` operations.
+    static func operationsWord(_ n: Int) -> String {
+        let rem100 = abs(n) % 100, rem10 = abs(n) % 10
+        if (11...14).contains(rem100) { return "операций" }
+        switch rem10 {
+        case 1:       return "операция"
+        case 2, 3, 4: return "операции"
+        default:      return "операций"
+        }
+    }
+
     private static func capitalizingFirst(_ s: String) -> String {
         guard let first = s.first else { return s }
         return first.uppercased() + s.dropFirst()

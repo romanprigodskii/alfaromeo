@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Добавить расход (§9.4 «ручной учёт») — manual expense entry. Demo only: the entry isn't persisted
-/// (no write path in the contract yet), shown by an honest success pill on save.
+/// Добавить расход (§9.4 «ручной учёт»): manual expense entry, kept in ``HistoryStore`` for the
+/// session (no write path in the contract yet).
 struct AddExpenseView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.apiClient) private var api
@@ -26,63 +26,52 @@ struct AddExpenseView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: Spacing.md) {
-                        field("Сумма") {
-                            HStack {
-                                TextField("0", text: $amountText)
-                                    .keyboardType(.decimalPad)
-                                    .font(BrandFont.amount)
-                                    .foregroundStyle(theme.textPrimary)
-                                Text("₽").font(BrandFont.amountS).foregroundStyle(theme.textSecondary)
-                            }
+                GroupedSection(footer: "Расход появится в ленте операций и учтётся в аналитике текущей сессии.") {
+                    field("Сумма") {
+                        HStack {
+                            TextField("0", text: $amountText)
+                                .keyboardType(.decimalPad)
+                                .font(BrandFont.amount)
+                                .foregroundStyle(theme.textPrimary)
+                            Text("₽").font(BrandFont.amountS).foregroundStyle(theme.textSecondary)
                         }
-
-                        Divider().overlay(theme.border)
-
-                        Button { showCategoryPicker = true } label: {
-                            HStack(spacing: Spacing.md) {
-                                Image(systemName: category.icon)
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(category.tint)
-                                    .frame(width: 36, height: 36)
-                                    .background(category.tint.opacity(0.16),
-                                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Категория").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                                    Text(category.title).font(BrandFont.bodyM.weight(.medium))
-                                        .foregroundStyle(theme.textPrimary)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(theme.textSecondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-
-                        Divider().overlay(theme.border)
-
-                        field("Куда / описание") {
-                            TextField("Например, Пятёрочка", text: $merchant)
-                                .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
-                        }
-
-                        Divider().overlay(theme.border)
-
-                        DatePicker(selection: $date, displayedComponents: [.date, .hourAndMinute]) {
-                            Text("Дата и время").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
-                        }
-                        .tint(theme.accent)
                     }
+
+                    Button { showCategoryPicker = true } label: {
+                        HStack(spacing: ListRow.glyphSpacing) {
+                            GlyphCircle(systemImage: category.icon, size: ListRow.glyphSize)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Категория").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                                Text(category.title).font(BrandFont.bodyM)
+                                    .foregroundStyle(theme.textPrimary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(theme.textTertiary)
+                        }
+                        .padding(.vertical, Spacing.rowVertical)
+                        .contentShape(Rectangle())
+                        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
+                    }
+                    .buttonStyle(.row)
+
+                    field("Получатель или описание") {
+                        TextField("Например, Пятёрочка", text: $merchant)
+                            .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    }
+
+                    DatePicker(selection: $date, displayedComponents: [.date, .hourAndMinute]) {
+                        Text("Дата и время").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    }
+                    .tint(theme.accent)
+                    .frame(minHeight: Spacing.rowMinHeight)
                 }
 
-                PrimaryButton(title: "Сохранить расход", icon: "checkmark") { save() }
+                PrimaryButton(title: "Сохранить расход") { save() }
                     .disabled(!canSave)
-
-                Text("Расход появится в ленте операций и учтётся в аналитике текущей сессии.")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -108,9 +97,10 @@ struct AddExpenseView: View {
 
     private func field<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(label).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             content()
         }
+        .padding(.vertical, Spacing.rowVertical)
     }
 }
 

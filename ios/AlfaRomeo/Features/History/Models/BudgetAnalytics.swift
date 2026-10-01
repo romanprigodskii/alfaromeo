@@ -175,8 +175,8 @@ enum BudgetAnalytics {
             out.append(AIInsight(
                 kind: .forecast,
                 title: "Прогноз к концу месяца",
-                message: "При текущем темпе расходы составят ≈ \(rub(projected)). "
-                       + "Сейчас потрачено \(rub(spent)) (\(Int(fraction * 100))% месяца)."
+                message: "При текущем темпе расходы составят около \(rub(projected)). "
+                       + "Сейчас потрачено \(rub(spent)), прошло \(pct(Double(Int(fraction * 100)))) месяца."
             ))
         }
 
@@ -186,8 +186,8 @@ enum BudgetAnalytics {
             out.append(AIInsight(
                 kind: .anomaly,
                 title: "Крупнейшая категория",
-                message: "«\(top.category.title)» — \(rub(top.amount)) (\(share)% расходов). "
-                       + "Похожие подписки и покупки растут ~+40% к прошлому месяцу."
+                message: "«\(top.category.title)»: \(rub(top.amount)), \(pct(Double(share))) расходов. "
+                       + "Похожие подписки и покупки выросли примерно на \(pct(40)) к прошлому месяцу."
             ))
         }
 
@@ -199,7 +199,7 @@ enum BudgetAnalytics {
                 kind: .tip,
                 title: saved >= 0 ? "Норма сбережений" : "Перерасход",
                 message: saved >= 0
-                    ? "Вы отложили \(rub(saved)) — это \(rate)% доходов за месяц."
+                    ? "Вы отложили \(rub(saved)), это \(pct(Double(rate))) доходов за месяц."
                     : "Расходы превысили доходы на \(rub(-saved)). Стоит пересмотреть бюджет."
             ))
         }
@@ -218,15 +218,8 @@ enum BudgetAnalytics {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
-    private static let rubFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"
-        f.maximumFractionDigits = 0
-        return f
-    }()
-    private static func rub(_ value: Double) -> String {
-        let n = rubFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
-        return "\(n) ₽"
-    }
+    /// Whole roubles in Russian format («48 200 ₽»), via the central ``MoneyFormat``.
+    private static func rub(_ value: Double) -> String { MoneyFormat.fiat(value.rounded()) }
+    /// «32 %» with NBSP, via ``MoneyFormat``.
+    private static func pct(_ points: Double) -> String { MoneyFormat.percent(points, maxFractionDigits: 0) }
 }

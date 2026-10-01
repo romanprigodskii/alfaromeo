@@ -2,9 +2,8 @@ import SwiftUI
 
 /// Деталь операции (§9.4): мерчант, редактируемая категория, чек, «оспорить», «спросить у AI».
 ///
-/// The AI ask and dispute are demo stubs (real AI lands in Фаза 3, §10.9); the editable category and
-/// receipt are session-local since the `Transaction` contract carries neither field yet — all clearly
-/// labeled. Loads the active profile's operations and resolves `txId` (§5.3).
+/// The editable category and the receipt are session-local since the `Transaction` contract carries
+/// neither field yet. Loads the active profile's operations and resolves `txId` (§5.3).
 struct OperationDetailView: View {
     let txId: String
 
@@ -30,14 +29,13 @@ struct OperationDetailView: View {
     var body: some View {
         ScrollView {
             if let tx = tx {
-                VStack(spacing: Spacing.lg) {
+                VStack(spacing: Spacing.section) {
                     header(tx)
-                    detailsCard(tx)
-                    if ticket != nil { ticketCard }
-                    receiptCard(tx)
-                    actions(tx)
+                    detailsSection(tx)
+                    actionsSection(tx)
                 }
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
             } else if loaded {
                 notFound
             } else {
@@ -67,7 +65,7 @@ struct OperationDetailView: View {
             Button("Оспорить", role: .destructive) { if let tx = tx { store.dispute(tx, category: category) } }
             Button("Отмена", role: .cancel) {}
         } message: {
-            Text("Создадим обращение по операции — его статус появится здесь и в разделе «Обращения».")
+            Text("Создадим обращение по операции. Его статус появится здесь и в разделе «Обращения».")
         }
         // Re-scope on BOTH the operation id and the active profile: switching between two
         // personal-type profiles keeps this NavigationStack alive, so watching txId alone would
@@ -79,108 +77,73 @@ struct OperationDetailView: View {
 
     private func header(_ tx: Transaction) -> some View {
         VStack(spacing: Spacing.sm) {
-            Image(systemName: category.icon)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(category.tint)
-                .frame(width: 64, height: 64)
-                .background(category.tint.opacity(0.16),
-                            in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            AmountText(amount: tx.amount, currency: tx.currencySymbol, size: 34,
-                       showsSign: true, colorBySign: true)
+            GlyphCircle(systemImage: category.icon, size: 56)
             Text(tx.counterparty ?? category.title)
-                .font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                 .multilineTextAlignment(.center)
-            statusPill(tx.status)
-            if ticket != nil {
-                StatusPill(status: .warning, text: "Оспаривается")
+                .padding(.top, Spacing.xs)
+            AmountText(amount: tx.amount, currency: tx.currencySymbol, size: 40,
+                       showsSign: true, colorBySign: true, splitsKopecks: true)
+            HStack(spacing: Spacing.sm) {
+                statusPill(tx.status)
+                if ticket != nil {
+                    StatusPill(status: .warning, text: "Оспаривается")
+                }
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Spacing.sm)
     }
 
-    private func detailsCard(_ tx: Transaction) -> some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                Button { showCategoryPicker = true } label: {
-                    ListRow(icon: category.icon, iconTint: category.tint, title: "Категория",
-                            subtitle: "Можно изменить", value: category.title, showsChevron: true)
-                }
-                .buttonStyle(.plain)
-                divider
-                detailRow(icon: "calendar", title: "Дата и время", value: dateString(tx))
-                divider
-                detailRow(icon: "arrow.left.arrow.right", title: "Тип операции", value: kindLabel(tx.kind))
-                divider
-                detailRow(icon: "creditcard", title: "Счёт", value: accountLabel(tx))
-                if let fee = tx.fee, fee > 0 {
-                    divider
-                    detailRow(icon: "percent", title: "Комиссия", value: rub(fee, currency: tx.currencySymbol))
-                }
-                if let rate = tx.fxRate {
-                    divider
-                    detailRow(icon: "function", title: "Курс", value: rub(rate, currency: "₽"))
-                }
-                divider
-                detailRow(icon: "number", title: "ID операции", value: tx.id)
+    /// Key/value facts as one grouped list. Once the operation is contested the dispute ticket joins
+    /// it as a row, and the footer points to «Обращения» (§9.4, §9.5).
+    private func detailsSection(_ tx: Transaction) -> some View {
+        GroupedSection(footer: ticket == nil ? nil
+                       : "Обращение принято. Статус и переписка в разделе «Обращения» в Чатах.") {
+            Button { showCategoryPicker = true } label: {
+                ListRow(title: "Категория", value: category.title, showsChevron: true)
+            }
+            .buttonStyle(.row)
+            ListRow(title: "Дата и время", value: dateString(tx))
+            ListRow(title: "Тип операции", value: kindLabel(tx.kind))
+            ListRow(title: "Счёт", value: accountLabel(tx))
+            if let fee = tx.fee, fee > 0 {
+                ListRow(title: "Комиссия", value: MoneyFormat.amount(fee, currency: tx.currencySymbol))
+            }
+            if let rate = tx.fxRate {
+                ListRow(title: "Курс", value: MoneyFormat.fiat(rate))
+            }
+            ListRow(title: "ID операции", value: tx.id)
+            if let ticket {
+                ListRow(title: "Обращение", subtitle: ticket.status.title, value: ticket.id)
             }
         }
     }
 
-    private func receiptCard(_ tx: Transaction) -> some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "doc.text.fill").foregroundStyle(theme.accent)
-                    Text("Чек").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                }
-                HStack {
-                    Text(tx.counterparty ?? "Операция").font(BrandFont.callout)
-                        .foregroundStyle(theme.textSecondary)
-                    Spacer()
-                    AmountText(amount: tx.amount, currency: tx.currencySymbol, size: 15,
-                               showsSign: true, colorBySign: true)
-                }
-                SecondaryButton(title: "Открыть чек (PDF)", icon: "arrow.down.doc") { shareReceipt(tx) }
-                Text("PDF-чек формируется на устройстве — можно открыть, сохранить в Файлы или отправить.")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+    /// Receipt, copilot and dispute as one list of actions (no stacked buttons, no sparkles).
+    private func actionsSection(_ tx: Transaction) -> some View {
+        GroupedSection(footer: "Чек в PDF формируется на устройстве: его можно открыть, сохранить в Файлы или отправить.") {
+            Button { shareReceipt(tx) } label: {
+                ListRow(icon: "doc.text", title: "Чек в PDF", showsChevron: true)
             }
-        }
-    }
-
-    private func actions(_ tx: Transaction) -> some View {
-        VStack(spacing: Spacing.sm) {
-            SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+            .buttonStyle(.row)
+            Button {
                 shell.showCopilot(.operation(
                     id: tx.id,
                     title: tx.counterparty ?? category.title,
-                    amount: rub(abs(tx.amount), currency: tx.currencySymbol)))
+                    amount: MoneyFormat.amount(abs(tx.amount), currency: tx.currencySymbol)))
+            } label: {
+                ListRow(icon: "text.bubble", title: "Спросить у AI", showsChevron: true)
             }
-            SecondaryButton(title: ticket == nil ? "Оспорить операцию" : "Операция оспаривается",
-                            icon: "exclamationmark.bubble") {
-                showDisputeConfirm = true
+            .buttonStyle(.row)
+            Button { showDisputeConfirm = true } label: {
+                ListRow(icon: "exclamationmark.bubble",
+                        title: ticket == nil ? "Оспорить операцию" : "Операция оспаривается",
+                        showsChevron: ticket == nil)
+                    .opacity(ticket == nil ? 1 : 0.5)
             }
+            .buttonStyle(.row)
             .disabled(ticket != nil)
-        }
-    }
-
-    /// Dispute ticket summary shown once an operation is contested (§9.4). Carries the case number that
-    /// «Обращения» (§9.5) will track — see ``DisputeTicket``.
-    @ViewBuilder private var ticketCard: some View {
-        if let ticket {
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "checkmark.bubble.fill").foregroundStyle(theme.success)
-                        Text(ticket.status.title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                        Spacer()
-                        StatusPill(status: .processing, text: ticket.id)
-                    }
-                    Text("Обращение по операции принято. Отследить и продолжить переписку можно в разделе «Обращения» (Чаты).")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
         }
     }
 
@@ -193,22 +156,15 @@ struct OperationDetailView: View {
 
     private var notFound: some View {
         VStack(spacing: Spacing.md) {
-            Image(systemName: "questionmark.folder")
-                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textSecondary)
+            GlyphCircle(systemImage: "questionmark.folder", size: 56)
             Text("Операция не найдена").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             Text("Возможно, она относится к другому профилю.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity).padding(.top, Spacing.xxl)
     }
 
     // MARK: - Pieces
-
-    private var divider: some View { Divider().overlay(theme.border) }
-
-    private func detailRow(icon: String, title: String, value: String) -> some View {
-        ListRow(icon: icon, title: title, value: value)
-    }
 
     private func statusPill(_ status: TransactionStatus) -> some View {
         let mapped: StatusPill.Status
@@ -231,7 +187,7 @@ struct OperationDetailView: View {
 
     private func accountLabel(_ tx: Transaction) -> String {
         guard let id = HistoryFilter.resolvedAccountId(for: tx, in: accounts),
-              let account = accounts.first(where: { $0.id == id }) else { return "—" }
+              let account = accounts.first(where: { $0.id == id }) else { return "Не определён" }
         switch account.type {
         case .current:      return "Текущий счёт"
         case .savings:      return "Накопительный"
@@ -250,20 +206,6 @@ struct OperationDetailView: View {
         case .acquire:  return "Эквайринг"
         }
     }
-
-    private func rub(_ value: Double, currency: String) -> String {
-        let n = Self.formatter.string(from: NSNumber(value: value)) ?? "\(value)"
-        return "\(n) \(currency)"
-    }
-
-    private static let formatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"
-        f.maximumFractionDigits = 2
-        f.minimumFractionDigits = 0
-        return f
-    }()
 
     private func load() async {
         loaded = false

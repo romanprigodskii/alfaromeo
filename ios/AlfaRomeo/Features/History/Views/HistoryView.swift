@@ -57,18 +57,19 @@ struct HistoryView: View {
                 Spacer(minLength: 0)
                 if filter.isActive {
                     Button { filter = HistoryFilter() } label: {
-                        Text("Сбросить").font(BrandFont.caption.weight(.semibold))
+                        Text("Сбросить").font(BrandFont.subheadline.weight(.medium))
                             .foregroundStyle(theme.accent)
+                            .frame(minHeight: 32)
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
         .padding(.top, Spacing.sm)
-        .padding(.bottom, Spacing.md)
+        .padding(.bottom, 12)
         .background(theme.background)
-        .overlay(alignment: .bottom) { Divider().overlay(theme.border) }
+        .overlay(alignment: .bottom) { Hairline() }
     }
 
     private var accountMenu: some View {
@@ -80,7 +81,7 @@ struct HistoryView: View {
                 }
             }
         } label: {
-            FilterChip(title: accountChipTitle, icon: "creditcard", isActive: filter.accountId != nil)
+            FilterChip(title: accountChipTitle, isActive: filter.accountId != nil)
         }
         .disabled(activityAccounts.count < 2)
     }
@@ -93,8 +94,7 @@ struct HistoryView: View {
                 }
             }
         } label: {
-            FilterChip(title: filter.datePreset.chipLabel, icon: "calendar",
-                       isActive: filter.datePreset != .all)
+            FilterChip(title: filter.datePreset.chipLabel, isActive: filter.datePreset != .all)
         }
     }
 
@@ -102,7 +102,7 @@ struct HistoryView: View {
     private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button { router.push(HistoryRoute.budgetAnalytics) } label: {
-                Image(systemName: "chart.pie.fill")
+                Image(systemName: "chart.pie")
             }
             .accessibilityLabel("Аналитика бюджета")
         }
@@ -129,9 +129,15 @@ struct HistoryView: View {
     @ViewBuilder
     private var content: some View {
         if isLoading {
-            Spacer()
-            ProgressView().controlSize(.large).tint(theme.accent)
-            Spacer()
+            // Skeleton rows instead of a centred spinner (docs/DESIGN.md §5).
+            ScrollView {
+                GroupedSection {
+                    ForEach(0..<6, id: \.self) { _ in SkeletonRow() }
+                }
+                .padding(.horizontal, Spacing.screen)
+                .padding(.top, Spacing.md)
+            }
+            .scrollDisabled(true)
         } else if sections.isEmpty {
             emptyState
         } else {
@@ -141,36 +147,32 @@ struct HistoryView: View {
                         sectionView(section)
                     }
                 }
-                .padding(.horizontal, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
                 .padding(.top, Spacing.md)
             }
             .contentMargins(.bottom, 96, for: .scrollContent)
         }
     }
 
+    /// One day: a quiet date label with the day's net, then the operations as a grouped list.
     private func sectionView(_ section: DaySection) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(alignment: .firstTextBaseline) {
                 Text(section.title)
-                    .font(BrandFont.headline)
-                    .foregroundStyle(theme.textPrimary)
+                    .font(BrandFont.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.textSecondary)
                 Spacer()
-                AmountText(amount: section.net, size: 13, showsSign: true, colorBySign: true)
-                    .opacity(0.85)
+                AmountText(amount: section.net, size: 15, showsSign: true, colorBySign: true)
             }
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, tx in
-                        Button {
-                            router.push(HistoryRoute.operationDetail(txId: tx.id))
-                        } label: {
-                            TransactionRow(transaction: tx, category: store.category(for: tx))
-                        }
-                        .buttonStyle(.plain)
-                        if index < section.transactions.count - 1 {
-                            Divider().overlay(theme.border)
-                        }
+            .padding(.horizontal, Spacing.md)
+            GroupedSection {
+                ForEach(section.transactions) { tx in
+                    Button {
+                        router.push(HistoryRoute.operationDetail(txId: tx.id))
+                    } label: {
+                        TransactionRow(transaction: tx, category: store.category(for: tx))
                     }
+                    .buttonStyle(.row)
                 }
             }
         }
@@ -179,18 +181,16 @@ struct HistoryView: View {
     private var emptyState: some View {
         VStack(spacing: Spacing.md) {
             Spacer()
-            Image(systemName: filter.isActive ? "line.3.horizontal.decrease.circle" : "tray")
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(theme.textSecondary)
+            GlyphCircle(systemImage: filter.isActive ? "line.3.horizontal.decrease" : "tray", size: 56)
             Text(filter.isActive ? "Нет операций по фильтру" : "Пока нет операций")
                 .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             Text(filter.isActive
-                 ? "Измените период, счёт или тип, чтобы увидеть больше."
-                 : "Операции активного профиля появятся здесь.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                 ? "Измените период, счёт или тип операций."
+                 : "Здесь появятся операции активного профиля.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
             if filter.isActive {
-                SecondaryButton(title: "Сбросить фильтры", icon: "arrow.counterclockwise") {
+                SecondaryButton(title: "Сбросить фильтры") {
                     filter = HistoryFilter()
                 }
                 .frame(maxWidth: 260)

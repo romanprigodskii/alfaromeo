@@ -1,8 +1,9 @@
 import SwiftUI
 import Charts
 
-/// Income vs. expense per month as grouped bars (§9.4 «диаграмма — столбчатая», the «Вся аналитика»
-/// tab). Uses a foreground-style scale tied to the theme's success/danger so the legend is automatic.
+/// Income vs. expense per month as grouped bars (§9.4 столбчатая диаграмма, the «Вся аналитика» tab).
+/// Colours follow the signed-amount rule (docs/DESIGN.md §6): income in `success`, expenses in ink,
+/// since spending is normal life rather than an error. The foreground-style scale drives the legend.
 struct MonthlyBarChart: View {
     let summaries: [MonthlySummary]
 
@@ -20,7 +21,7 @@ struct MonthlyBarChart: View {
                 )
                 .position(by: .value("Тип", incomeKey))
                 .foregroundStyle(by: .value("Тип", incomeKey))
-                .cornerRadius(5)
+                .cornerRadius(3)
 
                 BarMark(
                     x: .value("Месяц", month.label),
@@ -28,10 +29,10 @@ struct MonthlyBarChart: View {
                 )
                 .position(by: .value("Тип", expenseKey))
                 .foregroundStyle(by: .value("Тип", expenseKey))
-                .cornerRadius(5)
+                .cornerRadius(3)
             }
         }
-        .chartForegroundStyleScale([incomeKey: theme.success, expenseKey: theme.danger])
+        .chartForegroundStyleScale([incomeKey: theme.success, expenseKey: theme.textPrimary])
         .chartLegend(position: .top, alignment: .leading, spacing: Spacing.sm)
         .chartYAxis {
             AxisMarks { value in
@@ -47,19 +48,16 @@ struct MonthlyBarChart: View {
         }
         .chartXAxis {
             AxisMarks { _ in
-                AxisValueLabel().font(BrandFont.micro)
+                AxisValueLabel().font(BrandFont.micro).foregroundStyle(theme.textSecondary)
             }
         }
         .frame(height: 240)
         .accessibilityLabel("Доходы и расходы по месяцам")
     }
 
-    /// "1,2 млн" / "320 тыс" — compact axis labels.
+    /// «1,2 млн» / «320 тыс.»: compact axis labels through the central ``MoneyFormat``.
     static func compact(_ value: Double) -> String {
-        let v = abs(value)
-        if v >= 1_000_000 { return String(format: "%.1f млн", v / 1_000_000) }
-        if v >= 1_000 { return String(format: "%.0f тыс", v / 1_000) }
-        return String(format: "%.0f", v)
+        MoneyFormat.compact(abs(value), currency: nil)
     }
 }
 
