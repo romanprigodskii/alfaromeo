@@ -212,6 +212,6 @@ extension Account {
     /// Display symbol for the account's currency (₽ for fiat / цифр.₽, ticker otherwise).
     var symbol: String { currency == "RUB" ? "₽" : currency }
     var isRubLike: Bool { currency == "RUB" }
-    var displayTitle: String { type.paymentsLabel }
+    var displayTitle: String { type == .current && !isRubLike ? "Валютный счёт" : type.paymentsLabel }
     var displaySubtitle: String { "·· \(id.suffix(4)) · \(currency)" }
 }

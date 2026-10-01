@@ -46,6 +46,7 @@ struct BusinessAccountsView: View {
         .navigationDestination(for: AccountsRoute.self) { $0.destination }
         .task(id: profileId) { await store.load(api: api, profileId: profileId) }
         .task { await prices.start() }
+        .task { await FXRateService.shared.start() }
     }
 
     // MARK: Hero
@@ -56,7 +57,9 @@ struct BusinessAccountsView: View {
 
     private var heroSubline: String {
         var parts = ["Расчётный \(CryptoFormat.compactRub(store.settlementRub))"]
-        if store.multicurrencyRub > 0 { parts.append("валюта \(CryptoFormat.compactRub(store.multicurrencyRub))") }
+        if store.multicurrencyRub > 0 {
+            parts.append("валюта \(CryptoFormat.compactRub(store.multicurrencyRub)) · \(FXRateService.shared.label)")
+        }
         if store.treasuryRub > 0 {
             // Stablecoins are $-pegged, so the native total reads as «$…» rather than mislabelling the
             // USDT+USDC sum as a single currency.

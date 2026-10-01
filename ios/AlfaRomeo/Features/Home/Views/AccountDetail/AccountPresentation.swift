@@ -55,6 +55,11 @@ struct AccountRequisites {
     let addressMasked: String
     let network: String
 
+    /// ОКВ code in the account number (digits 6-8): 810 ₽, 840 USD, 978 EUR, 156 CNY.
+    private static func currencyNumCode(_ currency: String) -> String {
+        FxRateClient.seedTable.quotes[currency.uppercased()]?.numCode ?? "810"
+    }
+
     static func make(for account: Account, holder: String) -> AccountRequisites {
         if account.type == .crypto {
             let addr = AccountIdentifiers.address(seed: account.id)
@@ -72,7 +77,7 @@ struct AccountRequisites {
         let check = AccountIdentifiers.digits(seed: account.id + "k", count: 1)
         return AccountRequisites(
             isCrypto: false,
-            accountNumberFull: "40817 810 \(check) 0000 \(tail)",
+            accountNumberFull: "40817 \(currencyNumCode(account.currency)) \(check) 0000 \(tail)",
             accountNumberMasked: "•••• \(tail.suffix(4))",
             bik: "044525974",
             corrAccount: "30101 810 2 0000 0000974",
@@ -88,14 +93,23 @@ struct AccountRequisites {
 
 @MainActor
 enum AccountValuation {
-    /// Live ₽ for one unit of a currency: ₽ is 1:1; USD and the stablecoins are $-pegged off the live
-    /// USDT tick; any other (crypto) symbol reads the price book directly.
+    /// ₽ for one unit of a currency: ₽ is 1:1; fiat (USD, EUR, CNY…) at the official курс ЦБ
+    /// (``FXRateService``); the stablecoins off the live USDT tick; any other crypto symbol reads the
+    /// price book directly. Business Счета use this same function.
     static func rubRate(currency: String, prices: LivePriceService) -> Double {
-        switch currency.uppercased() {
-        case "RUB":                  return 1
-        case "USD", "USDT", "USDC":  return prices.price("USDT")
-        default:                     return prices.price(currency)
+        let code = currency.uppercased()
+        switch code {
+        case "RUB":            return 1
+        case "USDT", "USDC":   return prices.price("USDT")
+        default:
+            let fx = FXRateService.shared
+            return fx.isFiat(code) ? fx.rate(code) : prices.price(code)
         }
+    }
+
+    /// Foreign fiat (not ₽, not crypto) — valued and labelled by курс ЦБ.
+    static func isForeignFiat(_ currency: String) -> Bool {
+        currency.uppercased() != "RUB" && FXRateService.shared.isFiat(currency)
     }
 
     static func rubValue(_ account: Account, prices: LivePriceService) -> Double {

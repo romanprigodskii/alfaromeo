@@ -9,7 +9,7 @@ import Observation
 /// inject into. A `@MainActor @Observable` singleton lets a deposit opened in the wizard appear live
 /// in the hub list and goals top-ups reflect everywhere. It hydrates once per profile from the
 /// ``APIClient`` (`deposits` / `cryptoWallets` / `subscription` / `prices`); every mutation is a demo
-/// simulation. Live ₽ valuation of stakes folds in ``PriceSocket`` ticks (§11.4).
+/// simulation. Live ₽ valuation of stakes folds in ``LivePriceService`` ticks (§11.4).
 @MainActor
 @Observable
 final class SavingsStore {
@@ -24,12 +24,11 @@ final class SavingsStore {
 
     /// REST ₽ snapshot (asset → ₽), fallback until a live tick lands (§11.4).
     private(set) var priceSnapshot: [String: Double] = [:]
-    /// Live ₽ ticks (asset → ₽) from ``PriceSocket``.
-    private(set) var livePrices: [String: Double] = [:]
+    /// Live ₽ ticks (asset → ₽) from the app-wide ``LivePriceService`` — same numbers as «Биржа».
+    var livePrices: [String: Double] { LivePriceService.shared.ticks.mapValues(\.price) }
 
     private var loadedProfileId: String?
     private var seq = 0
-    private var isStreaming = false
 
     private static let trackedAssets = ["BTC", "ETH", "USDT", "SOL", "TON"]
 
@@ -71,16 +70,9 @@ final class SavingsStore {
 
     // MARK: - Live prices (§11.4)
 
-    /// Consume the mock ``PriceSocket`` for the caller's lifetime. Guarded so the hub and a pushed
-    /// stake flow share one socket (whoever starts first owns it; the other call is a no-op).
+    /// Start the shared ``LivePriceService`` (idempotent — the hub and a pushed stake flow share it).
     func streamPrices() async {
-        guard !isStreaming else { return }
-        isStreaming = true
-        defer { isStreaming = false }
-        let socket = PriceSocket(source: .mock, assets: Self.trackedAssets)
-        for await tick in socket.ticks() {
-            livePrices[tick.asset.uppercased()] = tick.price
-        }
+        await LivePriceService.shared.start()
     }
 
     /// ₽ price for an asset: a live tick if present, else the REST snapshot, else the reference price.

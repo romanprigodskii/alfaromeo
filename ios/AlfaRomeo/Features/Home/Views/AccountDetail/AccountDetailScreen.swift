@@ -23,6 +23,7 @@ struct AccountDetailScreen: View {
 
     @State private var store = HistoryStore.shared
     @State private var prices = LivePriceService.shared
+    @State private var fx = FXRateService.shared
     @State private var loaded = false
     @State private var revealNumber = false
     @State private var showRequisites = false
@@ -67,6 +68,7 @@ struct AccountDetailScreen: View {
         }
         // Crypto ₽-эквивалент + live-pill (idempotent; harmless for ₽ accounts).
         .task { await prices.start() }
+        .task { await fx.start() }
         // Profile-scoped load; re-runs on account/profile change (§5.3).
         .task(id: "\(accountId)|\(profileId)") { await load() }
     }
@@ -123,6 +125,14 @@ struct AccountDetailScreen: View {
                             .monospacedDigit()
                         livePill
                     }
+                } else if AccountValuation.isForeignFiat(account.currency) {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text("≈ \(MoneyFormat.fiat(AccountValuation.rubValue(account, prices: prices).rounded()))")
+                            .font(BrandFont.callout.weight(.medium))
+                            .foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
+                        fxPill(account.currency)
+                    }
                 }
 
                 divider
@@ -163,6 +173,16 @@ struct AccountDetailScreen: View {
             Circle().fill(prices.isLive ? theme.success : theme.warning).frame(width: 6, height: 6)
             Text(prices.isLive ? "live-курс" : "оффлайн")
                 .font(BrandFont.micro.weight(.medium)).foregroundStyle(theme.textSecondary)
+        }
+    }
+
+    /// «курс ЦБ на dd.MM · 1 USD = 83,25 ₽ · ▼ 0,38 %» — green once fetched live this session.
+    private func fxPill(_ currency: String) -> some View {
+        HStack(spacing: Spacing.xxs) {
+            Circle().fill(fx.isLive ? theme.success : theme.warning).frame(width: 6, height: 6)
+            Text([fx.label, fx.rateText(currency), fx.changeText(currency)].compactMap { $0 }.joined(separator: " · "))
+                .font(BrandFont.micro.weight(.medium)).foregroundStyle(theme.textSecondary)
+                .monospacedDigit()
         }
     }
 
@@ -267,7 +287,10 @@ struct AccountDetailScreen: View {
     private var divider: some View { Divider().overlay(theme.border) }
 
     private func currencyName(_ account: Account) -> String {
-        account.currency.uppercased() == "RUB" ? "Рубли · ₽" : account.currency.uppercased()
+        let code = account.currency.uppercased()
+        if code == "RUB" { return "Рубли · ₽" }
+        if AccountValuation.isForeignFiat(code), let name = fx.quote(code)?.name { return "\(name) · \(code)" }
+        return code
     }
 
     private func load() async {

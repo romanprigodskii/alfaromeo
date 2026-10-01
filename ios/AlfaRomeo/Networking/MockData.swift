@@ -112,6 +112,9 @@ enum MockData {
         Account(id: "acc_cur", profileId: personalProfileId, type: .current, currency: "RUB", balance: 184_200.50),
         Account(id: "acc_sav", profileId: personalProfileId, type: .savings, currency: "RUB", balance: 920_000),
         Account(id: "acc_dr",  profileId: personalProfileId, type: .digitalRuble, currency: "RUB", balance: 15_000),
+        // Currency accounts — valued in ₽ at the official курс ЦБ (FXRateService), not at the USDT tick.
+        Account(id: "acc_usd", profileId: personalProfileId, type: .current, currency: "USD", balance: 1_250),
+        Account(id: "acc_cny", profileId: personalProfileId, type: .current, currency: "CNY", balance: 8_400),
         Account(id: "acc_cr",  profileId: personalProfileId, type: .crypto, currency: "USDT", balance: 1_820.40),
     ]
     // РКО for the demo ООО (§8.2): a ₽ settlement account, a USD multicurrency account, and a crypto

@@ -176,6 +176,8 @@ struct TransferFlowView: View {
                 HStack {
                     Text(model.country).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
                     Spacer()
+                    Text("\(FXRateService.shared.rateText(model.abroadCurrency)) · ЦБ")
+                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary).monospacedDigit()
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
                 }
                 .padding(Spacing.md)
@@ -371,6 +373,10 @@ struct TransferFlowView: View {
             return model.inputInRub
                 ? "≈ \(plain(model.assetAmount)) \(model.asset)"
                 : "≈ \(money(model.rubAmount, "₽")) по курсу"
+        }
+        if model.kind == .abroad, !model.insufficientFunds, model.rubAmount > 0 {
+            let fx = FXRateService.shared
+            return "Получатель получит ≈ \(MoneyFormat.fiat(model.recipientAmount.rounded(), currency: model.abroadCurrency)) · \(fx.label)"
         }
         return model.insufficientFunds
             ? "Недостаточно средств на счёте"

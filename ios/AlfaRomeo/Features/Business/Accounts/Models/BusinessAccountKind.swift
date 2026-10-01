@@ -22,7 +22,7 @@ enum BusinessAccountGroup: String, CaseIterable, Identifiable, Hashable {
     var caption: String {
         switch self {
         case .rubles:        return "РКО · расчётный и накопительный"
-        case .multicurrency: return "Оценка в ₽ по live-курсу"
+        case .multicurrency: return "Оценка в ₽ по курсу ЦБ"
         case .treasury:      return "Стейблы как операционная валюта · live-курс"
         }
     }
@@ -65,7 +65,7 @@ struct BusinessAccountItem: Identifiable, Hashable {
     var subtitle: String {
         switch group {
         case .rubles:        return "Основной счёт · РКО"
-        case .multicurrency: return "Мультивалютный · оценка по live-курсу"
+        case .multicurrency: return "Мультивалютный · оценка по курсу ЦБ"
         case .treasury:      return "Стейбл · операционная валюта"
         }
     }

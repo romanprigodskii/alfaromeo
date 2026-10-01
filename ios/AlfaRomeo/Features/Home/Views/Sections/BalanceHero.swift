@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Unified ₽-equivalent header (§10.2 «Единый ₽-эквивалент в шапке»). Folds fiat + live crypto, so it
-/// ticks in real time as ``PriceSocket`` updates (§11.4).
+/// ticks in real time as ``LivePriceService`` updates (§11.4); currency accounts at курс ЦБ.
 struct BalanceHero: View {
     let dashboard: HomeDashboard
     let live: [String: Double]
@@ -24,6 +24,10 @@ struct BalanceHero: View {
                     if !dashboard.wallets.isEmpty {
                         stat("Крипта", dashboard.cryptoValueRub(live: live))
                     }
+                }
+                if dashboard.hasForeignFiat {
+                    Text("Валюта в ₽ · \(FXRateService.shared.label)")
+                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
                 }
             }
         }

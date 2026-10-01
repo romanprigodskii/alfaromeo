@@ -7,9 +7,9 @@ import Observation
 /// Mirrors the ``AcquiringStore`` / ``TeamStore`` pattern: a `@MainActor @Observable` singleton held via
 /// `@State` in each screen, hydrated once per business profile from the read-only ``APIClient`` (юрлицо +
 /// счета + операции для выписки). It does **not** copy money figures locally — balances are the contract
-/// ``Account`` values; the only derivation is the ₽ valuation of foreign/stablecoin balances, taken from
-/// the **same** live price book as the Crypto Hub (``LivePriceService``). USD and the stablecoins
-/// (USDT/USDC) are $-pegged, so they're valued at the live USDT→₽ rate (§2.4 «стейблы как опер. валюта»).
+/// ``Account`` values; the only derivation is the ₽ valuation of foreign/stablecoin balances: fiat (USD…)
+/// at the official курс ЦБ (``FXRateService``), the stablecoins (USDT/USDC) at the live USDT→₽ rate from
+/// the **same** price book as the Crypto Hub (``LivePriceService``, §2.4 «стейблы как опер. валюта»).
 @MainActor
 @Observable
 final class BusinessAccountsStore {
@@ -49,16 +49,12 @@ final class BusinessAccountsStore {
         }
     }
 
-    // MARK: - Live ₽ valuation (§2.4 — same source as Crypto Hub)
+    // MARK: - ₽ valuation (§2.4 — курс ЦБ for fiat, Crypto Hub prices for stablecoins)
 
-    /// Live ₽ rate for one unit of a currency. ₽ is 1:1; USD and the stablecoins are $-pegged and priced
-    /// off the live USDT→₽ tick; any other (crypto) symbol falls through to the price book directly.
+    /// ₽ rate for one unit of a currency — the same function the personal account detail uses:
+    /// ₽ 1:1, fiat at курс ЦБ, stablecoins at the live USDT tick, other crypto from the price book.
     func rubRate(currency: String) -> Double {
-        switch currency.uppercased() {
-        case "RUB":                  return 1
-        case "USD", "USDT", "USDC":  return LivePriceService.shared.price("USDT")
-        default:                     return LivePriceService.shared.price(currency)
-        }
+        AccountValuation.rubRate(currency: currency, prices: LivePriceService.shared)
     }
 
     /// ₽ equivalent of an account's native balance at the live rate.

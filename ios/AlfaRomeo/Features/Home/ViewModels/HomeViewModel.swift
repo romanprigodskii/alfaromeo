@@ -3,7 +3,7 @@ import Observation
 
 /// Loads and holds the profile-scoped dashboard (§9.1) plus the live crypto price stream (§11.4).
 ///
-/// One fan-out of ``APIClient`` calls builds a ``HomeDashboard``; ``PriceSocket`` ticks then update
+/// One fan-out of ``APIClient`` calls builds a ``HomeDashboard``; ``LivePriceService`` ticks then update
 /// ``livePrices`` so the ₽-equivalent and crypto valuation move in real time. The loader keeps the
 /// last good snapshot as a cache: a failed *refresh* keeps content on screen and raises a banner
 /// (§10.2 «ошибка обновления (кэш + плашка)»); only a first load with no cache hard-fails.
@@ -15,9 +15,10 @@ final class HomeViewModel {
     private(set) var phase: Phase = .idle
     private(set) var dashboard: HomeDashboard?
     private(set) var refreshFailed = false
-    var livePrices: [String: Double] = [:]
+    /// Live ₽ prices from the app-wide ``LivePriceService`` — the same book as «Биржа», so the Home
+    /// crypto total matches the exchange tab. Empty until the service has data (snapshot fallback).
+    var livePrices: [String: Double] { LivePriceService.shared.ticks.mapValues(\.price) }
 
-    private var priceSocket: PriceSocket?
     private static let trackedAssets = ["BTC", "ETH", "USDT", "SOL", "TON"]
 
     /// Demo-only: a short delay on the *first* load per profile so the skeleton state is observable
@@ -122,13 +123,11 @@ final class HomeViewModel {
 
     // MARK: - Live prices (§11.4)
 
-    /// Consume the mock ``PriceSocket`` for the view's lifetime; cancelled when the view disappears.
+    /// Start the shared price book (crypto) and курс ЦБ (fiat accounts). Both are idempotent singletons
+    /// that keep streaming for the session, so this returns once the first snapshot resolved.
     func streamPrices() async {
-        let socket = PriceSocket(source: .mock, assets: Self.trackedAssets)
-        priceSocket = socket
-        for await tick in socket.ticks() {
-            livePrices[tick.asset.uppercased()] = tick.price
-        }
-        priceSocket = nil
+        async let fx: Void = FXRateService.shared.start()
+        await LivePriceService.shared.start()
+        await fx
     }
 }

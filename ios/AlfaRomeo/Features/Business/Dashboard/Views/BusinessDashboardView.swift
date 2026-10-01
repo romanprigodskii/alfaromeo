@@ -53,6 +53,7 @@ struct BusinessDashboardView: View {
             await team.load(api: api, profileId: profileId, currentUserId: currentUserId)
         }
         .task { await prices.start() }
+        .task { await FXRateService.shared.start() }
     }
 
     // MARK: AI-инсайт строкой

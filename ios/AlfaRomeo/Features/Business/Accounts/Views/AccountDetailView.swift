@@ -10,6 +10,7 @@ struct AccountDetailView: View {
     @Environment(Router.self) private var router
     @State private var store = BusinessAccountsStore.shared
     @State private var prices = LivePriceService.shared
+    @State private var fx = FXRateService.shared
 
     private var item: BusinessAccountItem? { store.items.first { $0.id == accountId } }
 
@@ -37,6 +38,7 @@ struct AccountDetailView: View {
         .navigationTitle(item?.title ?? "Счёт")
         .navigationBarTitleDisplayMode(.inline)
         .task { await prices.start() }
+        .task { await fx.start() }
     }
 
     private func balanceCard(_ item: BusinessAccountItem) -> some View {
@@ -54,7 +56,7 @@ struct AccountDetailView: View {
                             .font(BrandFont.callout.weight(.medium))
                             .foregroundStyle(theme.textSecondary)
                             .monospacedDigit()
-                        livePill
+                        livePill(item.currency)
                     }
                 }
             }
@@ -69,7 +71,12 @@ struct AccountDetailView: View {
                 row("Валюта", item.currency.uppercased())
                 if item.showsRubEquivalent {
                     Divider().overlay(theme.border)
-                    row("Курс", "1 \(item.currency.uppercased()) ≈ \(CryptoFormat.rub(store.rubRate(currency: item.currency), fraction: 2))")
+                    if AccountValuation.isForeignFiat(item.currency) {
+                        row("Курс ЦБ на \(fx.dateText)",
+                            [fx.rateText(item.currency), fx.changeText(item.currency)].compactMap { $0 }.joined(separator: " · "))
+                    } else {
+                        row("Курс", "1 \(item.currency.uppercased()) ≈ \(CryptoFormat.rub(store.rubRate(currency: item.currency), fraction: 2))")
+                    }
                     Divider().overlay(theme.border)
                     row("Оценка в ₽", CryptoFormat.rub(item.rubValue))
                 }
@@ -87,10 +94,13 @@ struct AccountDetailView: View {
         .padding(.vertical, Spacing.sm)
     }
 
-    private var livePill: some View {
-        HStack(spacing: Spacing.xxs) {
-            Circle().fill(prices.isLive ? theme.success : theme.warning).frame(width: 6, height: 6)
-            Text(prices.isLive ? "live-курс" : "оффлайн")
+    /// Fiat → «курс ЦБ на dd.MM» (green once fetched live this session); stablecoins → the market pill.
+    private func livePill(_ currency: String) -> some View {
+        let fiat = AccountValuation.isForeignFiat(currency)
+        let live = fiat ? fx.isLive : prices.isLive
+        return HStack(spacing: Spacing.xxs) {
+            Circle().fill(live ? theme.success : theme.warning).frame(width: 6, height: 6)
+            Text(fiat ? fx.label : (live ? "live-курс" : "оффлайн"))
                 .font(BrandFont.micro.weight(.medium)).foregroundStyle(theme.textSecondary)
         }
     }

@@ -162,6 +162,22 @@ final class TransferFlowModel {
         return rawAmount
     }
 
+    /// Local currency of the abroad destination (ЦБ quotes all of them).
+    var abroadCurrency: String {
+        switch country {
+        case "Турция":    return "TRY"
+        case "Армения":   return "AMD"
+        case "ОАЭ":       return "AED"
+        case "Казахстан": return "KZT"
+        default:          return "RSD"   // Сербия
+        }
+    }
+
+    /// What the recipient gets in local currency at курс ЦБ (cross via ₽).
+    var recipientAmount: Double {
+        FXRateService.shared.convert(rubAmount, from: "RUB", to: abroadCurrency)
+    }
+
     /// The ₽-эквивалент shown for crypto rails (nil for fiat).
     var rubEquivalent: Double? { kind.isCrypto ? rubAmount : nil }
 

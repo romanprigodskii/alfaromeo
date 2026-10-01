@@ -3,7 +3,7 @@ import Foundation
 /// Aggregated, profile-scoped snapshot powering the Главный dashboard (§9.1, §10.2).
 ///
 /// Built by ``HomeViewModel`` from a single fan-out of profile-scoped ``APIClient`` calls, then read
-/// by the dashboard sections. The derived ₽ figures fold in live ``PriceSocket`` ticks so the unified
+/// by the dashboard sections. The derived ₽ figures fold in live ``LivePriceService`` ticks so the unified
 /// ₽-equivalent and the crypto valuation update in real time (§11.4).
 struct HomeDashboard {
     let profileId: String
@@ -21,10 +21,18 @@ struct HomeDashboard {
 
     // MARK: Derived — fiat
 
-    /// Sum of all ₽ balances (current + savings + digital ruble). The crypto *account* is valued via
-    /// ``wallets`` instead, so it is intentionally excluded here to avoid double counting.
-    var fiatRub: Double {
-        accounts.filter { $0.currency == "RUB" }.reduce(0) { $0 + $1.balance }
+    /// Sum of all fiat balances in ₽ (current + savings + digital ruble + currency accounts at курс ЦБ,
+    /// ``FXRateService``). The crypto *account* is valued via ``wallets`` instead, so it is intentionally
+    /// excluded here to avoid double counting.
+    @MainActor var fiatRub: Double {
+        let fx = FXRateService.shared
+        return accounts.filter { $0.type != .crypto && fx.isFiat($0.currency) }
+            .reduce(0) { $0 + fx.rubValue($1.balance, currency: $1.currency) }
+    }
+
+    /// Has a non-₽ fiat account → the header names the курс ЦБ date it was valued at.
+    @MainActor var hasForeignFiat: Bool {
+        accounts.contains { $0.type != .crypto && AccountValuation.isForeignFiat($0.currency) }
     }
 
     // MARK: Derived — crypto (live)
@@ -40,7 +48,7 @@ struct HomeDashboard {
     }
 
     /// The single ₽-equivalent shown in the header (§10.2): fiat + crypto.
-    func unifiedTotalRub(live: [String: Double]) -> Double {
+    @MainActor func unifiedTotalRub(live: [String: Double]) -> Double {
         fiatRub + cryptoValueRub(live: live)
     }
 
