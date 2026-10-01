@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Настройки (§9.8): Безопасность · Уведомления · Тема · Язык · Подписка. Each row pushes its screen
+/// Настройки (§9.8): Безопасность, Уведомления, Тема, Язык, Подписка. Each row pushes its screen
 /// in the surrounding navigation stack; Тема/Язык show the current choice inline. Backed by the
 /// persisted ``SettingsStore``.
 struct SettingsView: View {
@@ -9,33 +9,28 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                section {
-                    link(icon: "lock.shield.fill", tint: theme.accent, title: "Безопасность",
-                         subtitle: "Face ID, PIN, passkeys, устройства, лимиты") { SecuritySettingsView() }
-                    Divider().overlay(theme.border)
-                    link(icon: "bell.badge.fill", tint: theme.warning, title: "Уведомления",
-                         subtitle: "Push, операции, безопасность") { NotificationsSettingsView() }
+            VStack(alignment: .leading, spacing: Spacing.section) {
+                GroupedSection {
+                    link(icon: "lock.shield", title: "Безопасность",
+                         subtitle: "Face ID, код-пароль, устройства") { SecuritySettingsView() }
+                    link(icon: "bell", title: "Уведомления",
+                         value: settings.notifyPush ? "Вкл." : "Выкл.") { NotificationsSettingsView() }
                 }
 
-                section {
-                    link(icon: "paintpalette.fill", tint: theme.accent, title: "Тема",
+                GroupedSection {
+                    link(icon: "circle.lefthalf.filled", title: "Тема",
                          value: settings.themePreference.label) { ThemeSettingsView() }
-                    Divider().overlay(theme.border)
-                    link(icon: "globe", tint: theme.accent, title: "Язык",
+                    link(icon: "globe", title: "Язык",
                          value: settings.language.label) { LanguageSettingsView() }
                 }
 
-                section {
-                    link(icon: "star.circle.fill", tint: theme.accent, title: "Подписка",
+                GroupedSection(footer: "Настройки сохраняются на устройстве. Тема меняет оформление всего приложения.") {
+                    link(icon: "star", title: "Подписка",
                          subtitle: "Тариф и привилегии") { SubscriptionView() }
                 }
-
-                Text("Настройки сохраняются на устройстве. Тема меняет оформление всего приложения.")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                    .padding(.horizontal, Spacing.xs)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -44,18 +39,13 @@ struct SettingsView: View {
         .contentMargins(.bottom, 96, for: .scrollContent)
     }
 
-    private func section<Content: View>(@ViewBuilder _ content: @escaping () -> Content) -> some View {
-        SurfaceCard(padding: Spacing.sm) { VStack(spacing: 0) { content() } }
-    }
-
-    private func link<Destination: View>(icon: String, tint: Color, title: String,
+    private func link<Destination: View>(icon: String, title: String,
                                          subtitle: String? = nil, value: String? = nil,
                                          @ViewBuilder destination: @escaping () -> Destination) -> some View {
         NavigationLink { destination() } label: {
-            ListRow(icon: icon, iconTint: tint, title: title, subtitle: subtitle,
-                    value: value, showsChevron: true)
+            ListRow(icon: icon, title: title, subtitle: subtitle, value: value, showsChevron: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
     }
 }
 

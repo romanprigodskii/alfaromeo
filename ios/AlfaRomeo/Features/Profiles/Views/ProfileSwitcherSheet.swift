@@ -17,30 +17,23 @@ struct ProfileSwitcherSheet: View {
 
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    accountCard
+                VStack(alignment: .leading, spacing: Spacing.section) {
+                    accountHeader
 
-                    Text("Сменить профиль")
-                        .font(BrandFont.title)
-                        .foregroundStyle(theme.textPrimary)
-
-                    profileList
-                    addProfileLink
-
-                    if let error = model.error {
-                        Text(error).font(BrandFont.caption).foregroundStyle(theme.danger)
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        profileList
+                        if let error = model.error {
+                            Text(error).font(BrandFont.footnote).foregroundStyle(theme.danger)
+                                .padding(.horizontal, Spacing.md)
+                        }
                     }
 
-                    settingsCard(session: $session)
+                    settingsSection(session: $session)
 
-                    Divider().overlay(theme.border)
-
-                    debugLink
                     logoutButton
-
-                    Spacer(minLength: 0)
                 }
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(theme.background)
@@ -53,24 +46,25 @@ struct ProfileSwitcherSheet: View {
 
     // MARK: Account (Профиль и настройки, §9.8)
 
-    private var accountCard: some View {
+    private var accountHeader: some View {
         NavigationLink {
             ProfileView()
         } label: {
-            SurfaceCard(padding: Spacing.sm) {
-                HStack(spacing: Spacing.md) {
-                    Avatar(initials: session.avatarInitials, size: 44, ringColor: theme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(session.activeProfile?.displayName ?? session.activeProfile?.type.label ?? "Профиль")
-                            .font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Text("Профиль и настройки")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textSecondary)
+            HStack(spacing: Spacing.md) {
+                Avatar(initials: session.avatarInitials, size: 56)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.activeProfile?.displayName ?? session.activeProfile?.type.label ?? "Профиль")
+                        .font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Text("Профиль и настройки")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
+                Spacer(minLength: Spacing.sm)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
             }
+            .padding(.top, Spacing.sm)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -78,116 +72,87 @@ struct ProfileSwitcherSheet: View {
     // MARK: Profile list
 
     private var profileList: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                ForEach(Array(session.profiles.enumerated()), id: \.element.id) { index, profile in
-                    profileRow(profile)
-                    if index < session.profiles.count - 1 {
-                        Divider().overlay(theme.border)
-                    }
-                }
+        GroupedSection("Профили") {
+            ForEach(session.profiles) { profile in
+                profileRow(profile)
             }
+            NavigationLink {
+                AddProfileMenuView()
+            } label: {
+                ListRow(icon: "plus", title: "Добавить профиль", showsChevron: true)
+            }
+            .buttonStyle(.row)
         }
     }
 
     private func profileRow(_ profile: Profile) -> some View {
         let isActive = profile.id == session.activeProfile?.id
-        let marker = profile.type.markerColor
         let badgeTier = session.currentTier(for: profile.id, fallback: model.tiers[profile.id] ?? .base)
         return Button {
             Task {
                 if await model.switchTo(profile, session: session) { shell.dismiss() }
             }
         } label: {
-            HStack(spacing: Spacing.md) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(marker).frame(width: 4, height: 38)
-                Image(systemName: profile.type.icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(marker)
-                    .frame(width: 36, height: 36)
-                    .background(marker.opacity(0.16), in: Circle())
+            HStack(spacing: ListRow.glyphSpacing) {
+                // The glyph carries the profile's context colour (§5.2 marker) on a neutral circle.
+                GlyphCircle(systemImage: profile.type.icon, size: ListRow.glyphSize,
+                            tint: profile.type.markerColor)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.displayName ?? profile.type.label)
-                        .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Text(profile.type.label)
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Text(model.tiers[profile.id] != nil
+                         ? "\(profile.type.label), \(badgeTier.shortLabel)"
+                         : profile.type.label)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
                 Spacer(minLength: Spacing.sm)
-                if model.tiers[profile.id] != nil {
-                    Badge(kind: .text(badgeTier.shortLabel), tint: marker)
-                }
                 if isActive {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.accent)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.accent)
                 } else if model.switchingId == profile.id {
                     ProgressView().controlSize(.small)
                 }
             }
-            .frame(minHeight: 44)
-            .padding(.vertical, Spacing.xs)
+            .padding(.vertical, Spacing.sm)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
             .contentShape(Rectangle())
+            .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(profile.displayName ?? profile.type.label), \(profile.type.label)")
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
         .accessibilityHint(isActive ? "Активный профиль" : "Переключить профиль")
     }
 
-    private var addProfileLink: some View {
-        NavigationLink {
-            AddProfileMenuView()
-        } label: {
-            SurfaceCard(padding: Spacing.sm) {
-                ListRow(icon: "plus", title: "Добавить профиль",
-                        subtitle: "Личный · Бизнес", showsChevron: true)
-            }
-        }
-        .buttonStyle(.plain)
-    }
+    // MARK: Settings + debug
 
-    // MARK: Settings
-
-    private func settingsCard(session: Bindable<AppSession>) -> some View {
-        SurfaceCard(padding: Spacing.md) {
-            Toggle(isOn: session.requireBiometricForBusinessSwitch) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Face ID при входе в бизнес").font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                    Text("Повторный биометрический unlock (§5.2).")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                }
-            }
-            .tint(theme.accent)
-        }
-    }
-
-    // MARK: Debug + logout
-
-    private var debugLink: some View {
-        NavigationLink {
-            NetworkDebugView()
-        } label: {
-            SurfaceCard(padding: Spacing.sm) {
-                ListRow(icon: "ladybug.fill", title: "Сетевой слой · debug",
+    private func settingsSection(session: Bindable<AppSession>) -> some View {
+        GroupedSection("Настройки") {
+            SettingsToggleRow(icon: "faceid", title: "Face ID при входе в бизнес",
+                              subtitle: "Повторная биометрия", isOn: session.requireBiometricForBusinessSwitch)
+            NavigationLink {
+                NetworkDebugView()
+            } label: {
+                ListRow(icon: "ladybug", title: "Сетевой слой",
                         subtitle: "Моки, live-тики, AI-стрим", showsChevron: true)
             }
+            .buttonStyle(.row)
         }
-        .buttonStyle(.plain)
     }
+
+    // MARK: Logout
 
     private var logoutButton: some View {
         Button { session.signOut() } label: {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                Text("Выйти")
-            }
-            .font(BrandFont.headline)
-            .foregroundStyle(theme.danger)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 52)
-            .background(theme.danger.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            Text("Выйти")
+                .font(BrandFont.headline)
+                .foregroundStyle(theme.danger)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 52)
+                .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 }

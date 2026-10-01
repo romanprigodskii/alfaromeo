@@ -6,9 +6,9 @@ struct Entitlements: Equatable, Sendable {
     enum CashbackLevel: String { case basic, raised, max
         var label: String {
             switch self {
-            case .basic:  return "Базовый · 1 категория"
-            case .raised: return "Повышенный · супер-кэшбек"
-            case .max:    return "Максимальный · все категории"
+            case .basic:  return "Базовый, 1 категория"
+            case .raised: return "Повышенный, супер-кэшбек"
+            case .max:    return "Максимальный, все категории"
             }
         }
     }
@@ -33,8 +33,8 @@ struct Entitlements: Equatable, Sendable {
     enum SupportLevel: String { case standard, priority, concierge
         var label: String {
             switch self {
-            case .standard:  return "Стандарт (AI + очередь)"
-            case .priority:  return "Приoритет"
+            case .standard:  return "Стандарт: AI и очередь"
+            case .priority:  return "Приоритет"
             case .concierge: return "Консьерж 24/7"
             }
         }
@@ -42,9 +42,9 @@ struct Entitlements: Equatable, Sendable {
     enum TravelPerks: String { case none, partner, full
         var label: String {
             switch self {
-            case .none:    return "—"
+            case .none:    return "Нет"
             case .partner: return "Скидки у партнёров"
-            case .full:    return "Лаунж · страховка · консьерж"
+            case .full:    return "Лаунж, страховка, консьерж"
             }
         }
     }
@@ -63,7 +63,7 @@ struct Entitlements: Equatable, Sendable {
     let proactiveAI: Bool
 
     var maxCardsLabel: String { maxCards.map(String.init) ?? "∞" }
-    var aiLimitLabel: String { aiRequestsPerDay.map { "\($0)/день" } ?? "Без лимита" }
+    var aiLimitLabel: String { aiRequestsPerDay.map { "\($0) в день" } ?? "Без лимита" }
 
     /// Gating helper: can the profile have one more card at this tier?
     func canAddCard(currentCount: Int) -> Bool {

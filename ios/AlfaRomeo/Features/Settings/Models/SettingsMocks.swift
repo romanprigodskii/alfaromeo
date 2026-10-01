@@ -31,8 +31,8 @@ struct CloseContact: Identifiable, Hashable {
     let initials: String
 
     static let demo: [CloseContact] = [
-        CloseContact(id: "c1", name: "Мария Романова", relation: "Супруга · общий бюджет", initials: "М"),
-        CloseContact(id: "c2", name: "Пётр Романов", relation: "Сын · детская карта", initials: "П"),
+        CloseContact(id: "c1", name: "Мария Романова", relation: "Супруга, общий бюджет", initials: "М"),
+        CloseContact(id: "c2", name: "Пётр Романов", relation: "Сын, детская карта", initials: "П"),
     ]
 }
 
@@ -45,10 +45,10 @@ struct DeviceSession: Identifiable, Hashable {
     let isCurrent: Bool
 
     static let demo: [DeviceSession] = [
-        DeviceSession(id: "d1", name: "iPhone 17 Pro", detail: "Это устройство · Москва · сейчас",
+        DeviceSession(id: "d1", name: "iPhone 17 Pro", detail: "Москва, сейчас",
                       icon: "iphone", isCurrent: true),
-        DeviceSession(id: "d2", name: "iPad Air", detail: "Москва · 2 дня назад", icon: "ipad", isCurrent: false),
-        DeviceSession(id: "d3", name: "Chrome · macOS", detail: "Веб-кабинет · 5 дней назад",
+        DeviceSession(id: "d2", name: "iPad Air", detail: "Москва, 2 дня назад", icon: "ipad", isCurrent: false),
+        DeviceSession(id: "d3", name: "Chrome · macOS", detail: "Веб-кабинет, 5 дней назад",
                       icon: "desktopcomputer", isCurrent: false),
     ]
 }

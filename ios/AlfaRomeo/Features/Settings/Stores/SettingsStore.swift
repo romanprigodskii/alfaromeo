@@ -52,15 +52,8 @@ final class SettingsStore {
 
     func operationLimitLabel(_ value: Double) -> String {
         guard value > 0 else { return "Без лимита" }
-        let n = Self.rubFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
-        return "\(n) ₽"
+        return MoneyFormat.fiat(value)
     }
-
-    private static let rubFormatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.maximumFractionDigits = 0
-        return f
-    }()
 
     private enum K {
         static let theme = "settings.theme"

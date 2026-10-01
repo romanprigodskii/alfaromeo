@@ -28,40 +28,38 @@ struct SecuritySettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 authSection
                 limitsSection
                 devicesSection
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Безопасность")
         .navigationBarTitleDisplayMode(.inline)
         .contentMargins(.bottom, 96, for: .scrollContent)
-        .animation(.snappy, value: endedSessions)
+        .animation(Motion.snappy, value: endedSessions)
     }
 
     // MARK: Аутентификация
 
     private var authSection: some View {
-        section("Вход и подтверждение") {
-            SurfaceCard(padding: Spacing.md) {
-                VStack(spacing: Spacing.md) {
-                    toggleRow(icon: bio.systemImage, title: bio == .none ? "Биометрия" : bio.label,
-                              subtitle: "Вход и подтверждение операций", isOn: faceIDBinding)
-                    Divider().overlay(theme.border)
-                    toggleRow(icon: "lock.fill", title: "Код-пароль (PIN)",
-                              subtitle: "Запасной способ входа", isOn: $settings.pinEnabled)
-                    Divider().overlay(theme.border)
-                    toggleRow(icon: "key.fill", title: "Passkeys",
-                              subtitle: "Беспарольный вход по ключу устройства", isOn: $settings.passkeysEnabled)
-                }
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            GroupedSection("Вход и подтверждение") {
+                SettingsToggleRow(icon: bio.systemImage, title: bio == .none ? "Биометрия" : bio.label,
+                                  subtitle: "Вход и подтверждение операций", isOn: faceIDBinding)
+                SettingsToggleRow(icon: "lock", title: "Код-пароль",
+                                  subtitle: "Запасной способ входа", isOn: $settings.pinEnabled)
+                SettingsToggleRow(icon: "key", title: "Passkeys",
+                                  subtitle: "Вход по ключу устройства", isOn: $settings.passkeysEnabled)
             }
             if biometricError {
                 Text("Не удалось подтвердить \(bio.label). Биометрия не включена.")
-                    .font(BrandFont.caption).foregroundStyle(theme.danger)
+                    .font(BrandFont.footnote).foregroundStyle(theme.danger)
+                    .padding(.horizontal, Spacing.md)
             }
         }
     }
@@ -69,18 +67,22 @@ struct SecuritySettingsView: View {
     // MARK: Лимиты
 
     private var limitsSection: some View {
-        section("Лимит на операцию") {
-            SurfaceCard(padding: Spacing.md) {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Text("Операции свыше лимита требуют подтверждения биометрией (§10.3).")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    FlowChips(values: settings.operationLimitPresets,
-                              selected: settings.perOperationLimit,
-                              label: { settings.operationLimitLabel($0) },
-                              onSelect: { settings.perOperationLimit = $0 },
-                              theme: theme)
+        GroupedSection("Лимит на операцию",
+                       footer: "Операции свыше лимита нужно подтвердить биометрией.") {
+            ForEach(settings.operationLimitPresets, id: \.self) { value in
+                let isOn = value == settings.perOperationLimit
+                Button { settings.perOperationLimit = value } label: {
+                    HStack(spacing: Spacing.sm) {
+                        ListRow(title: settings.operationLimitLabel(value))
+                        if isOn {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(theme.accent)
+                        }
+                    }
                 }
+                .buttonStyle(.row)
+                .accessibilityAddTraits(isOn ? .isSelected : [])
             }
         }
     }
@@ -88,100 +90,34 @@ struct SecuritySettingsView: View {
     // MARK: Устройства и сессии
 
     private var devicesSection: some View {
-        section("Устройства и сессии") {
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(DeviceSession.demo.enumerated()), id: \.element.id) { index, device in
-                        deviceRow(device)
-                        if index < DeviceSession.demo.count - 1 { Divider().overlay(theme.border) }
-                    }
-                }
-            }
+        GroupedSection("Устройства") {
+            ForEach(DeviceSession.demo) { device in deviceRow(device) }
         }
     }
 
     private func deviceRow(_ device: DeviceSession) -> some View {
         let ended = endedSessions.contains(device.id)
-        return HStack(spacing: Spacing.md) {
-            Image(systemName: device.icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(device.isCurrent ? theme.success : theme.textSecondary)
-                .frame(width: 36, height: 36)
-                .background((device.isCurrent ? theme.success : theme.textSecondary).opacity(0.14),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        return HStack(spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: device.icon, size: ListRow.glyphSize)
             VStack(alignment: .leading, spacing: 2) {
-                Text(device.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+                Text(device.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                 Text(ended ? "Сессия завершена" : device.detail)
-                    .font(BrandFont.caption).foregroundStyle(ended ? theme.danger : theme.textSecondary)
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             }
             Spacer(minLength: Spacing.sm)
             if device.isCurrent {
-                Badge(kind: .text("Текущее"), tint: theme.success)
+                Badge(kind: .text("Это устройство"), tint: theme.success)
             } else if !ended {
                 Button("Завершить") { endedSessions.insert(device.id) }
-                    .font(BrandFont.caption.weight(.semibold))
+                    .font(BrandFont.body(15, weight: .medium))
                     .foregroundStyle(theme.danger)
                     .buttonStyle(.plain)
             }
         }
         .padding(.vertical, Spacing.sm)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
         .opacity(ended ? 0.5 : 1)
-    }
-
-    // MARK: Builders
-
-    private func toggleRow(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(theme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                }
-            }
-        }
-        .tint(theme.accent)
-    }
-
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(title.uppercased())
-                .font(BrandFont.micro).tracking(1.5).foregroundStyle(theme.textSecondary)
-            content()
-        }
-    }
-}
-
-/// Selectable value chips (used for the operation-limit presets).
-private struct FlowChips: View {
-    let values: [Double]
-    let selected: Double
-    let label: (Double) -> String
-    let onSelect: (Double) -> Void
-    let theme: Theme
-
-    var body: some View {
-        let columns = [GridItem(.adaptive(minimum: 96), spacing: Spacing.sm)]
-        LazyVGrid(columns: columns, alignment: .leading, spacing: Spacing.sm) {
-            ForEach(values, id: \.self) { value in
-                let isOn = value == selected
-                Button { onSelect(value) } label: {
-                    Text(label(value))
-                        .font(BrandFont.callout.weight(.medium))
-                        .foregroundStyle(isOn ? theme.onAccent : theme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, Spacing.sm)
-                        .background(isOn ? theme.accent : theme.elevated,
-                                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                            .stroke(isOn ? .clear : theme.border, lineWidth: 1))
-                }
-                .buttonStyle(PressableButtonStyle())
-            }
-        }
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 }
 

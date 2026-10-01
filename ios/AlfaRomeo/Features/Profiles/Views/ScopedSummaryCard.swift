@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A compact, profile-scoped snapshot shown on the dashboard. Reloads via ``APIClient`` whenever
-/// the active profile changes — visible proof that data is scoped per `profileId` (§5.3).
+/// the active profile changes: visible proof that data is scoped per `profileId` (§5.3).
 struct ScopedSummaryCard: View {
     @Environment(AppSession.self) private var session
     @Environment(\.apiClient) private var api
@@ -25,7 +25,6 @@ struct ScopedSummaryCard: View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack(spacing: Spacing.sm) {
-                    Circle().fill(theme.accent).frame(width: 10, height: 10)
                     Text(session.activeProfile?.displayName ?? "Профиль")
                         .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                     Spacer()
@@ -42,8 +41,8 @@ struct ScopedSummaryCard: View {
                     }
                 }
 
-                Text("scoped · \(session.activeProfile?.id ?? "—")")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("ID профиля: \(session.activeProfile?.id ?? "нет")")
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             }
         }
         .task(id: session.activeProfile?.id) { await load() }
@@ -51,8 +50,8 @@ struct ScopedSummaryCard: View {
 
     private func stat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(value).font(BrandFont.headline).monospacedDigit().foregroundStyle(theme.textPrimary)
+            Text(label).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
         }
     }
 

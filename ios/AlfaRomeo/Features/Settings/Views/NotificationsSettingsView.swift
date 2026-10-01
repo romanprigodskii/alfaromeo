@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Уведомления (§9.8) — push channels. Toggles persist in ``SettingsStore`` (demo: no real push
+/// Уведомления (§9.8): push channels. Toggles persist in ``SettingsStore`` (demo: no real push
 /// registration yet).
 struct NotificationsSettingsView: View {
     @Environment(\.theme) private var theme
@@ -8,52 +8,32 @@ struct NotificationsSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                SurfaceCard(padding: Spacing.md) {
-                    VStack(spacing: Spacing.md) {
-                        row(icon: "bell.badge.fill", title: "Push-уведомления",
-                            subtitle: "Главный выключатель", isOn: $settings.notifyPush)
-                        Divider().overlay(theme.border)
-                        row(icon: "arrow.left.arrow.right", title: "Операции и платежи",
-                            subtitle: "Списания, поступления, статусы", isOn: $settings.notifyTransactions)
-                            .disabled(!settings.notifyPush)
-                        Divider().overlay(theme.border)
-                        row(icon: "lock.shield.fill", title: "Безопасность",
-                            subtitle: "Входы, новые устройства, подтверждения", isOn: $settings.notifySecurity)
-                            .disabled(!settings.notifyPush)
-                        Divider().overlay(theme.border)
-                        row(icon: "tag.fill", title: "Акции и предложения",
-                            subtitle: "Кэшбек, тарифы, партнёрские офферы", isOn: $settings.notifyMarketing)
-                            .disabled(!settings.notifyPush)
-                    }
+            VStack(alignment: .leading, spacing: Spacing.section) {
+                GroupedSection {
+                    SettingsToggleRow(icon: "bell", title: "Push-уведомления",
+                                      subtitle: "Все каналы", isOn: $settings.notifyPush)
                 }
-                Text("Канал «Безопасность» рекомендуем держать включённым.")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+
+                GroupedSection("Каналы", footer: "Канал «Безопасность» рекомендуем держать включённым.") {
+                    SettingsToggleRow(icon: "arrow.left.arrow.right", title: "Операции и платежи",
+                                      subtitle: "Списания, поступления, статусы", isOn: $settings.notifyTransactions)
+                        .disabled(!settings.notifyPush)
+                    SettingsToggleRow(icon: "lock.shield", title: "Безопасность",
+                                      subtitle: "Входы, новые устройства, подтверждения", isOn: $settings.notifySecurity)
+                        .disabled(!settings.notifyPush)
+                    SettingsToggleRow(icon: "tag", title: "Акции и предложения",
+                                      subtitle: "Кэшбек, тарифы, партнёры", isOn: $settings.notifyMarketing)
+                        .disabled(!settings.notifyPush)
+                }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Уведомления")
         .navigationBarTitleDisplayMode(.inline)
-        .opacity(1)
-        .animation(.snappy, value: settings.notifyPush)
-    }
-
-    private func row(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(theme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                }
-            }
-        }
-        .tint(theme.accent)
+        .animation(Motion.snappy, value: settings.notifyPush)
     }
 }
 

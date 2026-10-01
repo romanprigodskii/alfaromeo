@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Язык (§9.8) — stub picker. The choice persists in ``SettingsStore``; full localization is a later
+/// Язык (§9.8): stub picker. The choice persists in ``SettingsStore``; full localization is a later
 /// phase, so the interface stays Russian for now (stated honestly).
 struct LanguageSettingsView: View {
     @Environment(\.theme) private var theme
@@ -8,20 +8,11 @@ struct LanguageSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(AppLanguage.allCases.enumerated()), id: \.element.id) { index, lang in
-                            row(lang)
-                            if index < AppLanguage.allCases.count - 1 { Divider().overlay(theme.border) }
-                        }
-                    }
-                }
-                Text("Локализация интерфейса появится в следующем обновлении — сейчас приложение на русском (демо).")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            GroupedSection(footer: "Пока интерфейс только на русском. Перевод появится в следующем обновлении.") {
+                ForEach(AppLanguage.allCases) { lang in row(lang) }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -32,21 +23,19 @@ struct LanguageSettingsView: View {
     private func row(_ lang: AppLanguage) -> some View {
         let isOn = settings.language == lang
         return Button {
-            withAnimation(.snappy) { settings.language = lang }
+            withAnimation(Motion.snappy) { settings.language = lang }
         } label: {
-            HStack(spacing: Spacing.md) {
-                Text(lang.nativeFlag).font(.system(size: 24))
-                    .frame(width: 36, height: 36)
-                Text(lang.label).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                Spacer()
+            HStack(spacing: Spacing.sm) {
+                ListRow(title: lang.label)
                 if isOn {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.accent)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.accent)
                 }
             }
-            .padding(.vertical, Spacing.sm)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 

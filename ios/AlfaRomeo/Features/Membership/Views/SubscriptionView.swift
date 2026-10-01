@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// «Подписка / Тариф» (§4.3, §9.3): compare the tiers for the active profile's track and
-/// upgrade/downgrade. Activation is a live mock — entitlements update immediately.
+/// upgrade/downgrade. Activation is a live mock: entitlements update immediately.
 struct SubscriptionView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.apiClient) private var api
@@ -16,10 +16,7 @@ struct SubscriptionView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Text("Тир — глобальная ось привилегий: кэшбек, лимиты крипты, AI, мобильный пакет, поддержка.")
-                    .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 liveEntitlements
 
                 ForEach(tiers, id: \.self) { tier in
@@ -30,7 +27,8 @@ struct SubscriptionView: View {
                     )
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -40,29 +38,33 @@ struct SubscriptionView: View {
         .task { baseTier = (try? await api.subscription(profileId: profileId))?.tier ?? .base }
     }
 
-    /// Live snapshot of the active entitlements — updates the instant a tier is selected.
+    /// Live snapshot of the active entitlements; updates the instant a tier is selected.
     private var liveEntitlements: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text("Активный тариф").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Spacer()
-                    Badge(kind: .text(effectiveTier.shortLabel), tint: theme.accent)
-                }
-                Text(effectiveTier.displayName).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                HStack(spacing: Spacing.xl) {
-                    chip("Карты", entitlements.maxCardsLabel)
-                    chip("AI", entitlements.aiLimitLabel)
-                    chip("Спред", entitlements.cryptoSpread.label.replacingOccurrences(of: " спред", with: ""))
-                }
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Текущий тариф").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                Text(effectiveTier.displayName).font(BrandFont.title1).foregroundStyle(theme.textPrimary)
+                    .contentTransition(.numericText())
             }
+            HStack(alignment: .top, spacing: Spacing.xl) {
+                stat("Карты", entitlements.maxCardsLabel)
+                stat("AI", entitlements.aiLimitLabel)
+                stat("Спред", entitlements.cryptoSpread.label.replacingOccurrences(of: " спред", with: ""))
+            }
+            Text("Тариф определяет кэшбек, лимиты, AI, мобильную связь и поддержку.")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 
-    private func chip(_ label: String, _ value: String) -> some View {
+    private func stat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(BrandFont.headline).foregroundStyle(theme.textPrimary).lineLimit(1)
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(value).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                .monospacedDigit().lineLimit(1)
+            Text(label).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
         }
     }
 }

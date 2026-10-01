@@ -1,29 +1,19 @@
 import SwiftUI
 
-/// Тема (§9.8) — Система / Светлая / Тёмная. Writing the choice into ``SettingsStore`` re-themes the
+/// Тема (§9.8): Система / Светлая / Тёмная. Writing the choice into ``SettingsStore`` re-themes the
 /// whole app live (read at ``RootView``). The dark palette already exists in ``Theme``; this is the
-/// access to it. Does not affect the scoped dark «проф-режим» of crypto trading (that forces its own
-/// scheme locally).
+/// access to it.
 struct ThemeSettingsView: View {
     @Environment(\.theme) private var theme
     @State private var settings = SettingsStore.shared
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(ThemePreference.allCases.enumerated()), id: \.element.id) { index, pref in
-                            row(pref)
-                            if index < ThemePreference.allCases.count - 1 { Divider().overlay(theme.border) }
-                        }
-                    }
-                }
-                Text("«Система» следует оформлению устройства. Светлая — основная схема банка; тёмная доступна целиком.")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            GroupedSection(footer: "«Система» повторяет оформление устройства. Основная схема банка светлая.") {
+                ForEach(ThemePreference.allCases) { pref in row(pref) }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -34,23 +24,19 @@ struct ThemeSettingsView: View {
     private func row(_ pref: ThemePreference) -> some View {
         let isOn = settings.themePreference == pref
         return Button {
-            withAnimation(.snappy) { settings.themePreference = pref }
+            withAnimation(Motion.snappy) { settings.themePreference = pref }
         } label: {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: pref.icon)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(theme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                Text(pref.label).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                Spacer()
+            HStack(spacing: Spacing.sm) {
+                ListRow(icon: pref.icon, title: pref.label)
                 if isOn {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.accent)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.accent)
                 }
             }
-            .padding(.vertical, Spacing.sm)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 

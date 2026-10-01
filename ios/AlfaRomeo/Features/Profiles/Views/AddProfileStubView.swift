@@ -7,7 +7,7 @@ enum AddProfileKind: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// Entry points shown in the "+ Добавить профиль" menu under the demo. Family/child are hidden
-    /// (no real onboarding flow yet) — their stub screens stay reachable in code for later phases
+    /// (no real onboarding flow yet); their stub screens stay reachable in code for later phases
     /// (§5.1). Product decision, not a bug.
     static var demoMenuKinds: [AddProfileKind] { [.personal, .business] }
 
@@ -32,8 +32,8 @@ enum AddProfileKind: String, CaseIterable, Identifiable {
     var menuSubtitle: String {
         switch self {
         case .personal: return "Второй личный профиль"
-        case .business: return "ИП / ООО / самозанятый — Ромео-Бизнес (§8)"
-        case .family:   return "Общий бюджет с «Близкими»"
+        case .business: return "ИП, ООО или самозанятый"
+        case .family:   return "Общий бюджет с близкими"
         case .child:    return "Родительский контроль, детская карта"
         }
     }
@@ -49,25 +49,25 @@ enum AddProfileKind: String, CaseIterable, Identifiable {
 
     var ctaTitle: String {
         switch self {
-        case .business: return "Открыть бизнес-онбординг (демо)"
-        default:        return "Создать профиль (демо)"
+        case .business: return "Создать бизнес-профиль"
+        default:        return "Создать профиль"
         }
     }
 
     var blurb: String {
         switch self {
-        case .personal: return "Второй личный профиль под тем же паспортом — отдельные счета, карты и лимиты."
-        case .business: return "Бизнес-онбординг (§8) — заглушка. Демо создаст бизнес-профиль и переключит режим."
-        case .family:   return "Семейный/совместный профиль (§5.1) — заглушка точки входа."
-        case .child:    return "Детский профиль с родительским контролем (§5.1) — заглушка точки входа."
+        case .personal: return "Второй личный профиль по тому же паспорту: отдельные счета, карты и лимиты."
+        case .business: return "Приложение создаст бизнес-профиль и переключится в бизнес-режим."
+        case .family:   return "Совместный профиль для семьи."
+        case .child:    return "Детский профиль с родительским контролем."
         }
     }
 
     var bullets: [String] {
         switch self {
-        case .personal: return ["Отдельные счета и карты", "Свои лимиты и тир", "Общий KYC"]
-        case .business: return ["ОГРН/ИНН и роли учредителей", "РКО · эквайринг · зарплаты", "Графитовая тема и свой таб-бар"]
-        case .family:   return ["Общий счёт и цели", "Доступ для «Близких»", "Совместные бюджеты"]
+        case .personal: return ["Отдельные счета и карты", "Свои лимиты и тариф", "Один паспорт на все профили"]
+        case .business: return ["ОГРН/ИНН и роли учредителей", "РКО, эквайринг, зарплаты", "Графитовая тема и свой таб-бар"]
+        case .family:   return ["Общий счёт и цели", "Доступ для близких", "Совместные бюджеты"]
         case .child:    return ["Привязан к родителю", "Лимиты, категории, геозоны", "Детская карта"]
         }
     }
@@ -84,38 +84,31 @@ struct AddProfileStubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 HStack(spacing: Spacing.md) {
-                    Image(systemName: kind.profileType.icon)
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundStyle(kind.profileType.markerColor)
-                        .frame(width: 56, height: 56)
-                        .background(kind.profileType.markerColor.opacity(0.16), in: Circle())
+                    GlyphCircle(systemImage: kind.profileType.icon, size: 56,
+                                tint: kind.profileType.markerColor)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(kind.title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                        Text(kind.menuSubtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        Text(kind.title).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                        Text(kind.menuSubtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     }
                 }
 
-                Text(kind.blurb).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(kind.bullets.enumerated()), id: \.offset) { index, bullet in
-                            ListRow(icon: "checkmark", title: bullet)
-                            if index < kind.bullets.count - 1 {
-                                Divider().overlay(theme.border)
-                            }
-                        }
+                GroupedSection(footer: kind.blurb) {
+                    ForEach(kind.bullets, id: \.self) { bullet in
+                        ListRow(title: bullet)
                     }
                 }
 
-                PrimaryButton(title: kind.ctaTitle, icon: "arrow.right") { create() }
-
-                Text("Полноценный флоу — в соответствующей фазе. Сейчас это заглушка точки входа.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                VStack(spacing: Spacing.sm) {
+                    PrimaryButton(title: kind.ctaTitle) { create() }
+                    Text("Демо: полный сценарий открытия появится позже.")
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
