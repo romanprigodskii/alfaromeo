@@ -41,10 +41,10 @@ enum TransferKind: String, Hashable, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .betweenAccounts: return "Свои счета и кошельки"
-        case .byPhone:         return "СБП · мгновенно"
+        case .byPhone:         return "СБП, без комиссии"
         case .byCard:          return "В любой банк"
         case .byRequisites:    return "Юр- и физлицам"
-        case .abroad:          return "Через ЭПР · ₽/стейбл"
+        case .abroad:          return "Через ЭПР, в ₽ или стейблкоинах"
         case .cryptoToContact: return "Контакту по номеру"
         case .digitalRubleQR:  return "Универсальный QR"
         }
@@ -76,9 +76,6 @@ enum TransferKind: String, Hashable, CaseIterable, Identifiable {
 
     /// Crypto rail: amount carries a ₽-эквивалент by mock rate and counts against the неквал-лимит.
     var isCrypto: Bool { self == .cryptoToContact }
-
-    /// Cold crypto/AI gradient (§13.1) for the "future money" rails — visually separates from fiat.
-    var usesCryptoGradient: Bool { self == .cryptoToContact || self == .digitalRubleQR }
 
     /// The verb shown on the confirm button.
     var actionVerb: String { isCrypto ? "Отправить" : "Перевести" }

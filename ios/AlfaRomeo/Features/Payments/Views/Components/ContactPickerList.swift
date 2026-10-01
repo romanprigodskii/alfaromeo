@@ -22,19 +22,16 @@ struct ContactPickerList: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             searchField
 
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(filtered.enumerated()), id: \.element.id) { index, contact in
+            GroupedSection {
+                if filtered.isEmpty {
+                    Text("Контакт не найден")
+                        .font(BrandFont.bodyM)
+                        .foregroundStyle(theme.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+                } else {
+                    ForEach(filtered) { contact in
                         Button { onSelect(contact) } label: { row(contact) }
-                            .buttonStyle(.plain)
-                        if index < filtered.count - 1 { Divider().overlay(theme.border) }
-                    }
-                    if filtered.isEmpty {
-                        Text("Контакт не найден")
-                            .font(BrandFont.callout)
-                            .foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, Spacing.md)
+                            .buttonStyle(.row)
                     }
                 }
             }
@@ -45,44 +42,56 @@ struct ContactPickerList: View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "magnifyingglass").foregroundStyle(theme.textSecondary)
             TextField("Имя или телефон", text: $query)
-                .font(BrandFont.body())
+                .font(BrandFont.bodyM)
                 .foregroundStyle(theme.textPrimary)
                 .autocorrectionDisabled()
         }
-        .padding(Spacing.md)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+        .padding(.horizontal, Spacing.md)
+        .frame(minHeight: 48)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     private func row(_ contact: PaymentContact) -> some View {
-        HStack(spacing: Spacing.md) {
-            Avatar(initials: contact.initials, size: 40)
+        HStack(spacing: ListRow.glyphSpacing) {
+            Avatar(initials: contact.initials, size: ListRow.glyphSize)
             VStack(alignment: .leading, spacing: 2) {
-                Text(contact.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                Text(secondary(contact)).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(contact.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                Text(secondary(contact)).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
             Spacer(minLength: Spacing.sm)
             if showsWalletHint && !contact.hasWallet {
-                Badge(kind: .text("Инвайт"), tint: theme.accent)
+                Badge(kind: .text("Инвайт"))
             }
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textSecondary)
+            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
         }
         .padding(.vertical, Spacing.sm)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
         .contentShape(Rectangle())
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private func secondary(_ contact: PaymentContact) -> String {
+        let phone = Self.displayPhone(contact.phone)
         if showsWalletHint {
-            return contact.hasWallet ? "\(contact.phone) · \(contact.walletShort ?? "кошелёк")" : "\(contact.phone) · без кошелька"
+            return contact.hasWallet ? "\(phone) · \(contact.walletShort ?? "кошелёк")" : "\(phone) · без кошелька"
         }
-        return "\(contact.phone) · \(contact.bank)"
+        return "\(phone) · \(contact.bank)"
+    }
+
+    /// «+79129257878» → «+7 912 925-78-78»; anything that isn't a Russian 11-digit number passes through.
+    static func displayPhone(_ raw: String) -> String {
+        let d = Array(raw.filter(\.isNumber))
+        guard d.count == 11, d[0] == "7" || d[0] == "8" else { return raw }
+        let s = { (r: Range<Int>) in String(d[r]) }
+        return "+7\u{00A0}\(s(1..<4))\u{00A0}\(s(4..<7))-\(s(7..<9))-\(s(9..<11))"
     }
 }
 
 #Preview {
     ScrollView {
         ContactPickerList(contacts: PaymentsMockData.contacts, showsWalletHint: true) { _ in }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.default.background)

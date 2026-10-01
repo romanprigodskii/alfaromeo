@@ -99,14 +99,12 @@ enum BillerSection: String, Hashable, Identifiable {
 
 // MARK: - Offers / templates / autopayments
 
-/// An offer for the hub banner (§9.2 «баннер офферов, как реф-скрин»).
+/// An offer on the payments hub (§9.2), shown as a plain row.
 struct PaymentOffer: Identifiable, Hashable {
     let id: String
     let title: String
     let subtitle: String
-    let badge: String?
     let icon: String
-    var gradient: Bool = false    // cold crypto/AI gradient vs. surface
 }
 
 /// A saved transfer template (§9.2 «Шаблоны»).

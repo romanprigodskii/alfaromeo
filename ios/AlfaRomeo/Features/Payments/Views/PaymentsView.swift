@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Платежи — transfers & payments hub root (§9.2). Quick tiles (Мои платежи / Счета ЖКУ / Штрафы),
-/// the offers banner, the seven transfer rails, supplier payments, and templates/autopayments. Every
-/// rail pushes the unified ``TransferFlowView`` via ``PaymentsRoute``; the section title + chrome are
-/// owned by the surrounding ``SectionScaffold``.
+/// Платежи — transfers & payments hub root (§9.2). A quick-action row (Оплата / Мои платежи / ЖКУ /
+/// Штрафы), the seven transfer rails, supplier payments + templates, and the offers as plain rows.
+/// Every rail pushes the unified ``TransferFlowView`` via ``PaymentsRoute``; the section title + chrome
+/// are owned by the surrounding ``SectionScaffold``.
 struct PaymentsView: View {
     @Environment(Router.self) private var router
     @Environment(\.apiClient) private var api
@@ -14,14 +14,14 @@ struct PaymentsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                payEntry
-                quickTiles
-                offers
+            VStack(alignment: .leading, spacing: Spacing.section) {
+                quickActions
                 transfers
                 more
+                offers
             }
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -30,115 +30,92 @@ struct PaymentsView: View {
         .task { await model.load(api: api, session: session) }
     }
 
-    // MARK: Оплата (§10.3 / §9.2) — точка входа в хаб «Оплата», перенесена сюда с дашборда (Home)
+    // MARK: Quick actions (§9.2): «Оплата» (QR / NFC / СБП / цифровой ₽) + the three biller hubs
 
-    private var payEntry: some View {
-        Button { router.push(PaymentsRoute.pay) } label: {
-            SurfaceCard(padding: Spacing.sm) {
-                ListRow(icon: "qrcode.viewfinder", title: "Оплата",
-                        subtitle: "QR · NFC · СБП · цифровой ₽", showsChevron: true)
+    private var quickActions: some View {
+        QuickActionRow {
+            QuickActionButton("Оплата", systemImage: "qrcode.viewfinder") {
+                router.push(PaymentsRoute.pay)
             }
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, Spacing.lg)
-    }
-
-    // MARK: Quick tiles (§9.2 «плитки»)
-
-    private var quickTiles: some View {
-        HStack(spacing: Spacing.md) {
             ForEach(model.sections) { section in
-                QuickActionTile(icon: section.icon, title: section.title,
-                                subtitle: subtitle(for: section), tint: tint(for: section)) {
+                QuickActionButton(shortTitle(for: section), systemImage: section.icon) {
                     router.push(PaymentsRoute.section(section))
                 }
             }
         }
-        .padding(.horizontal, Spacing.lg)
     }
 
-    private func subtitle(for section: BillerSection) -> String {
+    private func shortTitle(for section: BillerSection) -> String {
         switch section {
-        case .myPayments: return "Сохранённые"
-        case .utilities:  return "Начисления"
-        case .fines:      return "По номеру авто"
-        }
-    }
-    private func tint(for section: BillerSection) -> Color {
-        switch section {
-        case .myPayments: return theme.accent     // профиль-акцент
-        case .utilities:  return theme.warning    // энергия/ЖКУ — янтарный
-        case .fines:      return theme.danger     // штрафы — красный
+        case .myPayments: return "Мои платежи"
+        case .utilities:  return "ЖКУ"
+        case .fines:      return "Штрафы"
         }
     }
 
-    // MARK: Offers banner
-
-    private var offers: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionLabel("Предложения").padding(.horizontal, Spacing.lg)
-            OffersBanner(offers: model.offers) { offer in
-                // Route a couple of offers straight into the matching rail (demo affordance).
-                switch offer.id {
-                case "o2": router.push(PaymentsRoute.transfer(.cryptoToContact))
-                case "o3": router.push(PaymentsRoute.transfer(.digitalRubleQR))
-                case "o1": router.push(PaymentsRoute.transfer(.abroad))
-                case "o4": router.push(PaymentsRoute.section(.utilities))   // «Кэшбек на ЖКУ» → начисления ЖКУ
-                default:   break
-                }
-            }
-        }
-    }
-
-    // MARK: Transfers (§9.2 / §10.3 — seven rails)
+    // MARK: Transfers (§9.2 / §10.3, seven rails)
 
     private var transfers: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionLabel("Переводы")
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(model.rails.enumerated()), id: \.element) { index, kind in
-                        Button { router.push(PaymentsRoute.transfer(kind)) } label: {
-                            ListRow(icon: kind.icon,
-                                    iconTint: kind.usesCryptoGradient ? theme.accentCrypto.first : nil,
-                                    title: kind.title, subtitle: kind.subtitle, showsChevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        if index < model.rails.count - 1 { Divider().overlay(theme.border) }
-                    }
+        GroupedSection("Переводы") {
+            ForEach(model.rails) { kind in
+                Button { router.push(PaymentsRoute.transfer(kind)) } label: {
+                    ListRow(icon: kind.icon, title: kind.title, subtitle: kind.subtitle, showsChevron: true)
                 }
+                .buttonStyle(.row)
             }
         }
-        .padding(.horizontal, Spacing.lg)
     }
 
     // MARK: Suppliers + templates
 
     private var more: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionLabel("Платежи")
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    Button { router.push(PaymentsRoute.suppliers) } label: {
-                        ListRow(icon: "magnifyingglass", title: "Платежи поставщикам",
-                                subtitle: "Поиск по названию и категориям", showsChevron: true)
-                    }
-                    .buttonStyle(.plain)
-                    Divider().overlay(theme.border)
-                    Button { router.push(PaymentsRoute.templates) } label: {
-                        ListRow(icon: "square.stack.3d.up", title: "Шаблоны и автоплатежи",
-                                subtitle: "\(model.templates.count) шаблона · автоплатежи", showsChevron: true)
-                    }
-                    .buttonStyle(.plain)
-                }
+        GroupedSection("Другие платежи") {
+            Button { router.push(PaymentsRoute.suppliers) } label: {
+                ListRow(icon: "magnifyingglass", title: "Поставщики",
+                        subtitle: "Поиск по названию и ИНН", showsChevron: true)
             }
+            .buttonStyle(.row)
+            Button { router.push(PaymentsRoute.templates) } label: {
+                ListRow(icon: "square.stack.3d.up", title: "Шаблоны и автоплатежи",
+                        subtitle: templatesSummary, showsChevron: true)
+            }
+            .buttonStyle(.row)
         }
-        .padding(.horizontal, Spacing.lg)
     }
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(BrandFont.micro).tracking(1.5)
-            .foregroundStyle(theme.textSecondary)
+    private var templatesSummary: String {
+        let t = model.templates.count
+        let a = PaymentsMockData.autopayments.count
+        return "\(t) \(Self.plural(t, "шаблон", "шаблона", "шаблонов")), "
+            + "\(a) \(Self.plural(a, "автоплатёж", "автоплатежа", "автоплатежей"))"
+    }
+
+    // MARK: Offers (plain rows; slogans removed)
+
+    private var offers: some View {
+        GroupedSection("Предложения") {
+            ForEach(model.offers) { offer in
+                Button { open(offer) } label: {
+                    ListRow(icon: offer.icon, title: offer.title, subtitle: offer.subtitle, showsChevron: true)
+                }
+                .buttonStyle(.row)
+            }
+        }
+    }
+
+    /// Route offers straight into the matching rail (demo affordance).
+    private func open(_ offer: PaymentOffer) {
+        switch offer.id {
+        case "o1": router.push(PaymentsRoute.transfer(.abroad))
+        case "o4": router.push(PaymentsRoute.section(.utilities))   // «Кэшбек на ЖКУ» → начисления ЖКУ
+        default:   break
+        }
+    }
+
+    private static func plural(_ n: Int, _ one: String, _ few: String, _ many: String) -> String {
+        let n10 = n % 10, n100 = n % 100
+        if n10 == 1 && n100 != 11 { return one }
+        if (2...4).contains(n10) && !(12...14).contains(n100) { return few }
+        return many
     }
 }

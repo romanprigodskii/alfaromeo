@@ -23,12 +23,14 @@ struct SuppliersView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 searchField
                 categoryChips
-                resultsCard
+                resultsSection
+                    .padding(.top, Spacing.sm)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -42,12 +44,12 @@ struct SuppliersView: View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "magnifyingglass").foregroundStyle(theme.textSecondary)
             TextField("Поставщик, ИНН или услуга", text: $query)
-                .font(BrandFont.body()).foregroundStyle(theme.textPrimary)
+                .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                 .autocorrectionDisabled()
         }
-        .padding(Spacing.md)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+        .padding(.horizontal, Spacing.md)
+        .frame(minHeight: 48)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     private var categoryChips: some View {
@@ -58,40 +60,35 @@ struct SuppliersView: View {
                     Button {
                         categoryId = selected ? nil : category.id
                     } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: category.icon).font(.system(size: 13, weight: .semibold))
-                            Text(category.name).font(BrandFont.caption.weight(.medium))
-                        }
-                        .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
-                        .padding(.horizontal, Spacing.md)
-                        .frame(minHeight: 38)
-                        .background(selected ? theme.accent : theme.surface, in: Capsule())
-                        .overlay(Capsule().stroke(selected ? Color.clear : theme.border, lineWidth: 1))
+                        Text(category.name)
+                            .font(BrandFont.subheadline)
+                            .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
+                            .padding(.horizontal, Spacing.md - 4)
+                            .frame(minHeight: 36)
+                            .background(selected ? theme.accent : theme.surface,
+                                        in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                     }
                     .buttonStyle(PressableButtonStyle())
+                    .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
         }
         .scrollClipDisabled()
     }
 
-    private var resultsCard: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                if results.isEmpty {
-                    Text("Ничего не найдено")
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, Spacing.md)
-                } else {
-                    ForEach(Array(results.enumerated()), id: \.element.id) { index, biller in
-                        Button { router.push(PaymentsRoute.payBiller(billerId: biller.id)) } label: {
-                            ListRow(icon: biller.icon, title: biller.name,
-                                    subtitle: biller.detail, showsChevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        if index < results.count - 1 { Divider().overlay(theme.border) }
+    private var resultsSection: some View {
+        GroupedSection {
+            if results.isEmpty {
+                Text("Ничего не найдено")
+                    .font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+            } else {
+                ForEach(results) { biller in
+                    Button { router.push(PaymentsRoute.payBiller(billerId: biller.id)) } label: {
+                        ListRow(icon: biller.icon, title: biller.name,
+                                subtitle: biller.detail, showsChevron: true)
                     }
+                    .buttonStyle(.row)
                 }
             }
         }

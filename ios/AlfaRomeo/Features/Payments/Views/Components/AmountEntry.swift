@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Large monospaced amount entry (§13.1 mono for sums). Autofocuses a decimal keypad, shows the
+/// Large amount entry with tabular figures. Autofocuses a decimal keypad, shows the
 /// currency symbol, an optional secondary line (₽-эквивалент / «доступно»), and quick-amount chips.
 struct AmountEntry: View {
     @Binding var text: String
@@ -29,8 +29,8 @@ struct AmountEntry: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)   // scale digits at large Dynamic Type sizes, never clip
                     .multilineTextAlignment(.center)
-                Text(symbol)
-                    .font(BrandFont.mono(24, weight: .medium))
+                Text(MoneyFormat.symbol(for: symbol))
+                    .font(BrandFont.mono(26, weight: .semibold))
                     .foregroundStyle(theme.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -38,7 +38,8 @@ struct AmountEntry: View {
 
             if let secondary {
                 Text(secondary)
-                    .font(BrandFont.callout.weight(.medium))
+                    .font(BrandFont.subheadline)
+                    .monospacedDigit()
                     .foregroundStyle(secondaryIsWarning ? dangerInk : theme.textSecondary)
                     .contentTransition(.numericText())
             }
@@ -47,13 +48,13 @@ struct AmountEntry: View {
                 HStack(spacing: Spacing.sm) {
                     ForEach(quickAmounts, id: \.self) { value in
                         Button { onQuick(value) } label: {
-                            Text("+\(Self.short(value))")
-                                .font(BrandFont.callout.weight(.medium))
+                            Text(MoneyFormat.number(value, sign: .always))
+                                .font(BrandFont.subheadline)
+                                .monospacedDigit()
                                 .foregroundStyle(theme.textPrimary)
-                                .padding(.horizontal, Spacing.md)
+                                .padding(.horizontal, Spacing.md - 4)
                                 .frame(minHeight: 36)
-                                .background(theme.elevated, in: Capsule())
-                                .overlay(Capsule().stroke(theme.border, lineWidth: 1))
+                                .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                         }
                         .buttonStyle(PressableButtonStyle())
                     }
@@ -66,17 +67,11 @@ struct AmountEntry: View {
         .onTapGesture { focused = true }
     }
 
-    private static func short(_ value: Double) -> String {
-        if value >= 1000, value.truncatingRemainder(dividingBy: 1000) == 0 {
-            return "\(Int(value / 1000)) 000"
-        }
-        return String(Int(value))
-    }
 }
 
 #Preview {
     AmountEntry(text: .constant("5000"), symbol: "₽",
-                secondary: "Доступно 184 200 ₽", quickAmounts: [1000, 5000, 10000])
+                secondary: "Доступно: 184\u{00A0}200\u{00A0}₽", quickAmounts: [1000, 5000, 10000])
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.default.background)

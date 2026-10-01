@@ -72,20 +72,18 @@ enum PaymentsMockData {
         (utilities + fines + myPayments + suppliers).first { $0.id == id }
     }
 
-    // MARK: Offers banner (§9.2)
+    // MARK: Offers (§9.2): plain rows on the hub; the crypto / цифровой ₽ promos duplicated rails and were dropped
 
     static let offers: [PaymentOffer] = [
-        PaymentOffer(id: "o1", title: "Переводы за рубеж 0%", subtitle: "Для тарифа Pro и выше", badge: "Pro", icon: "globe", gradient: false),
-        PaymentOffer(id: "o2", title: "Крипто-перевод контакту", subtitle: "Мгновенно · получатель видит ₽", badge: "2035", icon: "bitcoinsign.circle.fill", gradient: true),
-        PaymentOffer(id: "o3", title: "Цифровой рубль", subtitle: "Платите по QR без комиссии", badge: nil, icon: "qrcode", gradient: true),
-        PaymentOffer(id: "o4", title: "Кэшбек на ЖКУ 3%", subtitle: "При оплате до 10 числа", badge: nil, icon: "house.fill", gradient: false),
+        PaymentOffer(id: "o1", title: "Переводы за рубеж без комиссии", subtitle: "Тариф Pro и выше", icon: "globe"),
+        PaymentOffer(id: "o4", title: "Кэшбек 3\u{00A0}% на ЖКУ", subtitle: "При оплате до 10 числа", icon: "house.fill"),
     ]
 
     // MARK: Templates / autopayments
 
     static let templates: [PaymentTemplate] = [
         PaymentTemplate(id: "t1", title: "Маме на телефон", detail: "СБП · +7 916 200-11-22", kind: .byPhone, amount: 1_000),
-        PaymentTemplate(id: "t2", title: "Аренда квартиры", detail: "По реквизитам · ежемесячно", kind: .byRequisites, amount: 65_000),
+        PaymentTemplate(id: "t2", title: "Аренда квартиры", detail: "По реквизитам", kind: .byRequisites, amount: 65_000),
         PaymentTemplate(id: "t3", title: "USDT Артёму", detail: "Крипто-перевод контакту", kind: .cryptoToContact, amount: nil),
     ]
 

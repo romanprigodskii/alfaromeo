@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Создание шаблона / автоплатежа (§9.2 — облегчённо). A light form: тип, название, направление
+/// Создание шаблона / автоплатежа (§9.2, облегчённо). A light form: тип, название, направление
 /// (rail), сумма, и расписание (для автоплатежа). Saving is a demo confirmation, then pops back.
 struct NewTemplateView: View {
     @Environment(Router.self) private var router
@@ -58,7 +58,7 @@ struct NewTemplateView: View {
                     StatusPill(status: .success, text: "\(mode.label) сохранён (демо)")
                 }
 
-                PrimaryButton(title: "Сохранить", icon: "checkmark") {
+                PrimaryButton(title: "Сохранить") {
                     withAnimation(Motion.snappy) { saved = true }
                     Task {
                         try? await Task.sleep(for: .seconds(0.9))
@@ -67,7 +67,8 @@ struct NewTemplateView: View {
                 }
                 .disabled(!canSave || saved)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -80,21 +81,23 @@ struct NewTemplateView: View {
 
     private func labeled<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(title.uppercased()).font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            Text(title).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                .padding(.horizontal, Spacing.xs)
             content()
         }
     }
 
     private func menuLabel(icon: String, text: String) -> some View {
         HStack(spacing: Spacing.sm) {
-            Image(systemName: icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.accent)
-            Text(text).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+            Image(systemName: GlyphCircle.outlineSymbol(icon)).font(.system(size: 17)).foregroundStyle(theme.textSecondary)
+                .frame(width: 24)
+            Text(text).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
             Spacer()
-            Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
+            Image(systemName: "chevron.up.chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
         }
-        .padding(Spacing.md)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+        .padding(.horizontal, Spacing.md)
+        .frame(minHeight: 48)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     private func field(_ binding: Binding<String>, placeholder: String = "",
@@ -103,9 +106,8 @@ struct NewTemplateView: View {
             .keyboardType(keyboard)
             .font(mono ? BrandFont.mono(17) : BrandFont.body())
             .foregroundStyle(theme.textPrimary)
-            .padding(Spacing.md)
-            .frame(maxWidth: .infinity)
-            .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            .padding(.horizontal, Spacing.md)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 }

@@ -46,7 +46,8 @@ struct TransferFlowView: View {
     private func scroll<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) { content() }
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .contentMargins(.bottom, 96, for: .scrollContent)
@@ -81,25 +82,20 @@ struct TransferFlowView: View {
             if model.accounts.isEmpty {
                 ProgressView().tint(theme.accent)
             } else if candidates.count < 2 {
-                // No distinct second ₽ account (e.g. a business profile with one РКО счёт) — guard the
+                // No distinct second ₽ account (e.g. a business profile with one РКО счёт): guard the
                 // dead always-declined flow instead of offering it.
-                SurfaceCard {
-                    Text("Для перевода между своими счетами нужно минимум два счёта в ₽.")
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text("Для перевода между своими счетами нужно минимум два счёта в ₽.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(candidates.enumerated()), id: \.element.id) { index, acc in
-                            Button { withAnimation(Motion.smooth) { model.selectDestinationAccount(acc) } } label: {
-                                ListRow(icon: acc.type.paymentsIcon, title: acc.displayTitle,
-                                        subtitle: acc.displaySubtitle, value: money(acc.balance, acc.symbol),
-                                        showsChevron: true)
-                            }
-                            .buttonStyle(.plain)
-                            if index < candidates.count - 1 { Divider().overlay(theme.border) }
+                GroupedSection {
+                    ForEach(candidates) { acc in
+                        Button { withAnimation(Motion.smooth) { model.selectDestinationAccount(acc) } } label: {
+                            ListRow(icon: acc.type.paymentsIcon, title: acc.displayTitle,
+                                    subtitle: acc.displaySubtitle, value: money(acc.balance, acc.symbol),
+                                    showsChevron: true)
                         }
+                        .buttonStyle(.row)
                     }
                 }
             }
@@ -108,20 +104,23 @@ struct TransferFlowView: View {
 
     private var phoneRecipient: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            stepHeader("Кому перевести", "По номеру телефона через СБП — мгновенно и без комиссии.")
+            stepHeader("Кому перевести", "По номеру телефона через СБП, без комиссии.")
             HStack(spacing: Spacing.sm) {
-                field($model.phone, placeholder: "+7 ___ ___-__-__", keyboard: .phonePad, mono: true)
+                field($model.phone, placeholder: "+7 ___ ___-__-__", keyboard: .phonePad)
+                let phoneReady = model.phone.filter(\.isNumber).count >= 10
                 Button { withAnimation(Motion.smooth) { model.commitTypedPhone() } } label: {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(theme.onAccent)
-                        .frame(width: 52, height: 52)
-                        .background(theme.accent, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    Text("Далее")
+                        .font(BrandFont.headline)
+                        .foregroundStyle(phoneReady ? theme.onAccent : theme.textTertiary)
+                        .padding(.horizontal, Spacing.md)
+                        .frame(height: 52)
+                        .background(phoneReady ? theme.accent : theme.fill,
+                                    in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
                 }
                 .buttonStyle(PressableButtonStyle())
-                .disabled(model.phone.filter(\.isNumber).count < 10)
+                .disabled(!phoneReady)
             }
-            Text("Зарегистрированные пользователи").font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            SectionHeader("Пользователи банка").padding(.top, Spacing.sm)
             ContactPickerList(contacts: model.registeredContacts) { contact in
                 withAnimation(Motion.smooth) { model.selectContactSBP(contact) }
             }
@@ -130,7 +129,7 @@ struct TransferFlowView: View {
 
     private var cryptoRecipient: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            stepHeader("Крипто-перевод контакту", "Получатель видит сумму в ₽ — конвертация под капотом (§10.3).")
+            stepHeader("Крипто-перевод контакту", "Получатель видит сумму в ₽, конвертация автоматическая.")
             ContactPickerList(contacts: PaymentsMockData.contacts, showsWalletHint: true) { contact in
                 withAnimation(Motion.smooth) { model.selectContactCrypto(contact) }
             }
@@ -144,7 +143,7 @@ struct TransferFlowView: View {
                 get: { model.cardNumber },
                 set: { model.cardNumber = String($0.filter(\.isNumber).prefix(16)) }
             ), placeholder: "0000 0000 0000 0000", keyboard: .numberPad, mono: true)
-            Text("Или выберите получателя").font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            SectionHeader("Или выберите получателя").padding(.top, Spacing.sm)
             ContactPickerList(contacts: model.registeredContacts) { contact in
                 withAnimation(Motion.smooth) { model.selectRegisteredRecipient(contact) }
             }
@@ -158,7 +157,7 @@ struct TransferFlowView: View {
             field($model.account, placeholder: "Номер счёта", keyboard: .numberPad, mono: true)
             field($model.bik, placeholder: "БИК банка", keyboard: .numberPad, mono: true)
             field($model.inn, placeholder: "ИНН (необязательно)", keyboard: .numberPad, mono: true)
-            PrimaryButton(title: "Далее", icon: "arrow.right") {
+            PrimaryButton(title: "Далее") {
                 withAnimation(Motion.smooth) { model.commitRequisites() }
             }
             .disabled(model.receiverName.isEmpty || model.account.filter(\.isNumber).count < 8)
@@ -167,26 +166,26 @@ struct TransferFlowView: View {
 
     private var abroadRecipient: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            stepHeader("Перевод за рубеж", "Через ЭПР — в ₽ или стейблами (§10.3). Комиссия 0% на Pro+.")
+            stepHeader("Перевод за рубеж", "Через ЭПР, в ₽ или стейблкоинах. Без комиссии на тарифе Pro и выше.")
             Menu {
                 ForEach(["Сербия", "Турция", "Армения", "ОАЭ", "Казахстан"], id: \.self) { c in
                     Button(c) { model.country = c }
                 }
             } label: {
-                HStack {
-                    Text(model.country).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+                HStack(spacing: Spacing.sm) {
+                    Text(model.country).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                     Spacer()
                     Text("\(FXRateService.shared.rateText(model.abroadCurrency)) · ЦБ")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary).monospacedDigit()
-                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).monospacedDigit()
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
                 }
-                .padding(Spacing.md)
-                .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+                .padding(.horizontal, Spacing.md)
+                .frame(minHeight: 48)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
             }
             field($model.receiverName, placeholder: "Получатель")
             field($model.iban, placeholder: "IBAN / SWIFT", mono: true)
-            PrimaryButton(title: "Далее", icon: "arrow.right") {
+            PrimaryButton(title: "Далее") {
                 withAnimation(Motion.smooth) { model.commitAbroad() }
             }
             .disabled(model.iban.isEmpty)
@@ -195,17 +194,16 @@ struct TransferFlowView: View {
 
     private var qrRecipient: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            stepHeader("Цифровой рубль", "Оплата по универсальному QR — без комиссии, кошелёк ЦБ-платформы.")
+            stepHeader("Цифровой рубль", "Оплата по универсальному QR без комиссии, кошелёк на платформе ЦБ.")
             ZStack {
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .fill(theme.elevated)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(theme.surface)
                     .frame(height: 220)
-                    .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
                 Image(systemName: "qrcode.viewfinder")
                     .font(.system(size: 88, weight: .light))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(theme.textTertiary)
             }
-            PrimaryButton(title: "Сканировать QR (демо)", icon: "qrcode") {
+            PrimaryButton(title: "Сканировать QR (демо)") {
                 withAnimation(Motion.smooth) { model.commitQR() }
             }
         }
@@ -234,7 +232,7 @@ struct TransferFlowView: View {
         )
 
         if model.kind.isCrypto && model.insufficientFunds {
-            inlineWarning("Недостаточно \(model.asset) на кошельке — спишется при поступлении.")
+            inlineWarning("Недостаточно \(model.asset) на кошельке, спишется при поступлении.")
         }
 
         SourceAccountPicker(
@@ -246,7 +244,7 @@ struct TransferFlowView: View {
 
         gateView
 
-        PrimaryButton(title: "Продолжить", icon: "arrow.right") {
+        PrimaryButton(title: "Продолжить") {
             withAnimation(Motion.smooth) { model.goToConfirm() }
         }
         .disabled(!model.canProceed)
@@ -286,8 +284,8 @@ struct TransferFlowView: View {
                               icon: bio.systemImage, isLoading: model.authorizing) {
                     Task { await model.authorize() }
                 }
-                Text("Подтверждение операции биометрией (§10.3)")
-                    .font(BrandFont.micro)
+                Text("Операция подтверждается биометрией")
+                    .font(BrandFont.footnote)
                     .foregroundStyle(theme.textSecondary)
                     .frame(maxWidth: .infinity)
             }
@@ -312,18 +310,16 @@ struct TransferFlowView: View {
     private var recipientChip: some View {
         Group {
             if let recipient = model.recipient {
-                HStack(spacing: Spacing.md) {
-                    Avatar(initials: recipient.initials, size: 40)
+                HStack(spacing: ListRow.glyphSpacing) {
+                    Avatar(initials: recipient.initials, size: 44)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(recipient.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                        Text(recipient.detail).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        Text(recipient.name).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                        Text(recipient.detail).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
                     }
-                    Spacer()
-                    if let bank = recipient.bank { Badge(kind: .text(bank), tint: theme.accent) }
+                    Spacer(minLength: Spacing.sm)
+                    if let bank = recipient.bank { Badge(kind: .text(bank)) }
                 }
-                .padding(Spacing.md)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
             }
         }
     }
@@ -331,7 +327,7 @@ struct TransferFlowView: View {
     private func stepHeader(_ title: String, _ subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text(subtitle).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+            Text(subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -343,7 +339,7 @@ struct TransferFlowView: View {
         return HStack(spacing: Spacing.sm) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 13, weight: .semibold)).foregroundStyle(danger)
-            Text(text).font(BrandFont.caption).foregroundStyle(danger)
+            Text(text).font(BrandFont.footnote).foregroundStyle(danger)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -353,12 +349,11 @@ struct TransferFlowView: View {
                        keyboard: UIKeyboardType = .default, mono: Bool = false) -> some View {
         TextField(placeholder, text: binding)
             .keyboardType(keyboard)
-            .font(mono ? BrandFont.mono(17) : BrandFont.body())
+            .font(mono ? BrandFont.code(17) : BrandFont.body())
             .foregroundStyle(theme.textPrimary)
-            .padding(Spacing.md)
-            .frame(maxWidth: .infinity)
-            .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            .padding(.horizontal, Spacing.md)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     // MARK: - Derived values
@@ -371,7 +366,7 @@ struct TransferFlowView: View {
     private var amountSecondary: String {
         if model.kind.isCrypto {
             return model.inputInRub
-                ? "≈ \(plain(model.assetAmount)) \(model.asset)"
+                ? "≈ \(MoneyFormat.amount(model.assetAmount, currency: model.asset))"
                 : "≈ \(money(model.rubAmount, "₽")) по курсу"
         }
         if model.kind == .abroad, !model.insufficientFunds, model.rubAmount > 0 {
@@ -388,7 +383,7 @@ struct TransferFlowView: View {
 
     private var sourceTitle: String {
         if model.kind.isCrypto { return "\(model.asset) кошелёк" }
-        return model.sourceAccount?.displayTitle ?? "—"
+        return model.sourceAccount?.displayTitle ?? "Не выбран"
     }
     private var sourceSubtitle: String {
         if model.kind.isCrypto {
@@ -405,7 +400,7 @@ struct TransferFlowView: View {
         if model.kind.isCrypto {
             return model.wallets.map { w in
                 .init(id: w.id, icon: "bitcoinsign.circle.fill", title: "\(w.asset) кошелёк",
-                      subtitle: "·· \(w.address.suffix(4))", balanceText: "\(plain(w.balance)) \(w.asset)")
+                      subtitle: "·· \(w.address.suffix(4))", balanceText: MoneyFormat.amount(w.balance, currency: w.asset))
             }
         }
         let sources = model.kind == .betweenAccounts
@@ -426,19 +421,6 @@ struct TransferFlowView: View {
     }
 
     private func money(_ value: Double, _ symbol: String) -> String {
-        (Self.formatter.string(from: NSNumber(value: value)) ?? "\(value)") + " " + symbol
+        MoneyFormat.amount(value, currency: symbol)
     }
-    private func plain(_ value: Double) -> String {
-        (Self.preciseFormatter.string(from: NSNumber(value: value)) ?? "\(value)")
-    }
-    private static let formatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.maximumFractionDigits = 2; f.minimumFractionDigits = 0
-        return f
-    }()
-    private static let preciseFormatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.maximumFractionDigits = 6; f.minimumFractionDigits = 0
-        return f
-    }()
 }

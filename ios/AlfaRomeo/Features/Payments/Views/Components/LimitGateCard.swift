@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A soft gate shown at the amount step when an operation can't proceed (§2.4 / §10.3): превышение
-/// лимита операции, or the неквал-инвестор годовой лимит for crypto. Informative, never a dead end —
+/// лимита операции, or the неквал-инвестор годовой лимит for crypto. Informative, never a dead end:
 /// it offers a clear next step (уменьшить сумму / пройти тест инвестора) without dark patterns (§4).
 struct LimitGateCard: View {
     enum Kind: Equatable {
@@ -19,12 +19,12 @@ struct LimitGateCard: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(theme.warning)
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(warningInk)
                 Text(title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             }
             Text(message)
-                .font(BrandFont.callout)
+                .font(BrandFont.subheadline)
                 .foregroundStyle(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -32,33 +32,30 @@ struct LimitGateCard: View {
                 progress
             }
 
-            HStack(spacing: Spacing.sm) {
-                Button(action: onAdjust) {
-                    Text("Изменить сумму")
-                        .font(BrandFont.callout.weight(.semibold))
-                        .foregroundStyle(theme.onAccent)
-                        .padding(.horizontal, Spacing.md)
-                        .frame(minHeight: 40)
-                        .background(theme.accent, in: Capsule())
-                }
-                .buttonStyle(.plain)
-
+            HStack(spacing: Spacing.lg) {
+                action("Изменить сумму", onAdjust)
                 if case .investor = kind {
-                    Button(action: onTakeInvestorTest) {
-                        Text("Пройти тест инвестора")
-                            .font(BrandFont.callout.weight(.medium))
-                            .foregroundStyle(theme.accent)
-                    }
-                    .buttonStyle(.plain)
+                    action("Пройти тест инвестора", onTakeInvestorTest)
                 }
             }
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-            .stroke(theme.warning.opacity(0.55), lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    private var warningInk: Color { theme.statusInk(.warning) }
+
+    private func action(_ title: String, _ handler: @escaping () -> Void) -> some View {
+        Button(action: handler) {
+            Text(title)
+                .font(BrandFont.body(15, weight: .medium))
+                .foregroundStyle(theme.accent)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var progress: some View {
@@ -66,8 +63,8 @@ struct LimitGateCard: View {
         let limit = PaymentsMockData.nonQualYearlyLimitRub
         return VStack(alignment: .leading, spacing: Spacing.xs) {
             ProgressBar(value: used / limit, tint: theme.warning)
-            Text("Использовано \(Self.rub(used)) из \(Self.rub(limit)) в этом году")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Использовано \(MoneyFormat.fiat(used)) из \(MoneyFormat.fiat(limit)) в этом году")
+                .font(BrandFont.footnote).monospacedDigit().foregroundStyle(theme.textSecondary)
         }
         .padding(.vertical, Spacing.xs)
     }
@@ -89,20 +86,11 @@ struct LimitGateCard: View {
     private var message: String {
         switch kind {
         case .perOperation(let limit):
-            return "Максимум за одну операцию — \(Self.rub(limit)). Уменьшите сумму или повысьте лимит в настройках безопасности."
+            return "Максимум за одну операцию: \(MoneyFormat.fiat(limit)). Уменьшите сумму или повысьте лимит в настройках безопасности."
         case .investor(let remaining):
-            return "Неквалифицированным инвесторам доступно 300 000 ₽ в год через посредника (§2.4). Осталось \(Self.rub(remaining)). Пройдите тест, чтобы повысить статус."
+            return "Неквалифицированным инвесторам доступно \(MoneyFormat.fiat(PaymentsMockData.nonQualYearlyLimitRub)) в год через посредника. Осталось \(MoneyFormat.fiat(remaining)). Пройдите тест, чтобы повысить статус."
         }
     }
-
-    private static func rub(_ value: Double) -> String {
-        (formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))") + " ₽"
-    }
-    private static let formatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.maximumFractionDigits = 0
-        return f
-    }()
 }
 
 #Preview {

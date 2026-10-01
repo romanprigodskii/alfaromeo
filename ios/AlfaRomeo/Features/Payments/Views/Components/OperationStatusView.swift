@@ -3,9 +3,9 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Animated operation status (§9.2 / §13.1): в обработке → успех / отклонено + причина. A single
-/// medallion morphs between states — a rotating ring while processing, a spring-scaled checkmark on
-/// success, a danger medallion + reason on decline. Honors Reduce Motion.
+/// Operation status (§9.2): в обработке → успех / отклонено + причина. A single medallion changes
+/// with the state: a rotating ring while processing, a checkmark on success, a danger mark + reason
+/// on decline. Motion only conveys state; honors Reduce Motion.
 struct OperationStatusView: View {
     let outcome: OperationOutcome
     var amount: Double
@@ -22,27 +22,26 @@ struct OperationStatusView: View {
     @State private var pop = false
 
     var body: some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(spacing: Spacing.lg) {
             Spacer(minLength: Spacing.xl)
 
             medallion
 
             VStack(spacing: Spacing.sm) {
                 Text(title)
-                    .font(BrandFont.title)
+                    .font(BrandFont.title1)
                     .foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
                 Text(subtitle)
-                    .font(BrandFont.body())
+                    .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
+                    .padding(.horizontal, Spacing.md)
             }
 
             if !isProcessing {
-                AmountText(amount: amount, currency: currency, size: 24)
-                    .padding(.top, Spacing.xs)
+                AmountText(amount: amount, currency: currency, size: 28)
             }
 
             Spacer(minLength: Spacing.lg)
@@ -50,7 +49,8 @@ struct OperationStatusView: View {
             actions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.vertical, Spacing.md)
         .background(theme.background.ignoresSafeArea())
         .onAppear { startAnimations() }
         .onChange(of: outcomeKey) { _, _ in startAnimations() }
@@ -62,32 +62,24 @@ struct OperationStatusView: View {
     private var medallion: some View {
         ZStack {
             Circle()
-                .fill(tint.opacity(0.14))
-                .frame(width: 132, height: 132)
-                .scaleEffect(isProcessing && !reduceMotion ? (spin ? 1.06 : 0.94) : 1)
-                .animation(isProcessing && !reduceMotion
-                           ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : nil,
-                           value: spin)
+                .fill(isProcessing ? theme.fill : tint.opacity(0.12))
+                .frame(width: 96, height: 96)
 
             if isProcessing {
                 Circle()
                     .trim(from: 0, to: 0.72)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 104, height: 104)
+                    .stroke(theme.textPrimary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .frame(width: 96, height: 96)
                     .rotationEffect(.degrees(spin ? 360 : 0))
                     .animation(reduceMotion ? nil : .linear(duration: 1).repeatForever(autoreverses: false),
                                value: spin)
             } else {
-                Circle()
-                    .stroke(tint, lineWidth: 4)
-                    .frame(width: 104, height: 104)
+                Image(systemName: symbol)
+                    .font(.system(size: 40, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .scaleEffect(pop ? 1 : 0.8)
+                    .opacity(pop ? 1 : 0)
             }
-
-            Image(systemName: symbol)
-                .font(.system(size: 46, weight: .bold))
-                .foregroundStyle(tint)
-                .scaleEffect(pop ? 1 : 0.4)
-                .opacity(pop ? 1 : 0)
         }
         .accessibilityLabel(title)
     }
@@ -99,14 +91,14 @@ struct OperationStatusView: View {
         case .processing:
             EmptyView()
         case .success:
-            PrimaryButton(title: "Готово", icon: "checkmark") { onClose() }
+            PrimaryButton(title: "Готово") { onClose() }
         case .declined(let reason):
             VStack(spacing: Spacing.sm) {
-                PrimaryButton(title: "Повторить", icon: "arrow.clockwise") { onRetry() }
-                SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+                PrimaryButton(title: "Повторить") { onRetry() }
+                SecondaryButton(title: "Спросить у AI") {
                     shell?.showCopilot(.declined(reason: reason.title))
                 }
-                SecondaryButton(title: "Закрыть") { onClose() }
+                TertiaryButton("Закрыть") { onClose() }
             }
         }
     }
@@ -117,9 +109,9 @@ struct OperationStatusView: View {
 
     private var tint: Color {
         switch outcome {
-        case .processing: return theme.accent
-        case .success:    return theme.success
-        case .declined:   return theme.danger
+        case .processing: return theme.textPrimary
+        case .success:    return theme.statusInk(.success)
+        case .declined:   return theme.statusInk(.danger)
         }
     }
 
@@ -127,7 +119,7 @@ struct OperationStatusView: View {
         switch outcome {
         case .processing: return "arrow.triangle.2.circlepath"
         case .success:    return "checkmark"
-        case .declined(let reason): return reason.systemImage
+        case .declined(let reason): return GlyphCircle.outlineSymbol(reason.systemImage)
         }
     }
 
@@ -160,7 +152,7 @@ struct OperationStatusView: View {
         spin = false
         pop = false
         if !reduceMotion { withAnimation(.linear(duration: 1)) { spin = true } }
-        withAnimation(reduceMotion ? nil : Motion.bouncy.delay(0.05)) { pop = true }
+        withAnimation(reduceMotion ? nil : Motion.smooth) { pop = true }
         notifyHaptic()
     }
 

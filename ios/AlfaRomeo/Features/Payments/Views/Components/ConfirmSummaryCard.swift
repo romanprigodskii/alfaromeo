@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The «Подтверждение» summary (§9.2): получатель, крупная сумма, комиссия, ₽-эквивалент (для
-/// крипты — по мок-курсу), счёт-источник и итог к списанию. Pure presentation — the flow passes
+/// крипты, по мок-курсу), счёт-источник и итог к списанию. Pure presentation — the flow passes
 /// already-computed values.
 struct ConfirmSummaryCard: View {
     let recipient: Recipient
@@ -17,80 +17,65 @@ struct ConfirmSummaryCard: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Spacing.lg) {
             recipientHeader
 
-            AmountText(amount: amount, currency: amountSymbol, size: 40)
-                .padding(.vertical, Spacing.xs)
-
-            if let rubEquivalent {
-                Text("≈ \(Self.rub(rubEquivalent)) по курсу")
-                    .font(BrandFont.callout)
-                    .foregroundStyle(theme.textSecondary)
+            VStack(spacing: Spacing.xs) {
+                AmountText(amount: amount, currency: amountSymbol, size: 40, splitsKopecks: true)
+                if let rubEquivalent {
+                    Text("≈ \(MoneyFormat.fiat(rubEquivalent)) по курсу")
+                        .font(BrandFont.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(theme.textSecondary)
+                }
             }
+            .frame(maxWidth: .infinity)
 
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    detailRow(icon: "creditcard", title: "Счёт списания", value: sourceTitle, sub: sourceSubtitle)
-                    Divider().overlay(theme.border)
-                    detailRow(icon: "percent", title: feeLabel,
-                              value: fee == 0 ? "Без комиссии" : Self.rub(fee))
-                    if let totalText {
-                        Divider().overlay(theme.border)
-                        detailRow(icon: "sum", title: "Итого к списанию", value: totalText, emphasized: true)
-                    }
+            GroupedSection {
+                detailRow(title: "Счёт списания", value: sourceTitle, sub: sourceSubtitle)
+                detailRow(title: feeLabel, value: fee == 0 ? "Без комиссии" : MoneyFormat.fiat(fee))
+                if let totalText {
+                    detailRow(title: "Итого к списанию", value: totalText, emphasized: true)
                 }
             }
         }
     }
 
     private var recipientHeader: some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle().fill(theme.accent.opacity(0.14)).frame(width: 48, height: 48)
-                Image(systemName: recipient.icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(theme.accent)
-            }
+        HStack(spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: recipient.icon, size: 44)
             VStack(alignment: .leading, spacing: 2) {
                 Text(recipient.name).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text(recipient.detail).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(recipient.detail).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
-            Spacer()
+            Spacer(minLength: Spacing.sm)
             if let bank = recipient.bank {
-                Badge(kind: .text(bank), tint: theme.accent)
+                Badge(kind: .text(bank))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func detailRow(icon: String, title: String, value: String,
+    private func detailRow(title: String, value: String,
                            sub: String? = nil, emphasized: Bool = false) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(theme.textSecondary)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                if let sub { Text(sub).font(BrandFont.micro).foregroundStyle(theme.textSecondary) }
-            }
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.md) {
+            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
             Spacer(minLength: Spacing.sm)
-            Text(value)
-                .font(emphasized ? BrandFont.headline : BrandFont.callout.weight(.medium))
-                .foregroundStyle(theme.textPrimary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(value)
+                    .font(emphasized ? BrandFont.headline : BrandFont.bodyM)
+                    .monospacedDigit()
+                    .foregroundStyle(theme.textPrimary)
+                if let sub {
+                    Text(sub).font(BrandFont.subheadline).monospacedDigit().foregroundStyle(theme.textSecondary)
+                }
+            }
+            .multilineTextAlignment(.trailing)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.sm + 4)
+        .frame(minHeight: Spacing.rowMinHeight)
     }
-
-    private static func rub(_ value: Double) -> String {
-        (formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))") + " ₽"
-    }
-    private static let formatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}"; f.maximumFractionDigits = 2; f.minimumFractionDigits = 0
-        return f
-    }()
 }
 
 #Preview {
@@ -98,9 +83,9 @@ struct ConfirmSummaryCard: View {
         ConfirmSummaryCard(
             recipient: Recipient(name: "Иван Петров", detail: "+7 916 200-11-22", icon: "person.fill", bank: "Альфа-Ромео"),
             amount: 5000, amountSymbol: "₽", fee: 0, rubEquivalent: nil,
-            sourceTitle: "Текущий счёт", sourceSubtitle: "·· 4921 · RUB", totalText: "5 000 ₽"
+            sourceTitle: "Текущий счёт", sourceSubtitle: "·· 4921 · RUB", totalText: MoneyFormat.fiat(5000)
         )
-        .padding(Spacing.lg)
+        .padding(Spacing.screen)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.default.background)

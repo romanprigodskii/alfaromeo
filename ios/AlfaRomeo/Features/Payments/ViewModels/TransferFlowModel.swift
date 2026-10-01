@@ -372,7 +372,7 @@ final class TransferFlowModel {
 
     func commitQR() {
         qrScanned = true
-        recipient = Recipient(name: "Цифровой рубль", detail: "QR · C2C · ЦБ-платформа", icon: "qrcode")
+        recipient = Recipient(name: "Цифровой рубль", detail: "Универсальный QR", icon: "qrcode")
         step = .amount
     }
 
