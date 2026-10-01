@@ -28,6 +28,31 @@ struct DisputeTicket: Identifiable, Hashable, Sendable {
     let categoryTitle: String
     let amount: Double
     let currency: String
-    var status: Status
+    /// Status recorded when the ticket was filed. Read ``status`` for the current one.
+    var filedStatus: Status
     let createdAt: Date
+
+    /// Demo lifecycle, computed on read from the time since filing: принято → на рассмотрении
+    /// after 2 minutes → решено after 10. Never goes back behind ``filedStatus``.
+    var status: Status { status(at: Date()) }
+
+    func status(at now: Date) -> Status {
+        let elapsed = now.timeIntervalSince(createdAt)
+        let byTime: Status = elapsed >= Self.resolvedAfter ? .resolved
+            : elapsed >= Self.inReviewAfter ? .inReview : .received
+        return byTime.rank >= filedStatus.rank ? byTime : filedStatus
+    }
+
+    static let inReviewAfter: TimeInterval = 2 * 60
+    static let resolvedAfter: TimeInterval = 10 * 60
+}
+
+private extension DisputeTicket.Status {
+    var rank: Int {
+        switch self {
+        case .received: return 0
+        case .inReview: return 1
+        case .resolved: return 2
+        }
+    }
 }

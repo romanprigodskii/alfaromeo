@@ -133,7 +133,7 @@ final class HistoryStore {
             categoryTitle: category.title,
             amount: tx.amount,
             currency: tx.currency,
-            status: .received,
+            filedStatus: .received,
             createdAt: Date()
         )
         tickets.insert(ticket, at: 0)
