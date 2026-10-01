@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// «Супер-кэшбек» (§9.3 / §4) — an elevated cashback rate on one chosen category. A Pro+ feature: on
-/// Base the screen shows a soft ``UpsellCard`` instead of the picker (§4 — мягко, без тёмных
+/// «Супер-кэшбек» (§9.3 / §4): an elevated cashback rate on one chosen category. A Pro+ feature: on
+/// Base the screen shows a soft ``UpsellCard`` instead of the picker (§4, мягко, без тёмных
 /// паттернов), never a hard block. Exactly one category is active at a time; state lives in
 /// ``BenefitsStore``.
 struct SuperCashbackView: View {
@@ -28,7 +28,8 @@ struct SuperCashbackView: View {
                     lockedBody
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -37,18 +38,15 @@ struct SuperCashbackView: View {
         .task { baseTier = (try? await api.subscription(profileId: profileId))?.tier ?? .base }
     }
 
-    // MARK: Locked (Base) — soft upsell, never blocked
+    // MARK: Locked (Base): soft upsell, never blocked
 
     private var lockedBody: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Супер-кэшбек").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("Повышенная ставка на одну категорию — доступно на Pro и выше.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            }
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            Text("Повышенная ставка на одну категорию. Доступно на Pro и выше.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             UpsellCard(
-                title: "Откройте супер-кэшбек",
-                message: "На Pro получайте до 8% на выбранную категорию вместо обычной ставки. На Infinite — до 10%.",
+                title: "Супер-кэшбек на Pro",
+                message: "На Pro до 8 % на выбранную категорию вместо обычной ставки, на Infinite до 10 %.",
                 recommendedTier: .pro
             )
         }
@@ -62,7 +60,7 @@ struct SuperCashbackView: View {
         }
     }
 
-    /// Super-eligible categories ordered: the user's active categories first, then by uplift desc —
+    /// Super-eligible categories ordered: the user's active categories first, then by uplift desc,
     /// so the most relevant choices surface at the top. Never empty for a Pro+ tier.
     private var orderedCategories: [CashbackCategory] {
         let selected = Set(store.selectedCategoryIds(profileId: profileId))
@@ -78,53 +76,52 @@ struct SuperCashbackView: View {
     }
 
     private var unlockedBody: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Супер-кэшбек").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("Повышенная ставка на одну выбранную категорию.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            }
-
+        VStack(alignment: .leading, spacing: Spacing.section) {
             if let active = activeCategory { activeCard(active) } else { emptyActiveCard }
 
-            if store.selectedCategoryIds(profileId: profileId).isEmpty {
-                Text("Сначала активируйте категории — супер-кэшбек выгоднее на ваших активных.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            }
-
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Доступные категории").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            GroupedSection("Доступные категории", footer: listFooter) {
                 ForEach(orderedCategories) { superRow($0) }
             }
         }
         .animation(Motion.snappy, value: activeCategory)
     }
 
+    private var listFooter: String {
+        if store.selectedCategoryIds(profileId: profileId).isEmpty {
+            return "Сначала активируйте категории: супер-кэшбек выгоднее на активных."
+        }
+        return "Повышенная ставка действует на одну выбранную категорию.."
+    }
+
+    /// The one primary summary on the screen: a standalone card is allowed here (DESIGN §4).
     private func activeCard(_ c: CashbackCategory) -> some View {
-        SurfaceCard(elevated: true) {
+        SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.accent)
-                    Text("Активна: \(c.name)").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                HStack(spacing: ListRow.glyphSpacing) {
+                    GlyphCircle(systemImage: c.icon)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(c.name).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                        Text("Супер-кэшбек активен")
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    }
                 }
-                HStack(spacing: Spacing.sm) {
-                    Text(CashbackCategory.pct(c.baseRate))
-                        .font(BrandFont.bodyM).foregroundStyle(theme.textSecondary).strikethrough()
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                     Text(CashbackCategory.pct(c.superRate ?? 0))
-                        .font(BrandFont.headline.weight(.semibold)).foregroundStyle(theme.accent)
+                        .font(BrandFont.title1).foregroundStyle(theme.textPrimary)
+                        .monospacedDigit()
+                    Text("вместо \(CashbackCategory.pct(c.baseRate))")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                        .monospacedDigit()
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: Spacing.xs) {
-                        Text("Экономия в месяц ~").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                        Text("Экономия в месяц около").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                         AmountText(amount: monthlySaving(c), size: 15)
                     }
-                    Text("при тратах ~40 000 ₽/мес в категории")
-                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    Text("При тратах \(MoneyFormat.fiat(assumedMonthlySpend)) в месяц в категории")
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 }
-                PrimaryButton(title: "Отключить") {
+                SecondaryButton(title: "Отключить") {
                     store.setSuperCashbackCategory(nil, profileId: profileId, entitlements: entitlements)
                 }
             }
@@ -132,53 +129,45 @@ struct SuperCashbackView: View {
     }
 
     private var emptyActiveCard: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Супер-кэшбек не выбран").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Выберите категорию ниже — на неё начнёт начисляться повышенная ставка.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            }
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Категория не выбрана").font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+            Text("Выберите категорию ниже, на неё начнёт начисляться повышенная ставка.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
     }
 
-    @ViewBuilder
     private func superRow(_ c: CashbackCategory) -> some View {
         let isActive = store.superCashbackCategoryId(profileId: profileId) == c.id
         let isSelectedCategory = store.isSelected(c.id, profileId: profileId)
 
-        SurfaceCard(padding: Spacing.md, elevated: isActive) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: c.icon)
-                    .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(theme.accent.opacity(0.12),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        return Button {
+            store.setSuperCashbackCategory(isActive ? nil : c.id, profileId: profileId, entitlements: entitlements)
+        } label: {
+            HStack(spacing: ListRow.glyphSpacing) {
+                GlyphCircle(systemImage: c.icon)
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: Spacing.xs) {
-                        Text(c.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+                        Text(c.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                         if isSelectedCategory { Badge(kind: .dot, tint: theme.success) }
                     }
-                    HStack(spacing: Spacing.xs) {
-                        Text(CashbackCategory.pct(c.baseRate))
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary).strikethrough()
-                        Text("→ \(CashbackCategory.pct(c.superRate ?? 0))")
-                            .font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.accent)
-                    }
+                    Text("\(CashbackCategory.pct(c.superRate ?? 0)) вместо \(CashbackCategory.pct(c.baseRate))")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                        .monospacedDigit()
                 }
 
                 Spacer(minLength: Spacing.sm)
 
-                if isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22, weight: .semibold)).foregroundStyle(theme.accent)
-                }
+                Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(isActive ? theme.accent : theme.textTertiary)
             }
+            .padding(.vertical, Spacing.sm)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            store.setSuperCashbackCategory(isActive ? nil : c.id, profileId: profileId, entitlements: entitlements)
-        }
+        .buttonStyle(.row)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
         .animation(Motion.snappy, value: isActive)
     }
 

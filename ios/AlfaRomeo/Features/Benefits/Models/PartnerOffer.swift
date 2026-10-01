@@ -26,16 +26,16 @@ struct PartnerOffer: Identifiable, Hashable, Sendable {
     }
 
     static let offers: [PartnerOffer] = [
-        .init(id: "p_yandex",    brand: "Яндекс.Такси", logo: "car.fill",         cashbackPct: 10, blurb: "Кэшбек на каждую поездку",      categoryId: "cat_transport", premium: false),
-        .init(id: "p_yaeda",     brand: "Яндекс.Еда",   logo: "fork.knife",       cashbackPct: 7,  blurb: "Доставка еды за 30 минут",      categoryId: "cat_food",      premium: false),
-        .init(id: "p_ozon",      brand: "Ozon",         logo: "shippingbox.fill", cashbackPct: 5,  blurb: "Маркетплейс — миллионы товаров", categoryId: "cat_shops",     premium: false),
+        .init(id: "p_yandex",    brand: "Яндекс.Такси", logo: "car.fill",         cashbackPct: 10, blurb: "Такси",                         categoryId: "cat_transport", premium: false),
+        .init(id: "p_yaeda",     brand: "Яндекс.Еда",   logo: "fork.knife",       cashbackPct: 7,  blurb: "Доставка еды",                  categoryId: "cat_food",      premium: false),
+        .init(id: "p_ozon",      brand: "Ozon",         logo: "shippingbox.fill", cashbackPct: 5,  blurb: "Маркетплейс",                   categoryId: "cat_shops",     premium: false),
         .init(id: "p_wb",        brand: "Wildberries",  logo: "bag.fill",         cashbackPct: 4,  blurb: "Мода и товары для дома",         categoryId: "cat_shops",     premium: false),
-        .init(id: "p_lenta",     brand: "Лента",        logo: "cart.fill",        cashbackPct: 3,  blurb: "Супермаркет у дома",            categoryId: "cat_super",     premium: false),
+        .init(id: "p_lenta",     brand: "Лента",        logo: "cart.fill",        cashbackPct: 3,  blurb: "Супермаркеты",                  categoryId: "cat_super",     premium: false),
         .init(id: "p_apteka",    brand: "Аптека.ру",    logo: "cross.case.fill",  cashbackPct: 6,  blurb: "Лекарства с доставкой",         categoryId: "cat_pharmacy",  premium: false),
         .init(id: "p_kinopoisk", brand: "Кинопоиск",    logo: "play.circle.fill", cashbackPct: 5,  blurb: "Фильмы и сериалы",              categoryId: "cat_subs",      premium: false),
-        .init(id: "p_aeroflot",  brand: "Аэрофлот",     logo: "airplane",         cashbackPct: 8,  blurb: "Авиабилеты по России и миру",   categoryId: "cat_travel",    premium: false),
-        .init(id: "p_lukoil",    brand: "Лукойл",       logo: "fuelpump.fill",    cashbackPct: 9,  blurb: "Заправки по всей стране",       categoryId: "cat_fuel",      premium: false),
-        .init(id: "p_ostrovok",  brand: "Островок",     logo: "bed.double.fill",  cashbackPct: 12, blurb: "Отели премиум-класса",         categoryId: "cat_travel",    premium: true),
-        .init(id: "p_tsum",      brand: "ЦУМ",          logo: "crown.fill",       cashbackPct: 15, blurb: "Люкс-бутики и дизайнеры",       categoryId: "cat_lux",       premium: true),
+        .init(id: "p_aeroflot",  brand: "Аэрофлот",     logo: "airplane",         cashbackPct: 8,  blurb: "Авиабилеты",                    categoryId: "cat_travel",    premium: false),
+        .init(id: "p_lukoil",    brand: "Лукойл",       logo: "fuelpump.fill",    cashbackPct: 9,  blurb: "АЗС",                           categoryId: "cat_fuel",      premium: false),
+        .init(id: "p_ostrovok",  brand: "Островок",     logo: "bed.double.fill",  cashbackPct: 12, blurb: "Отели",                         categoryId: "cat_travel",    premium: true),
+        .init(id: "p_tsum",      brand: "ЦУМ",          logo: "crown.fill",       cashbackPct: 15, blurb: "Бутики и дизайнеры",            categoryId: "cat_lux",       premium: true),
     ]
 }

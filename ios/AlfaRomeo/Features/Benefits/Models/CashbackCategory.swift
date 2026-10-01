@@ -13,9 +13,9 @@ struct CashbackCategory: Identifiable, Hashable, Sendable {
 
     static func lookup(_ id: String) -> CashbackCategory? { catalog.first { $0.id == id } }
 
-    /// Format a percentage rate the brand way — trimmed decimals + «%» (e.g. 1.5 → "1,5%", 5.0 → "5%").
+    /// Format a percentage rate via ``MoneyFormat`` (docs/DESIGN.md §6): 1.5 → "1,5 %", 5.0 → "5 %".
     static func pct(_ v: Double) -> String {
-        v.formatted(.number.precision(.fractionLength(0...1))) + "%"
+        MoneyFormat.percent(v, maxFractionDigits: 1)
     }
 
     /// The cashback catalog (§9.3). Mock content — there is no API for this.

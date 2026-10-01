@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Выгода (§9.3) — the cashback hub. A balance hero plus entries to the three cashback screens
+/// Выгода (§9.3): the cashback hub. A balance hero plus entries to the three cashback screens
 /// («Выбор категорий», «Супер-кэшбек», «Предложения / партнёры») and the existing tier comparison
 /// («Подписка/Тариф», §0.6 / §4). Subtitles reflect the live tier + ``BenefitsStore`` selection.
 ///
 /// No section route enum: this view lives inside the Выгода section's `NavigationStack` (provided by
-/// ``SectionScaffold``), so the entries push via destination-based `NavigationLink` — no `Router`.
+/// ``SectionScaffold``), so the entries push via destination-based `NavigationLink`, no `Router`.
 struct BenefitsView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.apiClient) private var api
@@ -20,11 +20,12 @@ struct BenefitsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 hero
                 entries
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -32,63 +33,49 @@ struct BenefitsView: View {
         .task { baseTier = (try? await api.subscription(profileId: profileId))?.tier ?? .base }
     }
 
-    // MARK: Hero — accrued cashback + tier
+    // MARK: Hero: accrued cashback + tier (the one main amount on the screen, no card)
 
     private var hero: some View {
-        SurfaceCard(elevated: true) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text("Накоплено кэшбека").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Spacer()
-                    Badge(kind: .text(effectiveTier.shortLabel), tint: theme.accent)
-                }
-                AmountText(amount: store.cashbackBalance, size: 34)
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10, weight: .bold)).foregroundStyle(theme.success)
-                    Text("На +\(Int(store.monthOverMonthDeltaPct))% больше, чем в прошлом месяце")
-                        .font(BrandFont.caption).foregroundStyle(theme.success)
-                }
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack {
+                Text("Накоплено кэшбека").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                Spacer()
+                Badge(kind: .text(effectiveTier.shortLabel))
             }
+            AmountText(amount: store.cashbackBalance, size: 40, splitsKopecks: true)
+            Text("\(MoneyFormat.percent(store.monthOverMonthDeltaPct, sign: .always)) к прошлому месяцу")
+                .font(BrandFont.subheadline).foregroundStyle(theme.success)
         }
     }
 
     // MARK: Entries
 
     private var entries: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                NavigationLink { CategorySelectionView() } label: {
-                    ListRow(icon: "square.grid.2x2.fill", title: "Выбор категорий",
-                            subtitle: categorySubtitle, showsChevron: true)
-                }
-                .buttonStyle(.plain)
-
-                Divider().overlay(theme.border)
-
-                NavigationLink { SuperCashbackView() } label: {
-                    ListRow(icon: "sparkles", title: "Супер-кэшбек",
-                            subtitle: superSubtitle, showsChevron: true)
-                }
-                .buttonStyle(.plain)
-
-                Divider().overlay(theme.border)
-
-                NavigationLink { PartnerOffersView() } label: {
-                    ListRow(icon: "bag.fill", title: "Предложения и партнёры",
-                            subtitle: "\(PartnerOffer.visible(for: entitlements).count) предложений",
-                            showsChevron: true)
-                }
-                .buttonStyle(.plain)
-
-                Divider().overlay(theme.border)
-
-                NavigationLink { SubscriptionView() } label: {
-                    ListRow(icon: "crown.fill", title: "Подписка и тариф",
-                            subtitle: "Сравнить Base · Pro · Infinite (§4)", showsChevron: true)
-                }
-                .buttonStyle(.plain)
+        GroupedSection {
+            NavigationLink { CategorySelectionView() } label: {
+                ListRow(icon: "square.grid.2x2", title: "Категории",
+                        subtitle: categorySubtitle, showsChevron: true)
             }
+            .buttonStyle(.row)
+
+            NavigationLink { SuperCashbackView() } label: {
+                ListRow(icon: "percent", title: "Супер-кэшбек",
+                        subtitle: superSubtitle, showsChevron: true)
+            }
+            .buttonStyle(.row)
+
+            NavigationLink { PartnerOffersView() } label: {
+                ListRow(icon: "bag", title: "Партнёры",
+                        subtitle: "\(PartnerOffer.visible(for: entitlements).count) предложений",
+                        showsChevron: true)
+            }
+            .buttonStyle(.row)
+
+            NavigationLink { SubscriptionView() } label: {
+                ListRow(icon: "crown", title: "Подписка и тариф",
+                        subtitle: "Текущий: \(effectiveTier.shortLabel)", showsChevron: true)
+            }
+            .buttonStyle(.row)
         }
     }
 
@@ -96,7 +83,7 @@ struct BenefitsView: View {
 
     private var categorySubtitle: String {
         let n = store.selectedCount(profileId: profileId)
-        if entitlements.allCashbackCategories { return "Активно: \(n) · без лимита" }
+        if entitlements.allCashbackCategories { return "Активно: \(n), без лимита" }
         return "Активно: \(n) из \(store.categoryLimit(for: entitlements))"
     }
 
@@ -106,7 +93,7 @@ struct BenefitsView: View {
            let c = CashbackCategory.lookup(id) {
             return "\(c.name): \(CashbackCategory.pct(c.superRate ?? 0))"
         }
-        return "Повышенные ставки"
+        return "Категория не выбрана"
     }
 }
 

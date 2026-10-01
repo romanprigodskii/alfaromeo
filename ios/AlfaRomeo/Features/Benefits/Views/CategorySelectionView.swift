@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// «Выбор категорий» (§9.3) — pick which cashback categories are active. The number of slots grows
-/// with the tier (Base 1 · Pro 3 · Infinite — все, §4); selection persists in ``BenefitsStore``. A
-/// slot-meter adds light geymification; Base also gets a soft upsell (§4 — без тёмных паттернов).
+/// «Категории» (§9.3): pick which cashback categories are active. The number of slots grows with
+/// the tier (Base 1, Pro 3, Infinite all, §4); selection persists in ``BenefitsStore``. A slot
+/// meter shows usage; Base also gets a soft upsell (§4, без тёмных паттернов).
 ///
 /// Pushed onto the Выгода section's `NavigationStack` via `NavigationLink` from ``BenefitsView``.
 struct CategorySelectionView: View {
@@ -22,8 +22,7 @@ struct CategorySelectionView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                intro
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if entitlements.allCashbackCategories {
                     unlimitedNote
                 } else {
@@ -33,12 +32,13 @@ struct CategorySelectionView: View {
                 if entitlements.cashback == .basic {
                     UpsellCard(
                         title: "Больше категорий",
-                        message: "На Pro выбирайте до 3 категорий, на Infinite — все сразу.",
+                        message: "На Pro до 3 категорий, на Infinite все сразу.",
                         recommendedTier: .pro
                     )
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(Motion.snappy, value: selectedCount)
         }
@@ -48,101 +48,81 @@ struct CategorySelectionView: View {
         .task { baseTier = (try? await api.subscription(profileId: profileId))?.tier ?? .base }
     }
 
-    // MARK: Intro
-
-    private var intro: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Выберите категории").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text("Кэшбек начисляется только по активным категориям.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-        }
-    }
-
-    // MARK: Slot meter (geymification)
+    // MARK: Slot meter (plain summary on the background, no card)
 
     private var slotMeter: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text("Слоты категорий").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Spacer()
-                    Badge(kind: .text(effectiveTier.shortLabel), tint: theme.accent)
-                }
-                Text("\(selectedCount) из \(maxSlots)")
-                    .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Активно \(selectedCount) из \(maxSlots)")
+                    .font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                    .monospacedDigit()
                     .contentTransition(.numericText())
-                ProgressBar(value: Double(selectedCount) / Double(max(maxSlots, 1)), tint: theme.accent)
-                Text(slotHint).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Spacer()
+                Badge(kind: .text(effectiveTier.shortLabel))
             }
+            ProgressBar(value: Double(selectedCount) / Double(max(maxSlots, 1)), tint: theme.accent)
+            Text(slotHint).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
     }
 
     private var slotHint: String {
         let free = maxSlots - selectedCount
-        if free <= 0 { return "Все слоты активны" }
-        return free == 1 ? "Ещё 1 слот доступен!" : "Ещё \(free) слота доступно!"
+        if free <= 0 { return "Все слоты заняты" }
+        return "Свободно слотов: \(free)"
     }
 
     private var unlimitedNote: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: "infinity").font(.system(size: 14, weight: .bold)).foregroundStyle(theme.success)
-            Text("Все категории активны без лимита").font(BrandFont.callout).foregroundStyle(theme.success)
-        }
+        Text("Все категории активны без лимита")
+            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
     }
 
     // MARK: Category list
 
     private var categoryList: some View {
-        VStack(spacing: Spacing.sm) {
-            ForEach(CashbackCategory.catalog) { categorySlot($0) }
+        GroupedSection(footer: "Кэшбек начисляется только по активным категориям.") {
+            ForEach(CashbackCategory.catalog) { categoryRow($0) }
         }
     }
 
-    @ViewBuilder
-    private func categorySlot(_ cat: CashbackCategory) -> some View {
+    private func categoryRow(_ cat: CashbackCategory) -> some View {
         let selected = store.isSelected(cat.id, profileId: profileId)
         let locked = cat.premium && !entitlements.allCashbackCategories
 
-        SurfaceCard(padding: Spacing.md, elevated: selected) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: cat.icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(selected ? theme.accent : theme.textSecondary)
-                    .frame(width: 40, height: 40)
-                    .background(selected ? theme.accent.opacity(0.12) : theme.elevated,
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        return Button {
+            guard !locked else { return }
+            store.toggleCategory(cat.id, profileId: profileId, entitlements: entitlements)
+        } label: {
+            HStack(spacing: ListRow.glyphSpacing) {
+                GlyphCircle(systemImage: cat.icon)
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: Spacing.xs) {
-                        Text(cat.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                        if cat.premium { Badge(kind: .text("Infinite"), tint: theme.accent) }
+                        Text(cat.name).font(BrandFont.bodyM)
+                            .foregroundStyle(locked ? theme.textTertiary : theme.textPrimary)
+                        if cat.premium { Badge(kind: .text("Infinite")) }
                     }
                     Text("Кэшбек \(CashbackCategory.pct(cat.baseRate))")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                        .monospacedDigit()
                 }
 
                 Spacer(minLength: Spacing.sm)
 
                 if locked {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.textSecondary)
+                    Image(systemName: "lock")
+                        .font(.system(size: 17)).foregroundStyle(theme.textTertiary)
                 } else {
                     Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(selected ? theme.accent : theme.border)
+                        .font(.system(size: 22))
+                        .foregroundStyle(selected ? theme.accent : theme.textTertiary)
                 }
             }
+            .padding(.vertical, Spacing.sm)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .contentShape(Rectangle())
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(selected ? theme.accent : theme.border, lineWidth: selected ? 2 : 1)
-        )
-        .opacity(locked ? 0.55 : 1)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard !locked else { return }
-            store.toggleCategory(cat.id, profileId: profileId, entitlements: entitlements)
-        }
+        .buttonStyle(.row)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
         .animation(Motion.snappy, value: selected)
     }
 }
