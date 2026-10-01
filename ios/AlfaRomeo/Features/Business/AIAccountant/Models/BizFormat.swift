@@ -1,31 +1,16 @@
 import Foundation
 
 /// Small ₽/date formatting helpers for the AI-accountant cards (§8.2). `AmountText` covers the big
-/// monospaced figures; these cover inline strings inside sentences ("через 14 дней", "17 июня").
+/// figures; these cover inline strings inside sentences ("через 14 дней", "17 июня").
 enum BizFormat {
-    private static let rubFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.groupingSeparator = "\u{2009}" // thin space
-        f.maximumFractionDigits = 0
-        f.minimumFractionDigits = 0
-        return f
-    }()
-
-    /// "1 200 000 ₽" (thin-space grouped, no decimals).
+    /// «1 200 000 ₽» via ``MoneyFormat`` (NBSP grouping, U+2212 minus, no kopecks).
     static func ruble(_ amount: Double) -> String {
-        let n = rubFormatter.string(from: NSNumber(value: abs(amount))) ?? "\(Int(abs(amount)))"
-        let sign = amount < 0 ? "\u{2212}" : ""
-        return "\(sign)\(n) ₽"
+        MoneyFormat.fiat(amount.rounded())
     }
 
-    /// "1,2 млн ₽" / "980 тыс ₽" — compact, for tight callouts.
+    /// «1,2 млн ₽» / «980 тыс. ₽», compact for tight callouts (``MoneyFormat/compact(_:currency:)``).
     static func compactRuble(_ amount: Double) -> String {
-        let sign = amount < 0 ? "\u{2212}" : ""
-        let v = abs(amount)
-        if v >= 1_000_000 { return sign + String(format: "%.1f млн ₽", v / 1_000_000).replacingOccurrences(of: ".", with: ",") }
-        if v >= 1_000 { return sign + String(format: "%.0f тыс ₽", v / 1_000) }
-        return sign + String(format: "%.0f ₽", v)
+        MoneyFormat.compact(amount)
     }
 
     private static let dayMonthFormatter: DateFormatter = {

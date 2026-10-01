@@ -78,9 +78,8 @@ struct RevenueSummaryHeader: View {
             }
             ProgressBar(
                 value: summary.share(slice),
-                tint: slice.method == .crypto ? nil : theme.accent,
-                useCryptoGradient: slice.method == .crypto,
-                height: 6
+                tint: theme.textPrimary,
+                height: 4
             )
         }
     }

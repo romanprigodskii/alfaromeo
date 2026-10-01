@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// A solid, contrast-safe chip naming a teammate's role (§8.2: владелец / бухгалтер / менеджер).
-/// Uses ``RoleCatalog`` for the label + tint; text uses `bestOnColor` so it stays AA on any tint
-/// (graphite/platinum/steel-blue/amber).
+/// A neutral chip naming a teammate's role (§8.2: владелец / бухгалтер / менеджер). Caption 12 medium
+/// on `fill`, radius 8 (DESIGN §5): roles are labels, not states, so they carry no tint.
 struct RoleBadge: View {
     let role: MembershipRole
     var compact: Bool = false
@@ -10,18 +9,13 @@ struct RoleBadge: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        let tint = RoleCatalog.tint(role, theme: theme)
-        HStack(spacing: Spacing.xxs) {
-            Image(systemName: RoleCatalog.icon(role))
-                .font(.system(size: compact ? 9 : 10, weight: .bold))
-            Text(RoleCatalog.label(role))
-                .font((compact ? BrandFont.micro : BrandFont.caption).weight(.semibold))
-        }
-        .foregroundStyle(tint.bestOnColor)
-        .padding(.horizontal, compact ? Spacing.sm : Spacing.sm)
-        .padding(.vertical, compact ? 2 : Spacing.xs)
-        .background(tint, in: Capsule())
-        .accessibilityLabel("Роль: \(RoleCatalog.label(role))")
+        Text(RoleCatalog.label(role))
+            .font(compact ? BrandFont.micro : BrandFont.footnote.weight(.medium))
+            .foregroundStyle(theme.textPrimary)
+            .padding(.horizontal, Spacing.sm)
+            .padding(.vertical, compact ? 3 : Spacing.xs)
+            .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
+            .accessibilityLabel("Роль: \(RoleCatalog.label(role))")
     }
 }
 

@@ -15,8 +15,8 @@ struct RolesMatrixView: View {
                     roleCard(role)
                 }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -30,7 +30,7 @@ struct RolesMatrixView: View {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Label("Многоступенчатая подпись", systemImage: "signature")
                     .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Платежи свыше \(SupplierPaymentModel.rub(store.policy.thresholdRub)) требуют \(store.policy.requiredSigners)-of-N подпись. Подписывать могут только владелец и бухгалтер (§11.8).")
+                Text("Платежи свыше \(SupplierPaymentModel.rub(store.policy.thresholdRub)) требуют \(store.policy.requiredSigners) подписей. Подписывать могут только владелец и бухгалтер.")
                     .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: Spacing.sm) {

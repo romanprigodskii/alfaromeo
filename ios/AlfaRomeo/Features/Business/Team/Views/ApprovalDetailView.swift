@@ -27,12 +27,12 @@ struct ApprovalDetailView: View {
                     signatureCard(item)
                     actionArea(item)
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("Заявка не найдена").font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                    .padding(Spacing.lg)
+                    .padding(Spacing.screen)
             }
         }
         .background(theme.background.ignoresSafeArea())
@@ -123,7 +123,7 @@ struct ApprovalDetailView: View {
                               icon: bio.systemImage, isLoading: signing) {
                     Task { await sign(as: signer) }
                 }
-                Text("Подпись \(signer.roleLabel.lowercased()) · подтверждение биометрией (§11.8)")
+                Text("Подпись: \(signer.roleLabel.lowercased()), подтверждение биометрией")
                     .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
                     .frame(maxWidth: .infinity)
                 Button(role: .destructive) {
@@ -157,21 +157,21 @@ struct ApprovalDetailView: View {
                            : (theme.isDark ? theme.danger : BrandColors.dangerInkLight)
         return VStack(spacing: Spacing.md) {
             ZStack {
-                Circle().fill(tint.opacity(0.14)).frame(width: 96, height: 96)
-                Image(systemName: success ? "checkmark.seal.fill" : "xmark.seal.fill")
-                    .font(.system(size: 40, weight: .bold)).foregroundStyle(tint)
+                Circle().fill(theme.fill).frame(width: 96, height: 96)
+                Image(systemName: success ? "checkmark" : "xmark")
+                    .font(.system(size: 36, weight: .medium)).foregroundStyle(tint)
                     .scaleEffect(pop ? 1 : 0.5).opacity(pop ? 1 : 0)
             }
             Text(success ? "Платёж исполнен" : "Платёж отклонён")
                 .font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text(success ? "Все подписи собраны. Исполнение — симуляция (§14)."
+            Text(success ? "Все подписи собраны. Исполнение в демо симулируется."
                          : "Заявка отклонена. Средства не списаны.")
                 .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            PrimaryButton(title: "Готово", icon: "checkmark") { router.popToRoot() }
+            PrimaryButton(title: "Готово") { router.popToRoot() }
         }
         .frame(maxWidth: .infinity).padding(.top, Spacing.sm)
-        .onAppear { withAnimation(reduceMotion ? nil : Motion.bouncy.delay(0.05)) { pop = true } }
+        .onAppear { withAnimation(reduceMotion ? nil : Motion.smooth.delay(0.05)) { pop = true } }
     }
 
     // MARK: Sign

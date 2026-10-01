@@ -21,12 +21,12 @@ struct CorporateCardDetailView: View {
                     limitCard(card)
                     controls(card)
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("Карта не найдена").font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                    .padding(Spacing.lg)
+                    .padding(Spacing.screen)
             }
         }
         .background(theme.background.ignoresSafeArea())
@@ -43,38 +43,13 @@ struct CorporateCardDetailView: View {
     }
 
     private func cardFace(_ card: CorporateCard) -> some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .fill(LinearGradient(colors: [BrandColors.bizElevatedDark, BrandColors.bizSurfaceDark],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(height: 188)
-                .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(.white.opacity(0.08), lineWidth: 1))
-            VStack(alignment: .leading) {
-                HStack {
-                    Text(card.holderName).font(BrandFont.headline).foregroundStyle(.white)
-                    Spacer()
-                    Text(card.kind.label).font(BrandFont.micro.weight(.semibold)).foregroundStyle(.white.opacity(0.7))
-                }
-                Spacer()
-                Text("•••• •••• •••• \(card.last4)")
-                    .font(BrandFont.mono(20, weight: .medium)).foregroundStyle(.white)
-                    .monospacedDigit()
-                HStack {
-                    Text(store.member(id: card.holderUserId).map { RoleCatalog.label($0.role) } ?? "Сотрудник")
-                        .font(BrandFont.caption).foregroundStyle(.white.opacity(0.7))
-                    Spacer()
-                    if card.isFrozen {
-                        Label("Заморожена", systemImage: "snowflake")
-                            .font(BrandFont.micro.weight(.semibold)).foregroundStyle(.white)
-                    }
-                    Text("МИР").font(BrandFont.caption.weight(.bold)).foregroundStyle(.white.opacity(0.85))
-                }
-            }
-            .padding(Spacing.lg)
-            .frame(height: 188)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            CardArt(last4: card.last4, label: card.holderName, style: .graphite, isFrozen: card.isFrozen)
+            Text([card.kind.label,
+                  store.member(id: card.holderUserId).map { RoleCatalog.label($0.role) } ?? "Сотрудник",
+                  card.isFrozen ? "заморожена" : nil].compactMap { $0 }.prefix(2).joined(separator: " · "))
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
-        .opacity(card.isFrozen ? 0.7 : 1)
     }
 
     private func limitCard(_ card: CorporateCard) -> some View {

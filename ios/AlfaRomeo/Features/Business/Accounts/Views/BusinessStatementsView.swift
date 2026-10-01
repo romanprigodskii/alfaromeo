@@ -14,13 +14,13 @@ struct BusinessStatementsView: View {
     var body: some View {
         let ops = store.operations
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 summaryCard(ops)
                 exportRow(ops)
                 operationsList(ops)
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -42,52 +42,43 @@ struct BusinessStatementsView: View {
         // currency, but «Поступления / Списания / Итого» are a single ₽-equivalent figure.
         let income = ops.filter { $0.amount > 0 }.reduce(0) { $0 + rubValue($1) }
         let expense = ops.filter { $0.amount < 0 }.reduce(0) { $0 + abs(rubValue($1)) }
-        return SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Выписка по счетам").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                        Text("\(store.businessName) · \(periodLabel) · \(ops.count) операций")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    }
-                    Spacer()
-                    Image(systemName: "doc.text.fill").font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(theme.accent)
-                }
-                HStack {
-                    flow(title: "Поступления", value: income, tint: theme.success)
-                    Spacer()
-                    flow(title: "Списания", value: -expense, tint: theme.danger)
-                    Spacer()
-                    flow(title: "Итого", value: income - expense, tint: theme.textPrimary)
-                }
+        return VStack(alignment: .leading, spacing: Spacing.md) {
+            Text("\(store.businessName), \(ops.count) операций")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            GroupedSection {
+                flow(title: "Поступления", value: income)
+                flow(title: "Списания", value: -expense)
+                flow(title: "Итого", value: income - expense, emphasized: true)
             }
         }
     }
 
-    /// ₽-equivalent of one operation at the store's live rate (₽ ops pass through 1:1).
     private func rubValue(_ tx: Transaction) -> Double { tx.amount * store.rubRate(currency: tx.currency) }
 
-    private func flow(title: String, value: Double, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            Text(CryptoFormat.compactRub(value))
-                .font(BrandFont.mono(15, weight: .semibold)).foregroundStyle(tint).monospacedDigit()
+    private func flow(title: String, value: Double, emphasized: Bool = false) -> some View {
+        HStack {
+            Text(title).font(emphasized ? BrandFont.headline : BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+            Spacer(minLength: Spacing.sm)
+            Text(MoneyFormat.compact(value))
+                .font(emphasized ? BrandFont.headline : BrandFont.bodyM)
+                .foregroundStyle(value > 0 && !emphasized ? theme.success : theme.textPrimary)
+                .monospacedDigit()
         }
+        .frame(minHeight: Spacing.rowMinHeight)
     }
 
     // MARK: Export (real PDF / CSV)
 
     private func exportRow(_ ops: [Transaction]) -> some View {
         HStack(spacing: Spacing.sm) {
-            SecondaryButton(title: "PDF", icon: "arrow.down.doc") {
+            SecondaryButton(title: "PDF") {
                 #if canImport(UIKit)
                 if let url = HistoryDocuments.statementPDF(periodLabel: periodLabel, rows: rows(ops)) {
                     share = SharePayload(url: url)
                 }
                 #endif
             }
-            SecondaryButton(title: "CSV", icon: "tablecells") {
+            SecondaryButton(title: "CSV") {
                 if let url = HistoryDocuments.statementCSV(periodLabel: periodLabel, rows: rows(ops)) {
                     share = SharePayload(url: url)
                 }
@@ -112,17 +103,12 @@ struct BusinessStatementsView: View {
 
     @ViewBuilder private func operationsList(_ ops: [Transaction]) -> some View {
         if ops.isEmpty {
-            SurfaceCard {
-                Text("По счетам ещё нет операций.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            }
+            Text("По счетам ещё нет операций.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         } else {
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(ops.enumerated()), id: \.element.id) { index, tx in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        operationRow(tx)
-                    }
+            GroupedSection("Операции") {
+                ForEach(ops) { tx in
+                    operationRow(tx)
                 }
             }
         }
@@ -130,20 +116,22 @@ struct BusinessStatementsView: View {
 
     private func operationRow(_ tx: Transaction) -> some View {
         HStack(spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(tx.counterparty ?? Self.kindLabel(tx.kind))
-                    .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary).lineLimit(1)
+                    .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary).lineLimit(1)
                 HStack(spacing: Spacing.sm) {
-                    Text(dateLabel(tx)).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    StatusPill(status: Self.pillStatus(tx.status))
-                        .scaleEffect(0.85, anchor: .leading)
+                    Text(dateLabel(tx)).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    if tx.status != .completed {
+                        StatusPill(status: Self.pillStatus(tx.status))
+                    }
                 }
             }
             Spacer(minLength: Spacing.sm)
             AmountText(amount: tx.amount, currency: tx.currency == "RUB" ? "₽" : tx.currency,
-                       size: 15, showsSign: true, colorBySign: true)
+                       size: 17, showsSign: true, colorBySign: true)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
     }
 
     private func dateLabel(_ tx: Transaction) -> String {

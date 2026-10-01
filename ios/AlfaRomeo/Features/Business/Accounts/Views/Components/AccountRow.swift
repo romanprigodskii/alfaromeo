@@ -1,32 +1,37 @@
 import SwiftUI
 
-/// One РКО account row (§8.2): an icon chip, the account title + masked number, and the native balance
-/// with a «≈ … ₽» live valuation sub-line for non-₽ accounts (multicurrency / stablecoin treasury).
+/// One РКО account row (§8.2) inside a ``GroupedSection``: a currency glyph, the account title + masked
+/// number, and the native balance with a «≈ … ₽» valuation line for non-₽ accounts.
 struct AccountRow: View {
     let item: BusinessAccountItem
 
     @Environment(\.theme) private var theme
 
-    private var iconTint: Color {
-        // Treasury/stables read as a «cold» crypto surface (§13.1); ₽ and fiat keep the graphite accent.
-        item.group == .treasury ? (theme.accentCrypto.last ?? theme.accent) : theme.accent
+    /// The group header already names the kind, so non-₽ rows keep the title short and move the
+    /// currency code next to the masked number («USD ·· 4340»).
+    private var rowTitle: String {
+        switch item.group {
+        case .rubles:        return item.title
+        case .multicurrency: return "Валютный счёт"
+        case .treasury:      return "Трежери"
+        }
+    }
+
+    private var rowSubtitle: String {
+        item.group == .rubles ? item.maskedNumber : "\(item.currency.uppercased()) \(item.maskedNumber)"
     }
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: item.icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(iconTint)
-                .frame(width: 40, height: 40)
-                .background(iconTint.opacity(0.14),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        HStack(spacing: Spacing.sm + 4) {
+            GlyphCircle(currency: item.currency)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(BrandFont.bodyM.weight(.medium))
+                Text(rowTitle)
+                    .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textPrimary)
-                Text(item.maskedNumber)
-                    .font(BrandFont.caption)
+                    .lineLimit(1)
+                Text(rowSubtitle)
+                    .font(BrandFont.subheadline)
                     .foregroundStyle(theme.textSecondary)
                     .monospacedDigit()
             }
@@ -36,10 +41,10 @@ struct AccountRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 AmountText(amount: item.balance,
                            currency: item.currency.uppercased() == "RUB" ? "₽" : item.currency.uppercased(),
-                           size: 15)
+                           size: 17)
                 if item.showsRubEquivalent {
-                    Text("≈ \(CryptoFormat.compactRub(item.rubValue))")
-                        .font(BrandFont.micro)
+                    Text("≈ \(MoneyFormat.compact(item.rubValue))")
+                        .font(BrandFont.subheadline)
                         .foregroundStyle(theme.textSecondary)
                         .monospacedDigit()
                 }
@@ -47,9 +52,11 @@ struct AccountRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(theme.textTertiary)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
         .contentShape(Rectangle())
+        .groupedRowTextInset(48)
     }
 }

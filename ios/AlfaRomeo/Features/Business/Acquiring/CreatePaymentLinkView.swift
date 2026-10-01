@@ -35,34 +35,22 @@ struct CreatePaymentLinkView: View {
                     }
                 }
 
-                SurfaceCard {
-                    HStack(alignment: .top, spacing: Spacing.md) {
-                        Image(systemName: model.kind.systemImage)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(theme.accent)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                theme.accent.opacity(0.14),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                            )
-                        Text(model.kind.hint)
-                            .font(BrandFont.caption)
-                            .foregroundStyle(theme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 0)
-                    }
-                }
+                Text(model.kind.hint)
+                    .font(BrandFont.footnote)
+                    .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Spacing.md)
 
                 Spacer(minLength: Spacing.md)
 
-                PrimaryButton(title: model.kind.actionTitle, icon: model.kind.systemImage) {
+                PrimaryButton(title: model.kind.actionTitle) {
                     if let link = model.generate(store: store) {
                         router.push(AcquiringRoute.linkResult(link))
                     }
                 }
                 .disabled(!model.canGenerate)
             }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Новый платёж")

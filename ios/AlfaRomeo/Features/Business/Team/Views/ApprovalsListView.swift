@@ -12,7 +12,7 @@ struct ApprovalsListView: View {
         let closed = store.allApprovalItems.filter { $0.request.status != .pending }
 
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if pending.isEmpty && closed.isEmpty {
                     emptyState
                 }
@@ -23,8 +23,8 @@ struct ApprovalsListView: View {
                     group("История", items: closed)
                 }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -34,27 +34,23 @@ struct ApprovalsListView: View {
     }
 
     private func group(_ title: String, items: [ApprovalItem]) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+        GroupedSection(title) {
             ForEach(items) { item in
                 Button { router.push(TeamRoute.approvalDetail(approvalId: item.id)) } label: {
-                    ApprovalCard(item: item)
+                    ApprovalRow(item: item)
                 }
-                .buttonStyle(PressableButtonStyle())
+                .buttonStyle(.row)
             }
         }
     }
 
     private var emptyState: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Image(systemName: "checkmark.seal.fill").font(.system(size: 28))
-                    .foregroundStyle(theme.isDark ? theme.success : BrandColors.successInkLight)
-                Text("Нет платежей на подпись").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Крупный платёж поставщику появится здесь, когда инициатор поставит первую подпись (§8.3).")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Нет платежей на подпись").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            Text("Крупный платёж поставщику появится здесь после первой подписи инициатора.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.top, Spacing.md)
     }
 }

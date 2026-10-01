@@ -4,9 +4,8 @@ import SwiftUI
 /// every ``AccountsRoute`` on the tab's own `NavigationStack` (the self-contained one-stack pattern of
 /// the Acquiring/Team hubs), so sub-screens push without touching the shell.
 ///
-/// Surfaces: a total-balance hero (₽ + multicurrency + crypto-treasury, all at the **live** rate), the
-/// РКО accounts grouped into рублёвые / мультивалютные / крипто-трежери, and the entry into the
-/// «выписка». Crypto-treasury (USDT/USDC) is valued by the same ``LivePriceService`` the Crypto Hub uses
+/// Surfaces: a total-balance hero (₽ + multicurrency at курс ЦБ + crypto-treasury at the live rate),
+/// the РКО accounts grouped into рублёвые / валютные / крипто-трежери, and the entry into the «выписка». Crypto-treasury (USDT/USDC) is valued by the same ``LivePriceService`` the Crypto Hub uses
 /// (§2.4). Runs in the graphite business theme resolved by the profile (§8/§13.1).
 struct BusinessAccountsView: View {
     @Environment(Router.self) private var router
@@ -21,7 +20,7 @@ struct BusinessAccountsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if store.loadFailed {
                     errorBlock
                 } else if !store.didLoad {
@@ -34,7 +33,7 @@ struct BusinessAccountsView: View {
                     statementsEntry
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -52,41 +51,43 @@ struct BusinessAccountsView: View {
     // MARK: Hero
 
     private var hero: some View {
-        AccountBalanceHero(totalRub: store.totalRub, isLive: prices.isLive, subline: heroSubline)
+        AccountBalanceHero(totalRub: store.totalRub, isLive: prices.isLive,
+                           stats: heroStats, footnote: heroFootnote)
     }
 
-    private var heroSubline: String {
-        var parts = ["Расчётный \(CryptoFormat.compactRub(store.settlementRub))"]
+    private var heroStats: [AccountBalanceHero.Stat] {
+        var stats = [AccountBalanceHero.Stat(label: "Расчётный", value: MoneyFormat.compact(store.settlementRub))]
         if store.multicurrencyRub > 0 {
-            parts.append("валюта \(CryptoFormat.compactRub(store.multicurrencyRub)) · \(FXRateService.shared.label)")
+            stats.append(.init(label: "Валюта", value: MoneyFormat.compact(store.multicurrencyRub)))
+        }
+        if store.treasuryRub > 0 {
+            stats.append(.init(label: "Трежери", value: MoneyFormat.compact(store.treasuryRub)))
+        }
+        return stats
+    }
+
+    private var heroFootnote: String? {
+        var lines: [String] = []
+        if store.multicurrencyRub > 0 {
+            lines.append("Валюта в ₽ · \(FXRateService.shared.label)")
         }
         if store.treasuryRub > 0 {
             // Stablecoins are $-pegged, so the native total reads as «$…» rather than mislabelling the
             // USDT+USDC sum as a single currency.
-            parts.append("трежери $\(CryptoFormat.qty(store.treasuryStableTotal)) ≈ \(CryptoFormat.compactRub(store.treasuryRub))")
+            lines.append("Трежери \(MoneyFormat.fiat(store.treasuryStableTotal, currency: "$")) · live-курс")
         }
-        return parts.joined(separator: " · ")
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
     }
 
     // MARK: Groups
 
     private func groupSection(_ group: BusinessAccountGroup) -> some View {
-        let items = store.items(in: group)
-        return VStack(alignment: .leading, spacing: Spacing.sm) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(group.title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text(group.caption).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            }
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        Button { router.push(AccountsRoute.accountDetail(accountId: item.id)) } label: {
-                            AccountRow(item: item)
-                        }
-                        .buttonStyle(.plain)
-                    }
+        GroupedSection(group.title, footer: group.caption) {
+            ForEach(store.items(in: group)) { item in
+                Button { router.push(AccountsRoute.accountDetail(accountId: item.id)) } label: {
+                    AccountRow(item: item)
                 }
+                .buttonStyle(.row)
             }
         }
     }
@@ -94,40 +95,36 @@ struct BusinessAccountsView: View {
     // MARK: Statements
 
     private var statementsEntry: some View {
-        Button { router.push(AccountsRoute.statements) } label: {
-            SurfaceCard(padding: Spacing.md) {
+        GroupedSection("Документы") {
+            Button { router.push(AccountsRoute.statements) } label: {
                 ListRow(icon: "doc.text", title: "Выписки",
-                        subtitle: "Операции по счетам · экспорт PDF / CSV", showsChevron: true)
+                        subtitle: "Все счета, PDF и CSV", showsChevron: true)
             }
+            .buttonStyle(.row)
         }
-        .buttonStyle(PressableButtonStyle())
     }
 
     // MARK: States
 
     private var loadingBlock: some View {
-        VStack(spacing: Spacing.md) {
-            ProgressView().tint(theme.accent)
-            Text("Загружаем счета…").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        GroupedSection {
+            ForEach(0..<3, id: \.self) { _ in SkeletonRow() }
         }
-        .frame(maxWidth: .infinity, minHeight: 240)
+        .accessibilityLabel("Загружаем счета")
     }
 
     private var errorBlock: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.warning)
-                    Text("Не удалось загрузить счета").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                }
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Не удалось загрузить счета").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                 Text("Проверьте соединение и попробуйте ещё раз.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                SecondaryButton(title: "Повторить", icon: "arrow.clockwise") {
-                    Task { await store.load(api: api, profileId: profileId, force: true) }
-                }
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            }
+            SecondaryButton(title: "Повторить") {
+                Task { await store.load(api: api, profileId: profileId, force: true) }
             }
         }
+        .padding(.top, Spacing.md)
     }
 }
 

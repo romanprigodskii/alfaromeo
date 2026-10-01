@@ -21,12 +21,12 @@ struct MemberDetailView: View {
                     cardsCard(member)
                     if !member.isCurrentUser { manageCard(member) }
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("Сотрудник не найден").font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                    .padding(Spacing.lg)
+                    .padding(Spacing.screen)
             }
         }
         .background(theme.background.ignoresSafeArea())

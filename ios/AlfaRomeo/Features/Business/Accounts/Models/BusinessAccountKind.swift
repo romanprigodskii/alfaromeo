@@ -13,17 +13,17 @@ enum BusinessAccountGroup: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .rubles:        return "Рублёвые счёта"
-        case .multicurrency: return "Мультивалютные"
+        case .rubles:        return "Рублёвые счета"
+        case .multicurrency: return "Валютные счета"
         case .treasury:      return "Крипто-трежери"
         }
     }
 
     var caption: String {
         switch self {
-        case .rubles:        return "РКО · расчётный и накопительный"
+        case .rubles:        return "РКО: расчётный и накопительный"
         case .multicurrency: return "Оценка в ₽ по курсу ЦБ"
-        case .treasury:      return "Стейблы как операционная валюта · live-курс"
+        case .treasury:      return "Стейблкоины, оценка в ₽ по live-курсу"
         }
     }
 }
@@ -82,6 +82,6 @@ struct BusinessAccountItem: Identifiable, Hashable {
     /// so the list reads like real РКО («·· 3900») without inventing a stored field.
     var maskedNumber: String {
         let n = account.id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
-        return String(format: "·· %04d", 1000 + (n * 37) % 9000)
+        return "·· \(1000 + (n * 37) % 9000)"
     }
 }

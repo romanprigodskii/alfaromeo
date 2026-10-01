@@ -77,10 +77,10 @@ struct AcceptPaymentView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Зачислится")
-                                    .font(BrandFont.caption)
+                                    .font(BrandFont.subheadline)
                                     .foregroundStyle(theme.textSecondary)
-                                Text("Комиссия \(model.method.feeLabel) · \(CryptoFormat.rub(model.feeRub))")
-                                    .font(BrandFont.micro)
+                                Text("Комиссия \(model.method.feeLabel) · \(MoneyFormat.fiat(model.feeRub.rounded()))")
+                                    .font(BrandFont.footnote)
                                     .foregroundStyle(theme.textSecondary)
                             }
                             Spacer()
@@ -98,7 +98,7 @@ struct AcceptPaymentView: View {
                 }
                 .disabled(!model.canAccept)
             }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
         }
         .scrollIndicators(.hidden)
     }

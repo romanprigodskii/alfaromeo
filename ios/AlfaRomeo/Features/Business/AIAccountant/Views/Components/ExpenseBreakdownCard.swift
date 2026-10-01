@@ -14,15 +14,10 @@ struct ExpenseBreakdownCard: View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: "chart.pie.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(theme.cryptoGradient, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                     Text("Анализ расходов")
                         .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                     Spacer()
-                    Text("за месяц").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    Text("за месяц").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 }
 
                 VStack(spacing: Spacing.sm) {
@@ -31,19 +26,15 @@ struct ExpenseBreakdownCard: View {
                     }
                 }
 
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: "wand.and.stars").font(.system(size: 11, weight: .bold)).foregroundStyle(theme.textSecondary)
-                    Text("AI классифицировал \(scenario.classifiedOpsCount) операций · \(scenario.needsReviewCount) требуют уточнения")
-                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text("Разобрано операций: \(scenario.classifiedOpsCount), на уточнении: \(scenario.needsReviewCount)")
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Button(action: onAsk) {
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: "sparkles").font(.system(size: 12, weight: .bold))
-                        Text("Где сэкономить — спросить AI").font(BrandFont.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(theme.accent)
+                    Text("Спросить, где сэкономить")
+                        .font(BrandFont.body(15, weight: .medium))
+                        .foregroundStyle(theme.accent)
                 }
                 .buttonStyle(.plain)
             }
@@ -53,13 +44,15 @@ struct ExpenseBreakdownCard: View {
     private func row(_ cat: ExpenseCategory) -> some View {
         VStack(spacing: Spacing.xxs) {
             HStack {
-                Text(cat.label).font(BrandFont.caption).foregroundStyle(theme.textPrimary)
+                Text(cat.label).font(BrandFont.subheadline).foregroundStyle(theme.textPrimary)
                 Spacer()
-                Text("\(cat.sharePercent)%").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                Text(BizFormat.compactRuble(cat.amount)).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                    .frame(width: 72, alignment: .trailing)
+                Text(MoneyFormat.percent(Double(cat.sharePercent))).font(BrandFont.subheadline.weight(.medium))
+                    .foregroundStyle(theme.textPrimary).monospacedDigit()
+                Text(BizFormat.compactRuble(cat.amount)).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: 84, alignment: .trailing)
             }
-            ProgressBar(value: Double(cat.sharePercent) / Double(max(maxShare, 1)), useCryptoGradient: true, height: 6)
+            ProgressBar(value: Double(cat.sharePercent) / Double(max(maxShare, 1)), height: 4)
         }
     }
 }

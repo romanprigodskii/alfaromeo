@@ -14,18 +14,18 @@ struct AcquiringAmountField: View {
         SurfaceCard(padding: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(title)
-                    .font(BrandFont.caption)
+                    .font(BrandFont.footnote)
                     .foregroundStyle(theme.textSecondary)
 
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
                     TextField(placeholder, text: $text)
                         .keyboardType(.decimalPad)
-                        .font(BrandFont.mono(34, weight: .semibold))
+                        .font(BrandFont.body(34, weight: .semibold))
                         .foregroundStyle(theme.textPrimary)
                         .monospacedDigit()
 
                     Text(currency)
-                        .font(BrandFont.mono(22))
+                        .font(BrandFont.body(22))
                         .foregroundStyle(theme.textSecondary)
                 }
             }

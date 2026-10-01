@@ -8,32 +8,36 @@ struct MemberRow: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            Avatar(initials: member.initials, size: 40,
+        HStack(spacing: Spacing.sm + 4) {
+            Avatar(initials: member.initials, size: 36,
                    ringColor: member.isCurrentUser ? theme.accent : nil)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: Spacing.xs) {
                     Text(member.name)
-                        .font(BrandFont.bodyM.weight(.medium))
+                        .font(BrandFont.bodyM)
                         .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
                     if member.isCurrentUser {
                         Text("вы").font(BrandFont.micro)
                             .foregroundStyle(theme.textSecondary)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(theme.elevated, in: Capsule())
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                     }
                 }
-                Text(member.email).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(member.email).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: Spacing.sm)
             RoleBadge(role: member.role, compact: true)
             if showsChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.textSecondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.textTertiary)
             }
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
         .contentShape(Rectangle())
+        .groupedRowTextInset(48)
     }
 }

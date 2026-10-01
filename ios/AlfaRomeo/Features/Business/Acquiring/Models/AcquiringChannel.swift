@@ -23,7 +23,7 @@ enum AcquiringChannel: String, CaseIterable, Identifiable, Hashable, Sendable {
         switch self {
         case .online:  return "Платёжные ссылки и интернет-эквайринг"
         case .offline: return "QR, NFC и терминал на кассе"
-        case .crypto:  return "Приём стейблов с авто-конвертацией в ₽ по live-курсу"
+        case .crypto:  return "Стейблкоины с конвертацией в ₽ по live-курсу"
         }
     }
 
@@ -31,16 +31,16 @@ enum AcquiringChannel: String, CaseIterable, Identifiable, Hashable, Sendable {
         switch self {
         case .online:  return "link"
         case .offline: return "qrcode.viewfinder"
-        case .crypto:  return "bitcoinsign.circle.fill"
+        case .crypto:  return "bitcoinsign"
         }
     }
 
     /// Capability chips shown on the channel card.
     var methods: [String] {
         switch self {
-        case .online:  return ["Платёжная ссылка", "Интернет-эквайринг", "Рекуррентные"]
+        case .online:  return ["Платёжная ссылка", "интернет-эквайринг", "рекуррентные"]
         case .offline: return ["QR", "NFC", "Терминал"]
-        case .crypto:  return ["USDT", "USDC", "Авто-конвертация в ₽"]
+        case .crypto:  return ["USDT", "USDC", "конвертация в ₽"]
         }
     }
 }

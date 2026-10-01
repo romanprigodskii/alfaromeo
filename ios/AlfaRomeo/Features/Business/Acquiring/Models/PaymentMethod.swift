@@ -23,10 +23,10 @@ enum PaymentMethod: String, CaseIterable, Identifiable, Hashable, Sendable {
 
     var subtitle: String {
         switch self {
-        case .card:         return "Visa · Mastercard · МИР"
+        case .card:         return "Visa, Mastercard, МИР"
         case .sbp:          return "QR или номер телефона"
         case .digitalRuble: return "Платформа ЦБ, мгновенно"
-        case .crypto:       return "USDT · USDC → авто-конвертация в ₽"
+        case .crypto:       return "USDT и USDC с конвертацией в ₽"
         }
     }
 

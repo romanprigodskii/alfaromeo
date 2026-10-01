@@ -10,19 +10,11 @@ struct CashflowForecastCard: View {
     var body: some View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "chart.xyaxis.line")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(theme.cryptoGradient, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Прогноз денежного потока")
-                            .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                        Text("\(scenario.companyName) · 90 дней")
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                    }
-                    Spacer()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Прогноз денежного потока")
+                        .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                    Text("\(scenario.companyName), 90 дней")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
 
                 Cashflow90Chart(scenario: scenario)
@@ -42,8 +34,8 @@ struct CashflowForecastCard: View {
 
     private func stat(title: String, value: String, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            Text(value).font(BrandFont.mono(15, weight: .semibold)).foregroundStyle(tint)
+            Text(title).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+            Text(value).font(BrandFont.body(15, weight: .semibold)).monospacedDigit().foregroundStyle(tint)
         }
     }
 }

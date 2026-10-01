@@ -27,14 +27,14 @@ struct SignatureProgressView: View {
         return VStack(spacing: Spacing.xs) {
             ZStack {
                 Circle()
-                    .fill(signed ? tint.opacity(0.16) : theme.elevated)
+                    .fill(signed ? theme.fill : theme.elevated)
                     .frame(width: 44, height: 44)
                 Circle()
                     .strokeBorder(signed ? tint : theme.border,
                                   style: StrokeStyle(lineWidth: 2, dash: signed ? [] : [4, 3]))
                     .frame(width: 44, height: 44)
                 if signed {
-                    Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(tint)
+                    Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(tint)
                 } else {
                     Text(slot.initials).font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
                 }

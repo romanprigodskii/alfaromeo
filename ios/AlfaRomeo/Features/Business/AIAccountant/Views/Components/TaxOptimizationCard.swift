@@ -12,38 +12,30 @@ struct TaxOptimizationCard: View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: "percent")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(theme.cryptoGradient, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                     Text("Оптимизация налога")
                         .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                     Spacer()
-                    Text("−\(tax.savingPercent)%")
-                        .font(BrandFont.headline)
+                    Text(MoneyFormat.percent(-Double(tax.savingPercent)))
+                        .font(BrandFont.headline).monospacedDigit()
                         .foregroundStyle(theme.success)
                 }
 
-                HStack(spacing: Spacing.xs) {
-                    Text(tax.current).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold)).foregroundStyle(theme.textSecondary)
-                    Text(tax.suggested).font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Сейчас: \(tax.current)").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    Text("Выгоднее: \(tax.suggested)").font(BrandFont.subheadline).foregroundStyle(theme.textPrimary)
                 }
                 .fixedSize(horizontal: false, vertical: true)
 
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
-                    Text("Экономия ≈").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Text("\(BizFormat.ruble(tax.savingRubPerYear)) / год")
-                        .font(BrandFont.mono(15, weight: .semibold)).foregroundStyle(theme.textPrimary)
+                    Text("Экономия около").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    Text("\(BizFormat.ruble(tax.savingRubPerYear)) в год")
+                        .font(BrandFont.body(15, weight: .semibold)).monospacedDigit().foregroundStyle(theme.textPrimary)
                 }
 
                 Button(action: onAsk) {
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: "sparkles").font(.system(size: 12, weight: .bold))
-                        Text("Подробнее у AI-бухгалтера").font(BrandFont.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(theme.accent)
+                    Text("Спросить подробнее")
+                        .font(BrandFont.body(15, weight: .medium))
+                        .foregroundStyle(theme.accent)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, Spacing.xxs)

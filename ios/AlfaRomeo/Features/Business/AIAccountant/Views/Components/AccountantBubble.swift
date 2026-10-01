@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One message row in the AI-бухгалтер chat (§8.2). The business twin of ``CopilotBubble``: a
-/// right-aligned accent bubble for the user; for the assistant, a cold-gradient avatar beside a surface
+/// right-aligned accent bubble for the user; for the assistant, a neutral «AI» monogram beside a surface
 /// bubble that can host streamed text (typing indicator), a business action card, a result receipt, or
 /// an escalation pill. Reuses ``CopilotTypingIndicator`` / ``StatusPill`` and the shared message model.
 struct AccountantBubble: View {
@@ -46,10 +46,6 @@ struct AccountantBubble: View {
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, Spacing.sm)
                         .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                                .stroke(theme.border, lineWidth: 1)
-                        )
                 }
 
                 if let draft = message.draft {
@@ -71,11 +67,7 @@ struct AccountantBubble: View {
     }
 
     private var avatar: some View {
-        Image(systemName: "sparkles")
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: 30, height: 30)
-            .background(theme.cryptoGradient, in: Circle())
+        GlyphCircle(text: "AI", size: 30)
             .accessibilityHidden(true)
     }
 
@@ -89,10 +81,6 @@ struct AccountantBubble: View {
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(theme.border, lineWidth: 1)
-        )
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }

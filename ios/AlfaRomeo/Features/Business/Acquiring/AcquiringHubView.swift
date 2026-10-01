@@ -17,7 +17,7 @@ struct AcquiringHubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if store.loadFailed {
                     errorBlock
                 } else if !store.didLoad && store.recentRevenue.isEmpty {
@@ -30,7 +30,7 @@ struct AcquiringHubView: View {
                     recentSection
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -47,33 +47,27 @@ struct AcquiringHubView: View {
     // MARK: - States
 
     private var loadingBlock: some View {
-        VStack {
-            ProgressView()
-                .tint(theme.accent)
-                .frame(maxWidth: .infinity)
-                .padding(.top, Spacing.xxl)
+        GroupedSection {
+            ForEach(0..<3, id: \.self) { _ in SkeletonRow() }
         }
+        .accessibilityLabel("Загружаем эквайринг")
     }
 
     private var errorBlock: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(theme.warning)
-                    Text("Не удалось загрузить эквайринг")
-                        .font(BrandFont.headline)
-                        .foregroundStyle(theme.textPrimary)
-                }
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Не удалось загрузить эквайринг")
+                    .font(BrandFont.headline)
+                    .foregroundStyle(theme.textPrimary)
                 Text("Проверьте соединение и попробуйте ещё раз.")
-                    .font(BrandFont.caption)
+                    .font(BrandFont.subheadline)
                     .foregroundStyle(theme.textSecondary)
-                SecondaryButton(title: "Повторить", icon: "arrow.clockwise") {
-                    Task { await store.load(api: api, profileId: profileId, force: true) }
-                }
+            }
+            SecondaryButton(title: "Повторить") {
+                Task { await store.load(api: api, profileId: profileId, force: true) }
             }
         }
+        .padding(.top, Spacing.md)
     }
 
     // MARK: - 1) Revenue hero
@@ -87,47 +81,26 @@ struct AcquiringHubView: View {
     // MARK: - 2) Quick actions
 
     private var quickActionsBlock: some View {
-        HStack(spacing: Spacing.sm) {
-            quickAction(title: "Ссылка", icon: "link") {
+        QuickActionRow {
+            QuickActionButton("Ссылка", systemImage: "link") {
                 router.push(AcquiringRoute.createLink(.link))
             }
-            quickAction(title: "QR", icon: "qrcode") {
+            QuickActionButton("QR", systemImage: "qrcode") {
                 router.push(AcquiringRoute.createLink(.qr))
             }
-            quickAction(title: "Принять", icon: "creditcard.fill") {
+            QuickActionButton("Принять", systemImage: "creditcard") {
                 router.push(AcquiringRoute.acceptPayment)
             }
-            quickAction(title: "Отчёт", icon: "chart.bar.fill") {
+            QuickActionButton("Отчёт", systemImage: "chart.bar") {
                 router.push(AcquiringRoute.revenue)
             }
         }
     }
 
-    private func quickAction(title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xs) {
-                ZStack {
-                    Circle()
-                        .fill(theme.accent)
-                        .frame(width: 48, height: 48)
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(theme.onAccent)
-                }
-                Text(title)
-                    .font(BrandFont.caption)
-                    .foregroundStyle(theme.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PressableButtonStyle())
-    }
-
     // MARK: - 3) Channels
 
     private var channelsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Точки приёма")
+        GroupedSection("Каналы приёма") {
             ChannelCard(channel: .online, liveRate: nil, isLive: prices.isLive) {
                 router.push(AcquiringRoute.createLink(.link))
             }
@@ -143,28 +116,19 @@ struct AcquiringHubView: View {
     // MARK: - 4) Configured points
 
     private var pointsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Настроенные точки")
-            SurfaceCard(padding: Spacing.sm) {
-                if store.points.isEmpty {
-                    Text("Точки приёма ещё не настроены")
-                        .font(BrandFont.caption)
-                        .foregroundStyle(theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, Spacing.xs)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(store.points.enumerated()), id: \.element.id) { index, point in
-                            if index > 0 {
-                                Divider().overlay(theme.border)
-                            }
-                            ListRow(
-                                icon: iconFor(point.type),
-                                title: point.label ?? typeTitle(point.type),
-                                subtitle: typeSubtitle(point.type)
-                            )
-                        }
-                    }
+        GroupedSection("Настроенные точки") {
+            if store.points.isEmpty {
+                Text("Точки приёма ещё не настроены")
+                    .font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+            } else {
+                ForEach(store.points) { point in
+                    ListRow(
+                        icon: iconFor(point.type),
+                        title: point.label ?? typeTitle(point.type),
+                        subtitle: typeSubtitle(point.type)
+                    )
                 }
             }
         }
@@ -173,41 +137,19 @@ struct AcquiringHubView: View {
     // MARK: - 5) Recent revenue
 
     private var recentSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack {
-                sectionHeader("Последние поступления")
-                Spacer()
-                Button("Все") { router.push(AcquiringRoute.revenue) }
-                    .font(BrandFont.callout.weight(.medium))
-                    .foregroundStyle(theme.accent)
-            }
-            SurfaceCard(padding: Spacing.sm) {
-                if store.recentRevenue.isEmpty {
-                    Text("Пока нет поступлений")
-                        .font(BrandFont.caption)
-                        .foregroundStyle(theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, Spacing.xs)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(store.recentRevenue.enumerated()), id: \.element.id) { index, entry in
-                            if index > 0 {
-                                Divider().overlay(theme.border)
-                            }
-                            RevenueEntryRow(entry: entry)
-                        }
-                    }
+        GroupedSection("Последние поступления", actionTitle: "Все",
+                       action: { router.push(AcquiringRoute.revenue) }) {
+            if store.recentRevenue.isEmpty {
+                Text("Пока нет поступлений")
+                    .font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+            } else {
+                ForEach(store.recentRevenue) { entry in
+                    RevenueEntryRow(entry: entry)
                 }
             }
         }
-    }
-
-    // MARK: - Helpers
-
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(BrandFont.headline)
-            .foregroundStyle(theme.textPrimary)
     }
 }
 
@@ -216,10 +158,10 @@ struct AcquiringHubView: View {
 private func iconFor(_ type: AcquiringType) -> String {
     switch type {
     case .online: return "globe"
-    case .terminal: return "creditcard.fill"
+    case .terminal: return "creditcard"
     case .qr: return "qrcode"
     case .link: return "link"
-    case .crypto: return "bitcoinsign.circle.fill"
+    case .crypto: return "bitcoinsign"
     }
 }
 
@@ -239,7 +181,7 @@ private func typeSubtitle(_ type: AcquiringType) -> String {
     case .terminal: return "Карты и СБП на офлайн-кассе"
     case .qr: return "Оплата по QR-коду СБП"
     case .link: return "Разовая ссылка для оплаты"
-    case .crypto: return "USDT · USDC → авто-конвертация в ₽"
+    case .crypto: return "USDT и USDC с конвертацией в ₽"
     }
 }
 

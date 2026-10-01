@@ -5,7 +5,8 @@ import SwiftUI
 /// pattern of the Crypto/Mobile hubs), so sub-screens push without touching the shell.
 ///
 /// Surfaces, in priority order: the **«на подпись»** task block (2-of-N approvals waiting, §11.8), the
-/// **«заплатить поставщику»** action (§8.3), the **роли/права** roster + matrix, and the **корп-карты**.
+/// **«заплатить поставщику»** action (§8.3), the сотрудники roster with **роли/права**, and the
+/// **корп-карты**.
 /// Runs in the graphite business theme resolved by the profile (§8/§13.1).
 struct TeamHubView: View {
     @Environment(AppSession.self) private var session
@@ -20,19 +21,18 @@ struct TeamHubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if !store.didLoad {
                     loading
                 } else {
-                    headerCard
+                    header
                     approvalsBlock
                     paySupplierAction
                     teamBlock
-                    rolesEntry
                     corpCardsBlock
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -49,53 +49,35 @@ struct TeamHubView: View {
 
     // MARK: Header
 
-    private var headerCard: some View {
-        SurfaceCard {
-            HStack(spacing: Spacing.md) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .fill(theme.accent.opacity(0.16)).frame(width: 48, height: 48)
-                    Image(systemName: "person.2.fill").font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(theme.accent)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(session.activeProfile?.displayName ?? "Бизнес")
-                        .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Text("\(store.members.count) в команде · 2-of-N подпись от \(Int(store.policy.thresholdRub / 1000)) тыс ₽")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer()
-                if let me = store.currentMember { RoleBadge(role: me.role, compact: true) }
+    private var header: some View {
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.activeProfile?.displayName ?? "Бизнес")
+                    .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                Text("\(store.members.count) в команде, вторая подпись от \(MoneyFormat.compact(store.policy.thresholdRub))")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: Spacing.sm)
+            if let me = store.currentMember { RoleBadge(role: me.role, compact: true) }
         }
     }
 
     // MARK: «На подпись» (§8.2 задачи / §11.8)
 
-    @ViewBuilder private var approvalsBlock: some View {
+    private var approvalsBlock: some View {
         let pending = store.pendingApprovalItems
-        sectionHeader("На подпись",
-                      badge: pending.isEmpty ? nil : pending.count,
-                      actionTitle: pending.isEmpty ? nil : "Все") {
-            router.push(TeamRoute.approvals)
-        }
-        if pending.isEmpty {
-            SurfaceCard {
-                HStack(spacing: Spacing.md) {
-                    Image(systemName: "checkmark.seal.fill").font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(theme.isDark ? theme.success : BrandColors.successInkLight)
-                    Text("Нет платежей, ожидающих подписи.")
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                }
-            }
-        } else {
-            VStack(spacing: Spacing.md) {
+        return GroupedSection("На подпись",
+                              actionTitle: pending.isEmpty ? nil : "Все",
+                              action: { router.push(TeamRoute.approvals) }) {
+            if pending.isEmpty {
+                ListRow(icon: "checkmark.seal", title: "Нет платежей на подпись")
+            } else {
                 ForEach(pending.prefix(2)) { item in
                     Button { router.push(TeamRoute.approvalDetail(approvalId: item.id)) } label: {
-                        ApprovalCard(item: item)
+                        ApprovalRow(item: item)
                     }
-                    .buttonStyle(PressableButtonStyle())
+                    .buttonStyle(.row)
                 }
             }
         }
@@ -105,131 +87,74 @@ struct TeamHubView: View {
 
     private var paySupplierAction: some View {
         VStack(spacing: Spacing.sm) {
-            PrimaryButton(title: "Заплатить поставщику", icon: "paperplane.fill") {
+            PrimaryButton(title: "Заплатить поставщику") {
                 router.push(TeamRoute.paySupplier)
             }
-            Text("Крупный платёж уходит на 2-of-N подпись (§8.3)")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Крупный платёж требует второй подписи")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 .frame(maxWidth: .infinity)
         }
     }
 
-    // MARK: Команда
+    // MARK: Сотрудники + роли
 
     private var teamBlock: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Команда", actionTitle: "Все") { router.push(TeamRoute.members) }
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.members.prefix(3).enumerated()), id: \.element.id) { index, member in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        Button { router.push(TeamRoute.memberDetail(memberId: member.id)) } label: {
-                            MemberRow(member: member)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Divider().overlay(theme.border)
-                    Button { router.push(TeamRoute.addMember) } label: {
-                        HStack(spacing: Spacing.md) {
-                            Image(systemName: "person.badge.plus")
-                                .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accent)
-                                .frame(width: 40, height: 40)
-                                .background(theme.accent.opacity(0.12),
-                                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                            Text("Добавить сотрудника")
-                                .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.accent)
-                            Spacer()
-                        }
-                        .padding(.vertical, Spacing.sm)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+        GroupedSection("Сотрудники", actionTitle: "Все", action: { router.push(TeamRoute.members) }) {
+            ForEach(store.members.prefix(3)) { member in
+                Button { router.push(TeamRoute.memberDetail(memberId: member.id)) } label: {
+                    MemberRow(member: member)
                 }
+                .buttonStyle(.row)
             }
-        }
-    }
-
-    private var rolesEntry: some View {
-        Button { router.push(TeamRoute.roles) } label: {
-            SurfaceCard(padding: Spacing.md) {
+            Button { router.push(TeamRoute.roles) } label: {
                 ListRow(icon: "checklist", title: "Роли и права",
-                        subtitle: "Кто что может: владелец · бухгалтер · менеджер",
-                        showsChevron: true)
+                        subtitle: "Владелец, бухгалтер, менеджер", showsChevron: true)
             }
+            .buttonStyle(.row)
+            actionRow("Добавить сотрудника", icon: "person.badge.plus") { router.push(TeamRoute.addMember) }
         }
-        .buttonStyle(PressableButtonStyle())
     }
 
     // MARK: Корп-карты
 
     private var corpCardsBlock: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("Корп-карты", actionTitle: "Все") { router.push(TeamRoute.corpCards) }
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.corpCards.prefix(2).enumerated()), id: \.element.id) { index, card in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        Button { router.push(TeamRoute.corpCardDetail(cardId: card.id)) } label: {
-                            CorpCardRow(card: card)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    if store.corpCards.isEmpty {
-                        Text("Ещё нет корп-карт. Выпустите карту сотруднику с лимитом.")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, Spacing.sm)
-                    }
-                    Divider().overlay(theme.border)
-                    Button { router.push(TeamRoute.issueCard(memberId: nil)) } label: {
-                        HStack(spacing: Spacing.md) {
-                            Image(systemName: "creditcard.and.123")
-                                .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accent)
-                                .frame(width: 40, height: 40)
-                                .background(theme.accent.opacity(0.12),
-                                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                            Text("Выпустить корп-карту")
-                                .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.accent)
-                            Spacer()
-                        }
-                        .padding(.vertical, Spacing.sm)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+        GroupedSection("Корп-карты", actionTitle: "Все", action: { router.push(TeamRoute.corpCards) }) {
+            ForEach(store.corpCards.prefix(2)) { card in
+                Button { router.push(TeamRoute.corpCardDetail(cardId: card.id)) } label: {
+                    CorpCardRow(card: card)
                 }
+                .buttonStyle(.row)
             }
+            if store.corpCards.isEmpty {
+                Text("Корп-карт пока нет")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+            }
+            actionRow("Выпустить корп-карту", icon: "creditcard") { router.push(TeamRoute.issueCard(memberId: nil)) }
         }
     }
 
     // MARK: Helpers
 
-    private var loading: some View {
-        VStack(spacing: Spacing.md) {
-            ProgressView().tint(theme.accent)
-            Text("Загружаем команду…").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+    private func actionRow(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Spacing.sm + 4) {
+                GlyphCircle(systemImage: icon)
+                Text(title).font(BrandFont.bodyM).foregroundStyle(theme.accent)
+                Spacer()
+            }
+            .frame(minHeight: Spacing.rowMinHeight)
+            .contentShape(Rectangle())
+            .groupedRowTextInset(48)
         }
-        .frame(maxWidth: .infinity, minHeight: 200)
+        .buttonStyle(.row)
     }
 
-    private func sectionHeader(_ title: String, badge: Int? = nil,
-                               actionTitle: String?, action: @escaping () -> Void) -> some View {
-        HStack {
-            HStack(spacing: Spacing.sm) {
-                Text(title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                if let badge { Badge(kind: .count(badge), tint: theme.accent) }
-            }
-            Spacer()
-            if let actionTitle {
-                Button(action: action) {
-                    HStack(spacing: 2) {
-                        Text(actionTitle)
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
-                    }
-                    .font(BrandFont.caption.weight(.semibold))
-                    .foregroundStyle(theme.accent)
-                }
-                .buttonStyle(.plain)
-            }
+    private var loading: some View {
+        GroupedSection {
+            ForEach(0..<3, id: \.self) { _ in SkeletonRow() }
         }
+        .accessibilityLabel("Загружаем команду")
     }
 }
 

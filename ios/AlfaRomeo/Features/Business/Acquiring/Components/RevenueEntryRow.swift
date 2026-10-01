@@ -1,43 +1,33 @@
 import SwiftUI
 
-/// Component #7 — a single revenue-feed row (display only, not a button).
-/// Leading method icon chip, counterparty + method/time subtitle, trailing signed amount.
+/// A single revenue-feed row (display only, not a button) for a ``GroupedSection``: method glyph,
+/// counterparty + method/time subtitle, trailing signed amount.
 struct RevenueEntryRow: View {
     @Environment(\.theme) private var theme
     let entry: RevenueEntry
 
-    private var chipTint: Color {
-        entry.wasCrypto ? (theme.accentCrypto.first ?? theme.accent) : theme.accent
-    }
-
     private var subtitle: String {
-        var parts = "\(entry.method.title) · \(Self.timeFormatter.string(from: entry.createdAt))"
+        let time = Self.timeFormatter.string(from: entry.createdAt)
         if entry.wasCrypto {
-            let qty = CryptoFormat.qty(entry.cryptoAmount ?? 0, symbol: entry.cryptoAsset)
-            parts += " · \(qty) → ₽"
+            let qty = MoneyFormat.crypto(entry.cryptoAmount ?? 0, symbol: entry.cryptoAsset)
+            return "\(time) · \(qty) в ₽"
         }
-        return parts
+        return "\(entry.method.title) · \(time)"
     }
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: entry.method.systemImage)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(chipTint)
-                .frame(width: 36, height: 36)
-                .background(
-                    chipTint.opacity(0.14),
-                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                )
+        HStack(spacing: Spacing.sm + 4) {
+            GlyphCircle(systemImage: entry.method.systemImage)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.counterparty)
-                    .font(BrandFont.bodyM.weight(.medium))
+                    .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(BrandFont.caption)
+                    .font(BrandFont.subheadline)
                     .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
                     .lineLimit(1)
             }
 
@@ -50,8 +40,10 @@ struct RevenueEntryRow: View {
                 colorBySign: true
             )
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
         .contentShape(Rectangle())
+        .groupedRowTextInset(48)
     }
 
     private static let timeFormatter: DateFormatter = {

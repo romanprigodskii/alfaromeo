@@ -27,12 +27,12 @@ struct IssueCorpCardView: View {
                     router.pop()
                 }
                 .disabled(!canIssue)
-                Text("Виртуальная выпускается мгновенно (§6.2). Пластик — с доставкой. Лимит можно менять в карточке.")
+                Text("Виртуальная выпускается сразу, пластик с доставкой. Лимит можно изменить в карточке.")
                     .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -50,7 +50,7 @@ struct IssueCorpCardView: View {
 
     private var holderPicker: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Сотрудник").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text("Сотрудник").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             SurfaceCard(padding: Spacing.sm) {
                 VStack(spacing: 0) {
                     ForEach(Array(store.members.enumerated()), id: \.element.id) { index, member in
@@ -79,7 +79,7 @@ struct IssueCorpCardView: View {
 
     private var typePicker: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Тип карты").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text("Тип карты").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             Picker("", selection: $kind) {
                 ForEach(CorporateCard.Kind.allCases) { Text($0.label).tag($0) }
             }
@@ -89,10 +89,10 @@ struct IssueCorpCardView: View {
 
     private var limitField: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Месячный лимит, ₽").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text("Месячный лимит, ₽").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             TextField("100 000", text: $limitText)
                 .keyboardType(.numberPad)
-                .font(BrandFont.mono(20, weight: .medium))
+                .font(BrandFont.body(20, weight: .medium)).monospacedDigit()
                 .foregroundStyle(theme.textPrimary)
                 .padding(Spacing.md)
                 .frame(maxWidth: .infinity)
@@ -101,10 +101,10 @@ struct IssueCorpCardView: View {
             HStack(spacing: Spacing.sm) {
                 ForEach([50_000.0, 100_000.0, 300_000.0], id: \.self) { v in
                     Button { limitText = String(Int(v)) } label: {
-                        Text("\(Int(v / 1000)) тыс")
-                            .font(BrandFont.caption.weight(.medium)).foregroundStyle(theme.accent)
-                            .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm)
-                            .background(theme.accent.opacity(0.12), in: Capsule())
+                        Text(MoneyFormat.compact(v))
+                            .font(BrandFont.body(15, weight: .medium)).foregroundStyle(theme.textPrimary)
+                            .padding(.horizontal, Spacing.sm + 4).padding(.vertical, Spacing.sm)
+                            .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }

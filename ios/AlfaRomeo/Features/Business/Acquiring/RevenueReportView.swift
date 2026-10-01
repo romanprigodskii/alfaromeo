@@ -22,27 +22,20 @@ struct RevenueReportView: View {
 
                 let entries = store.filteredRevenue(filter)
                 if entries.isEmpty {
-                    SurfaceCard {
-                        Text("Нет поступлений по фильтру")
-                            .font(BrandFont.caption)
-                            .foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                    Text("Нет поступлений по фильтру")
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(entries.enumerated()), id: \.element.id) { i, e in
-                                if i > 0 {
-                                    Divider().overlay(theme.border)
-                                }
-                                RevenueEntryRow(entry: e)
-                            }
+                    GroupedSection {
+                        ForEach(entries) { e in
+                            RevenueEntryRow(entry: e)
                         }
                     }
                 }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
         }
         .background(theme.background.ignoresSafeArea())
         .scrollIndicators(.hidden)

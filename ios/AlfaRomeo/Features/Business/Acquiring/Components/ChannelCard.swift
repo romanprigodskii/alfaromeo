@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Component #1 — a tappable acceptance-channel card for the acquiring hub.
+/// One acceptance channel as a ``GroupedSection`` row in the acquiring hub: glyph, title, the methods
+/// it covers, and (for crypto) the live USDT→₽ rate.
 struct ChannelCard: View {
     let channel: AcquiringChannel
     let liveRate: Double?
@@ -9,72 +10,41 @@ struct ChannelCard: View {
 
     @Environment(\.theme) private var theme
 
-    private var iconTint: Color {
-        channel == .crypto ? (theme.accentCrypto.first ?? theme.accent) : theme.accent
-    }
-
     private var showsRate: Bool {
         channel == .crypto && liveRate != nil
     }
 
     var body: some View {
         Button(action: action) {
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    header
-                    methodChips
+            HStack(spacing: Spacing.sm + 4) {
+                GlyphCircle(systemImage: channel.systemImage)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(channel.title)
+                        .font(BrandFont.bodyM)
+                        .foregroundStyle(theme.textPrimary)
+                    Text(channel.methods.joined(separator: ", "))
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                        .lineLimit(2)
                     if showsRate, let rate = liveRate {
                         rateLine(rate)
                     }
                 }
+                .multilineTextAlignment(.leading)
+
+                Spacer(minLength: Spacing.xs)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.textTertiary)
             }
+            .padding(.vertical, Spacing.rowVertical)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .contentShape(Rectangle())
+            .groupedRowTextInset(48)
         }
-        .buttonStyle(PressableButtonStyle())
-    }
-
-    private var header: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: channel.systemImage)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(iconTint)
-                .frame(width: 40, height: 40)
-                .background(
-                    iconTint.opacity(0.14),
-                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(channel.title)
-                    .font(BrandFont.headline)
-                    .foregroundStyle(theme.textPrimary)
-                Text(channel.subtitle)
-                    .font(BrandFont.caption)
-                    .foregroundStyle(theme.textSecondary)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: Spacing.xs)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(theme.textSecondary)
-        }
-    }
-
-    private var methodChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.xs) {
-                ForEach(channel.methods, id: \.self) { method in
-                    Text(method)
-                        .font(BrandFont.micro)
-                        .foregroundStyle(theme.textSecondary)
-                        .padding(.horizontal, Spacing.sm)
-                        .padding(.vertical, Spacing.xs)
-                        .background(theme.elevated, in: Capsule(style: .continuous))
-                }
-            }
-            .padding(.vertical, 1)
-        }
+        .buttonStyle(.row)
     }
 
     private func rateLine(_ rate: Double) -> some View {
@@ -82,11 +52,12 @@ struct ChannelCard: View {
             Circle()
                 .fill(isLive ? theme.success : theme.warning)
                 .frame(width: 6, height: 6)
-            Text("1 USDT = \(CryptoFormat.rub(rate)) · live")
-                .font(BrandFont.caption)
+            Text("1 USDT = \(MoneyFormat.fiat(rate.rounded())), live-курс")
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
                 .monospacedDigit()
         }
+        .padding(.top, 2)
     }
 }
 

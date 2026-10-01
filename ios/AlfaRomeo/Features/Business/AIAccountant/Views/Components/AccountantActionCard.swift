@@ -25,30 +25,27 @@ struct AccountantActionCard: View {
     }
 
     /// One-word flow direction so the user instantly sees money-in vs money-out.
-    private var flowTag: String { isInvoice ? "входящий" : "исходящий" }
+    private var flowTag: String { isInvoice ? "Входящий" : "Исходящий" }
 
     /// Tool-aware reassurance: issuing an invoice moves no money; a supplier payment does — but only
     /// after the user's own biometric confirm (the AI proposes, the user executes — §8.2/§11.7).
     private var disclaimer: String {
         isInvoice
-            ? "AI не двигает деньги — счёт выставляете вы тапом и биометрией."
-            : "AI не двигает деньги — оплату подтверждаете вы тапом и биометрией."
+            ? "AI не двигает деньги: счёт выставляете вы, с подтверждением биометрией."
+            : "AI не двигает деньги: оплату подтверждаете вы биометрией."
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(theme.cryptoGradient, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                GlyphCircle(systemImage: icon, size: 32)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Text(flowTag + " платёж").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    Text(flowTag + " платёж")
+                        .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 }
                 Spacer()
-                Text("Черновик").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                Badge(kind: .text("Черновик"))
             }
 
             Text(draft.summary)
@@ -62,35 +59,35 @@ struct AccountantActionCard: View {
 
             if draft.blocked {
                 HStack(alignment: .top, spacing: Spacing.xs) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(theme.warning)
-                    Text(draft.blockReason ?? "Сумма превышает лимит AI-агента — требуется подтверждение оператора.")
-                        .font(BrandFont.caption)
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(theme.statusInk(.warning))
+                    Text(draft.blockReason ?? "Сумма превышает лимит AI-агента, нужно подтверждение оператора.")
+                        .font(BrandFont.footnote)
                         .foregroundStyle(theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(Spacing.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
             }
 
             PrimaryButton(
-                title: draft.blocked ? "Нужна вторая подпись" : "Подтвердить · \(biometry)",
+                title: draft.blocked ? "Нужна вторая подпись" : "Подтвердить, \(biometry)",
                 icon: draft.blocked ? "lock.slash" : "faceid",
                 action: onConfirm
             )
             .disabled(draft.blocked)
 
             Text(disclaimer)
-                .font(BrandFont.micro)
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
         }
         .padding(Spacing.md)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(theme.cryptoGradient, lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .stroke(theme.border, lineWidth: 1)
         )
     }
 }

@@ -94,15 +94,12 @@ struct AIAccountantView: View {
                     insightDigest(model)
 
                     AccountantQuickPromptBar { prompt in model.quickPrompt(prompt) }
-                        .padding(.horizontal, -Spacing.lg) // the bar manages its own edge padding
+                        .padding(.horizontal, -Spacing.screen) // the bar manages its own edge padding
 
                     HStack(spacing: Spacing.sm) {
-                        Image(systemName: "bubble.left.and.text.bubble.right.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(theme.textSecondary)
-                        Text("Диалог с AI-бухгалтером")
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                        Rectangle().fill(theme.border).frame(height: 1)
+                        Text("Диалог")
+                            .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                        Hairline()
                     }
                     .padding(.top, Spacing.xs)
 
@@ -114,7 +111,7 @@ struct AIAccountantView: View {
                     }
                     Color.clear.frame(height: 1).id(Self.bottomAnchor)
                 }
-                .padding(Spacing.lg)
+                .padding(Spacing.screen)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: model.messages.last?.text) { _, _ in
@@ -151,7 +148,7 @@ struct AIAccountantView: View {
         return HStack(spacing: Spacing.xxs) {
             Circle().fill(live ? theme.success : theme.warning).frame(width: 6, height: 6)
             Text(live ? "Claude · на связи" : "Claude")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
         }
         .accessibilityLabel(live ? "Claude на связи" : "Claude офлайн-демо")
     }

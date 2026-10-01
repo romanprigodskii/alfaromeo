@@ -110,10 +110,7 @@ struct AcquiringReceiptCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.sm)
-        .background(
-            theme.success.opacity(0.10),
-            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-        )
+        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     // MARK: Footer

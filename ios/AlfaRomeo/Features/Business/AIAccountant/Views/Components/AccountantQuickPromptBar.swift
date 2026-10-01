@@ -31,26 +31,19 @@ struct AccountantQuickPromptBar: View {
                 ForEach(prompts) { p in
                     Button { onPrompt(p.text) } label: {
                         HStack(spacing: Spacing.xs) {
-                            Image(systemName: p.agentic ? "wand.and.stars" : p.icon)
-                                .font(.system(size: 11, weight: .semibold))
-                            Text(p.title).font(BrandFont.caption.weight(.semibold))
+                            Image(systemName: p.icon)
+                                .font(.system(size: 13, weight: .regular))
+                            Text(p.title).font(BrandFont.body(15, weight: .medium))
                         }
-                        .foregroundStyle(p.agentic ? .white : theme.textPrimary)
-                        .padding(.horizontal, Spacing.md)
-                        .frame(height: 34)
-                        .background {
-                            if p.agentic {
-                                Capsule().fill(theme.cryptoGradient)
-                            } else {
-                                Capsule().fill(theme.elevated)
-                                    .overlay(Capsule().stroke(theme.border, lineWidth: 1))
-                            }
-                        }
+                        .foregroundStyle(theme.textPrimary)
+                        .padding(.horizontal, Spacing.sm + 4)
+                        .frame(height: 36)
+                        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip + 2, style: .continuous))
                     }
                     .buttonStyle(PressableButtonStyle())
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
         }
     }
 }

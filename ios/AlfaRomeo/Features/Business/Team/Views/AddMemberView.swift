@@ -24,12 +24,12 @@ struct AddMemberView: View {
                     router.pop()
                 }
                 .disabled(!canAdd)
-                Text("Демо-инвайт: сотрудник добавляется сразу. В проде — приглашение по email/SMS, KYC и привязка к Membership (§5.3).")
+                Text("В демо сотрудник добавляется сразу. В реальном банке он получит приглашение по email или SMS и пройдёт проверку.")
                     .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -40,14 +40,14 @@ struct AddMemberView: View {
     }
 
     private var header: some View {
-        Text("Добавьте сотрудника и выберите роль — права назначатся автоматически (§8.2).")
+        Text("Выберите роль, права назначатся автоматически.")
             .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private var rolePicker: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Роль").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text("Роль").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             VStack(spacing: Spacing.sm) {
                 ForEach(RoleCatalog.demoRoles, id: \.self) { r in
                     Button { role = r } label: { roleOption(r) }
@@ -60,13 +60,11 @@ struct AddMemberView: View {
     private func roleOption(_ r: MembershipRole) -> some View {
         let selected = r == role
         return HStack(spacing: Spacing.md) {
-            Image(systemName: RoleCatalog.icon(r)).font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(selected ? theme.onAccent : theme.accent)
-                .frame(width: 40, height: 40)
-                .background(selected ? theme.accent : theme.accent.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            GlyphCircle(systemImage: RoleCatalog.icon(r),
+                        tint: selected ? theme.onAccent : nil,
+                        background: selected ? theme.accent : nil)
             VStack(alignment: .leading, spacing: 2) {
-                Text(RoleCatalog.label(r)).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+                Text(RoleCatalog.label(r)).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                 Text(RoleCatalog.blurb(r)).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

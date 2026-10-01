@@ -11,22 +11,15 @@ struct PaymentMethodRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: method.systemImage)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(theme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(
-                        theme.accent.opacity(0.14),
-                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    )
+            HStack(spacing: Spacing.sm + 4) {
+                GlyphCircle(systemImage: method.systemImage)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(method.title)
-                        .font(BrandFont.bodyM.weight(.medium))
+                        .font(BrandFont.bodyM)
                         .foregroundStyle(theme.textPrimary)
                     Text(method.subtitle)
-                        .font(BrandFont.caption)
+                        .font(BrandFont.subheadline)
                         .foregroundStyle(theme.textSecondary)
                         .lineLimit(2)
                 }
@@ -41,20 +34,17 @@ struct PaymentMethodRow: View {
                 }
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(isSelected ? theme.accent : theme.border)
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(isSelected ? theme.accent : theme.textTertiary)
                     .animation(Motion.snappy, value: isSelected)
             }
             .padding(Spacing.md)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(
-                        isSelected ? theme.accent : theme.border,
-                        lineWidth: isSelected ? 1.5 : 1
-                    )
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .stroke(isSelected ? theme.accent : .clear, lineWidth: 1.5)
             )
-            .contentShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
     }

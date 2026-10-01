@@ -12,7 +12,6 @@ struct CryptoConversionCard: View {
     let creditedRub: Double
     let isLive: Bool
 
-    private var creditedTint: Color { theme.accentCrypto.first ?? theme.accent }
 
     var body: some View {
         SurfaceCard {
@@ -29,7 +28,7 @@ struct CryptoConversionCard: View {
 
     private var header: some View {
         HStack(spacing: Spacing.sm) {
-            Text("Авто-конвертация в ₽")
+            Text("Конвертация в ₽")
                 .font(BrandFont.headline)
                 .foregroundStyle(theme.textPrimary)
             Spacer(minLength: Spacing.sm)
@@ -43,16 +42,9 @@ struct CryptoConversionCard: View {
                 .fill(isLive ? theme.success : theme.warning)
                 .frame(width: 6, height: 6)
             Text(isLive ? "live-курс" : "курс")
-                .font(BrandFont.caption)
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
         }
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xxs)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.pill, style: .continuous)
-                .stroke(theme.border, lineWidth: 1)
-        )
     }
 
     // MARK: - Rows
@@ -60,15 +52,15 @@ struct CryptoConversionCard: View {
     private var stablePays: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Клиент платит")
-                .font(BrandFont.caption)
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
-            Text(CryptoFormat.qty(stableAmount, symbol: asset))
-                .font(BrandFont.mono(22))
+            Text(MoneyFormat.crypto(stableAmount, symbol: asset))
+                .font(BrandFont.body(22, weight: .semibold))
                 .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .contentTransition(.numericText())
-            Text("по курсу 1 \(asset) = \(CryptoFormat.rub(rate, fraction: 2))")
-                .font(BrandFont.caption)
+            Text("по курсу 1 \(asset) = \(MoneyFormat.fiat(rate))")
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -77,19 +69,19 @@ struct CryptoConversionCard: View {
 
     private var arrow: some View {
         Image(systemName: "arrow.down")
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(theme.cryptoGradient)
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(theme.textTertiary)
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var creditedToAccount: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Зачислится на счёт")
-                .font(BrandFont.caption)
+                .font(BrandFont.footnote)
                 .foregroundStyle(theme.textSecondary)
-            Text(CryptoFormat.rub(creditedRub))
-                .font(BrandFont.mono(22))
-                .foregroundStyle(creditedTint)
+            Text(MoneyFormat.fiat(creditedRub.rounded()))
+                .font(BrandFont.body(22, weight: .semibold))
+                .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .contentTransition(.numericText())
         }

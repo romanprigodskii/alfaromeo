@@ -51,7 +51,7 @@ struct AcquiringStatusView: View {
                     AcquiringReceiptCard(receipt: receipt)
                         .padding(.bottom, Spacing.sm)
                 }
-                PrimaryButton(title: "Готово", icon: "checkmark") { onClose() }
+                PrimaryButton(title: "Готово") { onClose() }
             }
         }
     }
@@ -71,7 +71,7 @@ struct AcquiringStatusView: View {
 
     private var medallion: some View {
         ZStack {
-            Circle().fill(tint.opacity(0.14)).frame(width: 132, height: 132)
+            Circle().fill(theme.fill).frame(width: 132, height: 132)
                 .scaleEffect(outcome.isProcessing && !reduceMotion ? (spin ? 1.06 : 0.94) : 1)
                 .animation(outcome.isProcessing && !reduceMotion
                            ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : nil, value: spin)
@@ -85,7 +85,7 @@ struct AcquiringStatusView: View {
                 Circle().stroke(tint, lineWidth: 4).frame(width: 104, height: 104)
             }
             Image(systemName: symbol)
-                .font(.system(size: 46, weight: .bold))
+                .font(.system(size: 44, weight: .medium))
                 .foregroundStyle(tint)
                 .scaleEffect(pop ? 1 : 0.4)
                 .opacity(pop ? 1 : 0)
@@ -98,11 +98,11 @@ struct AcquiringStatusView: View {
         case .processing:
             EmptyView()
         case .settled:
-            PrimaryButton(title: "Готово", icon: "checkmark") { onClose() }
+            PrimaryButton(title: "Готово") { onClose() }
         case .declined(let r):
             VStack(spacing: Spacing.sm) {
-                PrimaryButton(title: "Повторить", icon: "arrow.clockwise") { onRetry() }
-                SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+                PrimaryButton(title: "Повторить") { onRetry() }
+                SecondaryButton(title: "Спросить у AI") {
                     shell?.showCopilot(.declined(reason: r.title))
                 }
                 SecondaryButton(title: "Закрыть") { onClose() }

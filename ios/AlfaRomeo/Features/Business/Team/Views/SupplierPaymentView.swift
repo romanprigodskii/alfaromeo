@@ -41,7 +41,7 @@ struct SupplierPaymentView: View {
     private func scroll<C: View>(@ViewBuilder _ content: () -> C) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) { content() }
-                .padding(Spacing.lg)
+                .padding(Spacing.screen)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.hidden)
@@ -64,7 +64,7 @@ struct SupplierPaymentView: View {
         stepHeader("Сумма и назначение", "")
         TextField("0", text: $model.amountText)
             .keyboardType(.numberPad)
-            .font(BrandFont.mono(28, weight: .semibold))
+            .font(BrandFont.body(28, weight: .semibold)).monospacedDigit()
             .foregroundStyle(theme.textPrimary)
             .padding(Spacing.md)
             .frame(maxWidth: .infinity)
@@ -74,7 +74,7 @@ struct SupplierPaymentView: View {
         thresholdHint
         field($model.purpose, placeholder: "Назначение платежа")
 
-        PrimaryButton(title: "Проверить", icon: "arrow.right") {
+        PrimaryButton(title: "Проверить") {
             withAnimation(Motion.smooth) { model.goToReview() }
         }
         .disabled(!model.canProceedDetails)
@@ -83,7 +83,7 @@ struct SupplierPaymentView: View {
     private var counterpartyPicker: some View {
         SurfaceCard(padding: Spacing.sm) {
             if model.counterparties.isEmpty {
-                Text("Справочник контрагентов пуст — переключитесь на «Реквизиты».")
+                Text("Справочник контрагентов пуст. Введите платёж по реквизитам.")
                     .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, Spacing.xs)
             } else {
@@ -126,8 +126,8 @@ struct SupplierPaymentView: View {
                 Image(systemName: multi ? "signature" : "checkmark.shield")
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.accent)
                 Text(multi
-                     ? "Свыше \(SupplierPaymentModel.rub(model.threshold)) — потребуется 2-of-N подпись."
-                     : "До \(SupplierPaymentModel.rub(model.threshold)) — одна подпись, сразу.")
+                     ? "Свыше \(SupplierPaymentModel.rub(model.threshold)) нужна вторая подпись."
+                     : "До \(SupplierPaymentModel.rub(model.threshold)) хватит одной подписи.")
                     .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,8 +170,8 @@ struct SupplierPaymentView: View {
                 Task { await model.authorize() }
             }
             Text(model.requiresMultiSignature
-                 ? "Ваша подпись — первая из \(Int(TeamStore.shared.policy.requiredSigners)). Подтверждение биометрией (§11.8)."
-                 : "Подтверждение операции биометрией (§10.3).")
+                 ? "Ваша подпись первая из \(Int(TeamStore.shared.policy.requiredSigners)). Подтверждение биометрией."
+                 : "Подтверждение операции биометрией.")
                 .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
                 .frame(maxWidth: .infinity).multilineTextAlignment(.center)
         }
@@ -183,8 +183,8 @@ struct SupplierPaymentView: View {
                 HStack(alignment: .top, spacing: Spacing.md) {
                     Image(systemName: "signature").font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.accent)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Нужна 2-of-N подпись").font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Text("Сумма больше порога \(SupplierPaymentModel.rub(model.threshold)). После вашей подписи платёж уйдёт на подпись\(model.nextSignerName.map { " — \($0)" } ?? " второму лицу") (§8.3).")
+                        Text("Нужна вторая подпись").font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
+                        Text("Сумма больше порога \(SupplierPaymentModel.rub(model.threshold)). После вашей подписи платёж уйдёт на подпись\(model.nextSignerName.map { ": \($0)" } ?? " второму лицу").")
                             .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -223,15 +223,15 @@ struct SupplierPaymentView: View {
         VStack(spacing: Spacing.lg) {
             Spacer(minLength: Spacing.lg)
             ZStack {
-                Circle().fill(theme.accent.opacity(0.14)).frame(width: 116, height: 116)
-                Image(systemName: "signature").font(.system(size: 44, weight: .bold)).foregroundStyle(theme.accent)
+                Circle().fill(theme.fill).frame(width: 96, height: 96)
+                Image(systemName: "signature").font(.system(size: 40, weight: .regular)).foregroundStyle(theme.textPrimary)
             }
             VStack(spacing: Spacing.sm) {
                 Text("Отправлено на подпись").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("Вы поставили первую подпись. Платёж ждёт второй подписи\(model.nextSignerName.map { " — \($0)" } ?? "").")
+                Text("Вы поставили первую подпись. Платёж ждёт второй подписи\(model.nextSignerName.map { ": \($0)" } ?? "").")
                     .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
+                    .padding(.horizontal, Spacing.screen)
             }
             if let item = model.submitted {
                 SurfaceCard { SignatureProgressView(slots: item.slots) }
@@ -239,7 +239,7 @@ struct SupplierPaymentView: View {
             Spacer(minLength: Spacing.md)
             VStack(spacing: Spacing.sm) {
                 if let item = model.submitted {
-                    PrimaryButton(title: "К подписи второго лица", icon: "signature") {
+                    PrimaryButton(title: "К подписи второго лица") {
                         router.push(TeamRoute.approvalDetail(approvalId: item.id))
                     }
                 }
@@ -247,7 +247,7 @@ struct SupplierPaymentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.lg)
+        .padding(Spacing.screen)
         .background(theme.background.ignoresSafeArea())
     }
 
@@ -277,7 +277,7 @@ struct SupplierPaymentView: View {
                        keyboard: UIKeyboardType = .default, mono: Bool = false) -> some View {
         TextField(placeholder, text: binding)
             .keyboardType(keyboard)
-            .font(mono ? BrandFont.mono(17) : BrandFont.body())
+            .font(mono ? BrandFont.code(17) : BrandFont.body())
             .foregroundStyle(theme.textPrimary)
             .padding(Spacing.md)
             .frame(maxWidth: .infinity)

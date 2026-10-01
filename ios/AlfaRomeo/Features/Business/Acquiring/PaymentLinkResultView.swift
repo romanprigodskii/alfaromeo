@@ -16,7 +16,7 @@ struct PaymentLinkResultView: View {
                 actions
             }
             .frame(maxWidth: .infinity)
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle(link.kind.title)
@@ -45,14 +45,11 @@ struct PaymentLinkResultView: View {
             QRCodeView(string: link.url)
                 .frame(maxWidth: .infinity)
         } else {
-            Image(systemName: "link.circle.fill")
-                .font(.system(size: 72, weight: .semibold))
-                .foregroundStyle(theme.accent)
-                .frame(width: 132, height: 132)
-                .background(
-                    theme.accent.opacity(0.14),
-                    in: Circle()
-                )
+            Image(systemName: "link")
+                .font(.system(size: 44, weight: .regular))
+                .foregroundStyle(theme.textPrimary)
+                .frame(width: 112, height: 112)
+                .background(theme.fill, in: Circle())
                 .frame(maxWidth: .infinity)
         }
     }
@@ -63,7 +60,7 @@ struct PaymentLinkResultView: View {
         SurfaceCard(padding: Spacing.md) {
             VStack(spacing: Spacing.sm) {
                 Text(link.url)
-                    .font(BrandFont.mono(13))
+                    .font(BrandFont.code(13))
                     .foregroundStyle(theme.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -76,13 +73,10 @@ struct PaymentLinkResultView: View {
                         Text(copied ? "Скопировано" : "Скопировать")
                             .font(BrandFont.callout.weight(.medium))
                     }
-                    .foregroundStyle(copied ? theme.success : theme.accent)
+                    .foregroundStyle(copied ? theme.statusInk(.success) : theme.textPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 44)
-                    .background(
-                        (copied ? theme.success : theme.accent).opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    )
+                    .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(PressableButtonStyle())

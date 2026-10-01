@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 /// The 90-day cash-flow projection (§8.2) on Swift Charts: a filled balance curve, the zero baseline,
-/// and — when the projection dips negative — a danger marker at the cash gap (the deepest point). The
+/// and, when the projection dips negative, a danger marker at the cash gap (the deepest point). The
 /// area hangs BELOW the dashed zero line through the gap, so the liquidity shortfall reads at a glance.
 struct Cashflow90Chart: View {
     let scenario: CashflowScenario
@@ -19,13 +19,13 @@ struct Cashflow90Chart: View {
                     yEnd: .value("Остаток", p.balance)
                 )
                 .interpolationMethod(.monotone)
-                .foregroundStyle(areaGradient)
+                .foregroundStyle(areaFill)
             }
 
             ForEach(scenario.points) { p in
                 LineMark(x: .value("Дата", p.date), y: .value("Остаток", p.balance))
                     .interpolationMethod(.monotone)
-                    .foregroundStyle(theme.accent)
+                    .foregroundStyle(theme.textPrimary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
             }
 
@@ -55,7 +55,7 @@ struct Cashflow90Chart: View {
         .chartYScale(domain: yDomain)
         .chartYAxis {
             AxisMarks(position: .leading) { value in
-                AxisGridLine().foregroundStyle(theme.border.opacity(0.6))
+                AxisGridLine().foregroundStyle(theme.border)
                 AxisValueLabel {
                     if let amount = value.as(Double.self) {
                         Text(Self.compact(amount))
@@ -67,7 +67,7 @@ struct Cashflow90Chart: View {
         }
         .chartXAxis {
             AxisMarks(values: .stride(by: .month)) { value in
-                AxisGridLine().foregroundStyle(theme.border.opacity(0.4))
+                AxisGridLine().foregroundStyle(theme.border)
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
                         Text(date, format: .dateTime.month(.abbreviated))
@@ -81,12 +81,8 @@ struct Cashflow90Chart: View {
         .accessibilityLabel("Прогноз денежного потока на 90 дней")
     }
 
-    private var areaGradient: LinearGradient {
-        LinearGradient(
-            colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.04)],
-            startPoint: .top, endPoint: .bottom
-        )
-    }
+    /// Flat, quiet fill under the line (DESIGN §2: no decorative gradients).
+    private var areaFill: Color { theme.textPrimary.opacity(0.06) }
 
     /// Y domain with headroom below the trough and above the peak (keeps the gap marker off the edge).
     private var yDomain: ClosedRange<Double> {
@@ -96,12 +92,8 @@ struct Cashflow90Chart: View {
         return (low - pad)...(high + pad)
     }
 
-    /// Signed compact ₽ axis label: "2,8 млн" / "−1,2 млн" / "320 тыс".
+    /// Signed compact ₽ axis label via ``MoneyFormat``: «2,8 млн» / «−1,2 млн» / «320 тыс.».
     static func compact(_ value: Double) -> String {
-        let sign = value < 0 ? "\u{2212}" : ""
-        let v = abs(value)
-        if v >= 1_000_000 { return sign + String(format: "%.1f млн", v / 1_000_000) }
-        if v >= 1_000 { return sign + String(format: "%.0f тыс", v / 1_000) }
-        return sign + String(format: "%.0f", v)
+        MoneyFormat.compact(value, currency: nil)
     }
 }
