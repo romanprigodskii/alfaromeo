@@ -15,6 +15,7 @@ struct CreditApplyView: View {
     @State private var step: Step
     @State private var outcome: CreditOutcome = .processing
     @State private var authorizing = false
+    @State private var showTerms = false
 
     private let product: CreditProduct
     private let bio = BiometricAuthenticator.available()
@@ -205,7 +206,20 @@ struct CreditApplyView: View {
                              isOn: $draft.consentData)
             CreditConsentRow(title: "Индивидуальные условия договора",
                              subtitle: "Ознакомлен и принимаю условия кредитного договора.",
-                             isOn: $draft.consentTerms)
+                             isOn: $draft.consentTerms,
+                             onOpen: { showTerms = true })
+        }
+        .sheet(isPresented: $showTerms) {
+            CreditTermsSheet(
+                productName: product.name,
+                amountNoun: product.kind.amountNoun,
+                amount: clampedAmount,
+                termMonths: draft.termMonths,
+                rateText: rateText,
+                monthlyPayment: monthlyPayment,
+                overpay: product.kind.isInterestFree ? 0
+                    : LoanMath.overpay(principal: clampedAmount, annualRatePercent: rate, months: draft.termMonths),
+                onAccept: { draft.consentTerms = true })
         }
     }
 

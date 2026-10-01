@@ -7,10 +7,26 @@ struct CreditConsentRow: View {
     let title: String
     var subtitle: String? = nil
     @Binding var isOn: Bool
+    /// Opens the document behind the consent (e.g. the contract terms). Adds a trailing «Открыть».
+    var onOpen: (() -> Void)? = nil
 
     @Environment(\.theme) private var theme
 
     var body: some View {
+        HStack(alignment: .center, spacing: Spacing.sm) {
+            toggleButton
+            if let onOpen {
+                Button("Открыть", action: onOpen)
+                    .font(BrandFont.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.accent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .accessibilityLabel("Открыть: \(title)")
+            }
+        }
+        .groupedRowTextInset(24 + ListRow.glyphSpacing)
+    }
+
+    private var toggleButton: some View {
         Button {
             withAnimation(Motion.snappy) { isOn.toggle() }
         } label: {
@@ -36,7 +52,6 @@ struct CreditConsentRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.row)
-        .groupedRowTextInset(24 + ListRow.glyphSpacing)
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
         .accessibilityLabel(title)
     }
