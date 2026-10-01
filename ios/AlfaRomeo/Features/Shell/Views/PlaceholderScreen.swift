@@ -49,12 +49,12 @@ struct PlaceholderScreen: View {
 #Preview {
     NavigationStack {
         PlaceholderScreen(
-            title: "Главный",
+            title: "Главная",
             blurb: "Пример секции-заглушки.",
             items: ["Дашборд", "Карты", "Счета"],
             onPushDemo: {}
         )
-        .navigationTitle("Главный")
+        .navigationTitle("Главная")
     }
     .environment(\.theme, .default)
 }

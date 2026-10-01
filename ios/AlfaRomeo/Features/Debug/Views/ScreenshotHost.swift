@@ -127,9 +127,9 @@ struct ScreenshotHost: View {
             NavigationStack { ThemeSettingsView() }
         // Theme really switches the whole app: same screen rendered via the real ThemeProvider, light vs dark.
         case "homeLight":
-            Themed(.light) { NavigationStack { HomeView().navigationTitle("Главный").navigationBarTitleDisplayMode(.inline) } }
+            Themed(.light) { NavigationStack { HomeView().navigationTitle("Главная").navigationBarTitleDisplayMode(.inline) } }
         case "homeDark":
-            Themed(.dark) { NavigationStack { HomeView().navigationTitle("Главный").navigationBarTitleDisplayMode(.inline) } }
+            Themed(.dark) { NavigationStack { HomeView().navigationTitle("Главная").navigationBarTitleDisplayMode(.inline) } }
         case "settingsDark":
             Themed(.dark) { NavigationStack { SettingsView() } }
 
