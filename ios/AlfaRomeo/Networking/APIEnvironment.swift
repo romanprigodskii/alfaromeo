@@ -15,6 +15,10 @@ enum APIEnvironment {
     /// on 4000 to dodge the common :3000 collision, §14) and can be overridden at runtime via the
     /// `AR_BACKEND_PORT` UserDefaults key — so the debug screen can retarget without a rebuild.
     static let devHost = "localhost"
+
+    /// Production host. Temporarily the standalone deploy (`backend/deploy/standalone`) on its sslip.io
+    /// name with HTTPS on :4443; switch back to `api.alfa-romeo.uk` once that domain points at a server.
+    static let productionHost = "5-144-181-60.sslip.io:4443"
     static var devPort: Int {
         if let raw = UserDefaults.standard.string(forKey: "AR_BACKEND_PORT"), let p = Int(raw) { return p }
         return 4000
@@ -25,7 +29,7 @@ enum APIEnvironment {
         switch self {
         case .dev:        return URL(string: "http://\(APIEnvironment.devHost):\(APIEnvironment.devPort)")!
         case .staging:    return URL(string: "https://staging.api.alfa-romeo.bank")!
-        case .production: return URL(string: "https://api.alfa-romeo.uk")!
+        case .production: return URL(string: "https://\(APIEnvironment.productionHost)")!
         }
     }
 
@@ -34,7 +38,7 @@ enum APIEnvironment {
         switch self {
         case .dev:        return URL(string: "ws://\(APIEnvironment.devHost):\(APIEnvironment.devPort)/ws")!
         case .staging:    return URL(string: "wss://staging.api.alfa-romeo.bank/ws")!
-        case .production: return URL(string: "wss://api.alfa-romeo.uk/ws")!
+        case .production: return URL(string: "wss://\(APIEnvironment.productionHost)/ws")!
         }
     }
 
