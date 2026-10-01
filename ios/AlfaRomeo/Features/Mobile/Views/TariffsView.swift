@@ -21,7 +21,7 @@ struct TariffsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 header
 
                 ForEach(catalog) { tariff in
@@ -32,11 +32,14 @@ struct TariffsView: View {
                     ) { apply(tariff) }
                 }
 
-                Text("Смена тарифа меняет ваш класс Ромео — кэшбек, лимиты, AI и связь растут вместе (§4, §7.1).")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Смена тарифа меняет ваш класс Ромео. Вместе с ним меняются кэшбек, лимиты, AI и связь.")
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                    .padding(.horizontal, Spacing.md)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Тарифы")
@@ -50,9 +53,11 @@ struct TariffsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Тариф в связке с классом").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text("Текущий: \(MobileTariff.make(for: effectiveTier).name) · \(effectiveTier.displayName)")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+            Text("Текущий: \(MobileTariff.make(for: effectiveTier).name)")
+                .font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+            Text("Класс \(effectiveTier.displayName). Тариф меняется вместе с классом.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -66,16 +71,20 @@ struct TariffsView: View {
 
     private func appliedToast(_ tier: Tier) -> some View {
         HStack(spacing: Spacing.sm) {
-            Image(systemName: "checkmark.seal.fill").foregroundStyle(theme.onAccent)
+            Image(systemName: "checkmark.circle.fill").font(.system(size: 20))
+                .foregroundStyle(theme.success)
             Text("Подключён тариф \(MobileTariff.make(for: tier).name)")
-                .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.onAccent)
+                .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
             Spacer(minLength: Spacing.sm)
             Button("Готово") { dismiss() }
-                .font(BrandFont.callout.weight(.bold)).foregroundStyle(theme.onAccent)
+                .font(BrandFont.headline).foregroundStyle(theme.accent)
         }
-        .padding(Spacing.md)
-        .background(theme.accent, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .padding(Spacing.lg)
+        .padding(.horizontal, Spacing.md)
+        .frame(minHeight: 56)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 16, y: 4)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.bottom, Spacing.md)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }

@@ -17,15 +17,15 @@ enum ESIMMethod: String, CaseIterable, Identifiable, Hashable, Sendable {
     }
     var subtitle: String {
         switch self {
-        case .qr:        return "Мгновенная eSIM — сканируйте QR оператора"
-        case .newNumber: return "Выберите красивый номер Ромео Mobile"
-        case .transfer:  return "Сохраните номер (MNP) от другого оператора"
+        case .qr:        return "Сканируйте QR оператора"
+        case .newNumber: return "Выберите номер Ромео Mobile"
+        case .transfer:  return "Перенос от другого оператора (MNP)"
         }
     }
     var icon: String {
         switch self {
         case .qr:        return "qrcode"
-        case .newNumber: return "sparkles"
+        case .newNumber: return "number"
         case .transfer:  return "arrow.left.arrow.right"
         }
     }

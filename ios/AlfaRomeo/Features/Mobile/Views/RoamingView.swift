@@ -4,7 +4,7 @@ import SwiftUI
 /// выключается; на пакетах S/M он управляется тумблером и оплачивается отдельно. The §7.1 hook is a
 /// prominent крипто-оплата entry: «оплатить роуминг криптой/стейблами в путешествии» — a deep-link
 /// into the crypto-first payment flow (``MobileRoute/payment(_:)`` with ``MobilePaymentPurpose/roaming``),
-/// styled with the cold crypto accent so it reads as the recommended way to pay while travelling.
+/// shown as a row right under the roaming switch.
 struct RoamingView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.apiClient) private var api
@@ -17,27 +17,24 @@ struct RoamingView: View {
     private var effectiveTier: Tier { session.currentTier(for: profileId, fallback: store.baseTier) }
     private var tariff: MobileTariff { MobileTariff.make(for: effectiveTier) }
 
-    /// Страны для поездок с ориентировочной ценой роуминга за день (§7.1 demo).
-    private let countries: [(name: String, icon: String, perDay: String)] = [
-        ("Турция", "airplane", "≈ 350 ₽/день"),
-        ("ОАЭ", "airplane", "≈ 590 ₽/день"),
-        ("Грузия", "airplane", "≈ 290 ₽/день"),
-        ("Таиланд", "airplane", "≈ 640 ₽/день"),
-        ("Сербия", "airplane", "≈ 320 ₽/день"),
+    /// Страны для поездок с ориентировочной ценой роуминга за день, ₽ (§7.1 demo).
+    private let countries: [(name: String, perDay: Double)] = [
+        ("Турция", 350),
+        ("ОАЭ", 590),
+        ("Грузия", 290),
+        ("Таиланд", 640),
+        ("Сербия", 320),
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                statusCard
-                cryptoPayCard
-                countriesCard
-
-                Text("Цены ориентировочные и зависят от страны и оператора-партнёра (§7.1).")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: Spacing.section) {
+                statusSection
+                countriesSection
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -48,41 +45,46 @@ struct RoamingView: View {
         .task { await store.load(api: api, profileId: profileId) }
     }
 
-    // MARK: - Status
+    // MARK: - Status + crypto pay (§7.1 hook)
 
-    @ViewBuilder
-    private var statusCard: some View {
-        SurfaceCard {
+    private var statusSection: some View {
+        GroupedSection(footer: tariff.isUnlimited
+                       ? "На классе Infinite роуминг включён всегда."
+                       : "На пакетах S и M роуминг оплачивается отдельно. Включите его перед поездкой.") {
             if tariff.isUnlimited {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "airplane")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(theme.accent)
-                        Text("Роуминг").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                        Spacer(minLength: Spacing.sm)
-                        StatusPill(status: .success, text: "Включён")
+                HStack(spacing: ListRow.glyphSpacing) {
+                    GlyphCircle(systemImage: "airplane")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Роуминг").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        Text("Тариф \(tariff.name)").font(BrandFont.subheadline)
+                            .foregroundStyle(theme.textSecondary)
                     }
-                    Text("Роуминг включён на тарифе Infinite (§7.1).")
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: Spacing.sm)
+                    StatusPill(status: .success, text: "Включён")
                 }
+                .frame(minHeight: Spacing.rowMinHeightTwoLine)
+                .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
             } else {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
+                HStack(spacing: ListRow.glyphSpacing) {
+                    GlyphCircle(systemImage: "airplane")
                     Toggle(isOn: roamingBinding) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Роуминг").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                            Text("Тариф \(tariff.name)").font(BrandFont.caption)
+                            Text("Роуминг").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                            Text("Тариф \(tariff.name)").font(BrandFont.subheadline)
                                 .foregroundStyle(theme.textSecondary)
                         }
                     }
                     .tint(theme.accent)
-
-                    Text("На пакетах S и M роуминг оплачивается отдельно — включите его перед поездкой (§7.1).")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(minHeight: Spacing.rowMinHeightTwoLine)
+                .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
             }
+
+            NavigationLink(value: MobileRoute.payment(.roaming)) {
+                ListRow(icon: "bitcoinsign", title: "Оплата криптой",
+                        subtitle: "Криптовалюта и стейблкоины", showsChevron: true)
+            }
+            .buttonStyle(.row)
         }
     }
 
@@ -90,50 +92,14 @@ struct RoamingView: View {
         Binding(get: { store.roamingEnabled }, set: { store.setRoaming($0) })
     }
 
-    // MARK: - Crypto pay (§7.1 hook)
-
-    private var cryptoPayCard: some View {
-        NavigationLink(value: MobileRoute.payment(.roaming)) {
-            SurfaceCard {
-                HStack(spacing: Spacing.md) {
-                    Image(systemName: "bitcoinsign.circle.fill")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Оплатить роуминг криптой/стейблами")
-                            .font(BrandFont.bodyM.weight(.semibold))
-                            .foregroundStyle(theme.textPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Оплата стейблами прямо в поездке")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    }
-                    Spacer(minLength: Spacing.sm)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(theme.textSecondary)
-                }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(theme.accentCrypto.first ?? theme.accent, lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(PressableButtonStyle())
-    }
-
     // MARK: - Countries
 
-    private var countriesCard: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Популярные направления").font(BrandFont.headline)
-                .foregroundStyle(theme.textPrimary)
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(countries.enumerated()), id: \.element.name) { i, country in
-                        ListRow(icon: country.icon, title: country.name, value: country.perDay)
-                        if i < countries.count - 1 { Divider().overlay(theme.border) }
-                    }
-                }
+    private var countriesSection: some View {
+        GroupedSection("Популярные направления",
+                       footer: "Цены ориентировочные и зависят от страны и оператора-партнёра.") {
+            ForEach(countries, id: \.name) { country in
+                ListRow(title: country.name,
+                        value: "≈\u{00A0}" + MoneyFormat.fiat(country.perDay) + " в день")
             }
         }
     }

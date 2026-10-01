@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Разбивка использования (§7.2): столбики по дням + список категорий с долями. Pure presentation —
+/// Разбивка использования (§7.2): столбики по дням + список категорий с долями. Pure presentation;
 /// the data comes from ``MobileUsage`` (mock).
 struct UsageBreakdownView: View {
     let usage: MobileUsage
@@ -11,54 +11,56 @@ struct UsageBreakdownView: View {
     private var lastDayId: Int { usage.days.last?.id ?? -1 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("По дням").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                HStack(alignment: .bottom, spacing: Spacing.sm) {
-                    ForEach(usage.days) { day in
-                        VStack(spacing: Spacing.xs) {
-                            Text(format(day.gb)).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                            RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
-                                .fill(theme.accent.opacity(day.id == lastDayId ? 1 : 0.5))
-                                .frame(height: max(6, CGFloat(day.gb / maxDayGb) * 96))
-                            Text(day.label).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                                .lineLimit(1).minimumScaleFactor(0.7)
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+                SectionHeader("По дням")
+                SurfaceCard {
+                    HStack(alignment: .bottom, spacing: Spacing.sm) {
+                        ForEach(usage.days) { day in
+                            VStack(spacing: Spacing.xs) {
+                                Text(format(day.gb)).font(BrandFont.micro).monospacedDigit()
+                                    .foregroundStyle(theme.textSecondary)
+                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                    .fill(day.id == lastDayId ? theme.accent : theme.textTertiary.opacity(0.55))
+                                    .frame(height: max(6, CGFloat(day.gb / maxDayGb) * 96))
+                                Text(day.label).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                                    .lineLimit(1).minimumScaleFactor(0.7)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
+                    .frame(height: 140, alignment: .bottom)
                 }
-                .frame(height: 140, alignment: .bottom)
             }
 
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("По категориям").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(usage.categories.enumerated()), id: \.element.id) { i, cat in
-                            categoryRow(cat)
-                            if i < usage.categories.count - 1 { Divider().overlay(theme.border) }
-                        }
-                    }
+            GroupedSection("По категориям") {
+                ForEach(usage.categories) { cat in
+                    categoryRow(cat)
                 }
             }
         }
     }
 
     private func categoryRow(_ cat: MobileUsageCategory) -> some View {
-        VStack(spacing: Spacing.xs) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: cat.icon).font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(theme.accent).frame(width: 28)
-                Text(cat.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
-                Spacer()
-                Text("\(format(cat.gb)) ГБ").font(BrandFont.callout.weight(.medium))
-                    .foregroundStyle(theme.textPrimary)
-                Text("\(Int(cat.share * 100))%").font(BrandFont.caption)
-                    .foregroundStyle(theme.textSecondary).frame(width: 40, alignment: .trailing)
+        HStack(spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: cat.icon)
+            VStack(alignment: .leading, spacing: Spacing.xs + 2) {
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                    Text(cat.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Spacer(minLength: Spacing.sm)
+                    Text(format(cat.gb) + "\u{00A0}ГБ").font(BrandFont.bodyM).monospacedDigit()
+                        .foregroundStyle(theme.textPrimary)
+                    Text(MoneyFormat.percent(fraction: cat.share, maxFractionDigits: 0))
+                        .font(BrandFont.subheadline).monospacedDigit()
+                        .foregroundStyle(theme.textSecondary)
+                        .frame(width: 44, alignment: .trailing)
+                }
+                ProgressBar(value: cat.share, height: 4)
             }
-            ProgressBar(value: cat.share, height: 5)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private func format(_ value: Double) -> String { MobileTariff.format(value) }

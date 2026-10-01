@@ -24,22 +24,31 @@ struct FamilyPlanView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 sharedPool
 
-                ForEach(store.family) { member in
-                    memberCard(member)
+                GroupedSection(
+                    "Участники",
+                    footer: "Общий пакет один на всю семью. ГБ можно распределить между близкими и детскими профилями."
+                ) {
+                    ForEach(store.family) { member in
+                        memberRow(member)
+                    }
+                    Button { showAdd = true } label: {
+                        HStack(spacing: ListRow.glyphSpacing) {
+                            GlyphCircle(systemImage: "plus", tint: theme.accent)
+                            Text("Добавить участника").font(BrandFont.bodyM).foregroundStyle(theme.accent)
+                            Spacer(minLength: 0)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.row)
                 }
-
-                SecondaryButton(title: "Добавить участника", icon: "person.badge.plus") {
-                    showAdd = true
-                }
-
-                Text("Распределяйте ГБ между близкими и детскими профилями — общий пакет один на всю семью (§7.1).")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -56,49 +65,57 @@ struct FamilyPlanView: View {
     private var sharedPool: some View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "person.2.fill").font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(theme.accent)
-                    Text("Общий пакет").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Spacer()
-                    Text("\(store.family.count) уч.").font(BrandFont.caption)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Общий пакет").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    Spacer(minLength: Spacing.sm)
+                    Text(membersLabel).font(BrandFont.subheadline).monospacedDigit()
                         .foregroundStyle(theme.textSecondary)
                 }
+                Text(gb(store.familyUsedGb) + " из " + gb(store.familyAllocatedGb))
+                    .font(BrandFont.title2).monospacedDigit()
+                    .foregroundStyle(theme.textPrimary)
                 ProgressBar(value: store.familyAllocatedGb > 0
                             ? min(1, store.familyUsedGb / store.familyAllocatedGb) : 0)
-                Text("\(MobileTariff.format(store.familyUsedGb)) из \(MobileTariff.format(store.familyAllocatedGb)) ГБ распределено")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
             }
         }
     }
 
+    private var membersLabel: String {
+        let n = store.family.count
+        let (mod10, mod100) = (n % 10, n % 100)
+        let word = mod10 == 1 && mod100 != 11 ? "участник"
+            : (2...4).contains(mod10) && !(12...14).contains(mod100) ? "участника" : "участников"
+        return MoneyFormat.integer(n) + "\u{00A0}" + word
+    }
+
+    private func gb(_ value: Double) -> String { MobileTariff.format(value) + "\u{00A0}ГБ" }
+
     // MARK: - Участник
 
-    private func memberCard(_ member: FamilyShareMember) -> some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack(spacing: Spacing.md) {
-                    if member.kind == .me {
-                        Avatar(initials: member.initials)
-                    } else {
-                        Avatar(systemImage: member.kind.icon)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(member.name).font(BrandFont.bodyM.weight(.medium))
-                            .foregroundStyle(theme.textPrimary)
-                        Badge(kind: .text(member.kind.label), tint: theme.accent)
-                    }
-                    Spacer()
+    private func memberRow(_ member: FamilyShareMember) -> some View {
+        let remaining = MobileTariff.format(member.remainingGb) + " из " + gb(member.allocatedGb)
+        let subtitle = member.kind == .me ? "Осталось " + remaining
+                                          : member.kind.label + ", осталось " + remaining
+        return VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: ListRow.glyphSpacing) {
+                if member.kind == .me {
+                    Avatar(initials: member.initials, size: ListRow.glyphSize)
+                } else {
+                    Avatar(systemImage: member.kind.icon, size: ListRow.glyphSize)
                 }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Text(subtitle)
+                        .font(BrandFont.subheadline).monospacedDigit()
+                        .foregroundStyle(theme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
 
-                ProgressBar(value: member.usedFraction)
-                Text("\(MobileTariff.format(member.remainingGb)) ГБ осталось из \(MobileTariff.format(member.allocatedGb))")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-
-                Divider().overlay(theme.border)
-
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                ProgressBar(value: member.usedFraction, height: 4)
                 Stepper(
-                    "Выделено: \(Int(member.allocatedGb)) ГБ",
+                    "Выделено: " + gb(member.allocatedGb),
                     value: Binding(
                         get: { member.allocatedGb },
                         set: { store.allocateGb($0, memberId: member.id) }
@@ -107,20 +124,24 @@ struct FamilyPlanView: View {
                     step: 1
                 )
                 .font(BrandFont.callout)
+                .monospacedDigit()
                 .foregroundStyle(theme.textPrimary)
                 .tint(theme.accent)
             }
+            .padding(.leading, ListRow.glyphSize + ListRow.glyphSpacing)
         }
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     // MARK: - Добавить участника
 
     private var addMemberSheet: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            Text("Новый участник").font(BrandFont.title).foregroundStyle(theme.textPrimary)
+            Text("Новый участник").font(BrandFont.title1).foregroundStyle(theme.textPrimary)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Тип профиля").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Тип профиля").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 Picker("Тип профиля", selection: $newKind) {
                     ForEach([FamilyShareMember.Kind.close, .child], id: \.self) { kind in
                         Text(kind.label).tag(kind)
@@ -130,27 +151,25 @@ struct FamilyPlanView: View {
             }
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Имя").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Имя").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 TextField("Например, Артём", text: $newName)
                     .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textPrimary)
                     .padding(Spacing.md)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .stroke(theme.border, lineWidth: 1))
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
             }
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HStack {
-                    Text("Выделить ГБ").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text("Выделить ГБ").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                     Spacer()
-                    Text("\(Int(newGb)) ГБ").font(BrandFont.callout.weight(.semibold))
+                    Text(gb(newGb)).font(BrandFont.headline).monospacedDigit()
                         .foregroundStyle(theme.textPrimary)
                 }
                 Slider(value: $newGb, in: 1...30, step: 1).tint(theme.accent)
             }
 
-            PrimaryButton(title: "Добавить", icon: "checkmark") {
+            PrimaryButton(title: "Добавить") {
                 store.addFamilyMember(name: newName, kind: newKind, allocatedGb: newGb)
                 resetForm()
                 showAdd = false

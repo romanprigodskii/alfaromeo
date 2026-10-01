@@ -39,7 +39,9 @@ struct MobilePaymentView: View {
                     composer
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -56,15 +58,27 @@ struct MobilePaymentView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            header
-
-            AmountText(amount: amount, size: 34)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text(purpose.prompt).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline) {
+                    AmountText(amount: amount, size: 40, splitsKopecks: true)
+                        .contentTransition(.numericText())
+                    Spacer(minLength: Spacing.sm)
+                    Button("Сбросить") {
+                        withAnimation(reduceMotion ? nil : Motion.snappy) { amount = 0 }
+                    }
+                    .font(BrandFont.body(15, weight: .medium))
+                    .foregroundStyle(amount > 0 ? theme.accent : theme.textTertiary)
+                    .disabled(amount <= 0)
+                }
+            }
 
             chips
 
             sourcesCard
 
-            PrimaryButton(title: purpose.title, icon: "checkmark") {
+            PrimaryButton(title: purpose.title) {
                 if let s = selectedSource {
                     store.recordPayment(purpose: purpose, amount: amount, source: s)
                 }
@@ -74,50 +88,32 @@ struct MobilePaymentView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(purpose.title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text(purpose.prompt).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
     private var chips: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: Spacing.sm)], spacing: Spacing.sm) {
-                ForEach(quickAmounts, id: \.self) { value in
-                    Button { withAnimation(reduceMotion ? nil : Motion.snappy) { amount += value } } label: {
-                        Text("+\(Int(value)) ₽").font(BrandFont.callout.weight(.semibold))
-                            .frame(maxWidth: .infinity).frame(minHeight: 44)
-                            .foregroundStyle(theme.textPrimary)
-                            .background(theme.elevated, in: Capsule())
-                    }
-                    .buttonStyle(PressableButtonStyle())
+        HStack(spacing: Spacing.sm) {
+            ForEach(quickAmounts, id: \.self) { value in
+                Button { withAnimation(reduceMotion ? nil : Motion.snappy) { amount += value } } label: {
+                    Text(MoneyFormat.fiat(value, sign: .always))
+                        .font(BrandFont.callout)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity).frame(minHeight: 40)
+                        .foregroundStyle(theme.textPrimary)
+                        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                 }
-            }
-            SecondaryButton(title: "Сброс", icon: "arrow.counterclockwise") {
-                withAnimation(reduceMotion ? nil : Motion.snappy) { amount = 0 }
+                .buttonStyle(PressableButtonStyle())
             }
         }
     }
 
     private var sourcesCard: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Счёт списания").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(sources.enumerated()), id: \.element.id) { i, source in
-                        PaymentSourceRow(
-                            source: source,
-                            isSelected: source.id == selectedSource?.id
-                        ) { selectedSourceId = source.id }
-                        if i < sources.count - 1 { Divider().overlay(theme.border) }
-                    }
-                }
+        GroupedSection("Счёт списания", footer: "Оплата с любого счёта, включая крипту.") {
+            ForEach(sources) { source in
+                PaymentSourceRow(
+                    source: source,
+                    isSelected: source.id == selectedSource?.id
+                ) { selectedSourceId = source.id }
             }
-            Text("Оплата с любого счёта, включая крипту (§7.1).")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -128,7 +124,7 @@ struct MobilePaymentView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 56)).foregroundStyle(theme.success)
             Text(purpose.title + " выполнена")
-                .font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                .font(BrandFont.title1).foregroundStyle(theme.textPrimary)
                 .multilineTextAlignment(.center)
             AmountText(amount: -amount, size: 24, showsSign: true, colorBySign: true)
             if let title = selectedSource?.title {

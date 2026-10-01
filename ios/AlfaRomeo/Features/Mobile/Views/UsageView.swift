@@ -18,16 +18,19 @@ struct UsageView: View {
         let usage = store.usage()
 
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 summary(usage)
 
                 UsageBreakdownView(usage: usage)
 
-                Text("Разбивка по дням и категориям — демо-данные (мок-метеринг §7.3). В проде метеринг приходит от оператора по факту трафика.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Демо-данные. В рабочей версии детализацию передаёт оператор по факту трафика.")
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                    .padding(.horizontal, Spacing.md)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -43,26 +46,26 @@ struct UsageView: View {
     private func summary(_ usage: MobileUsage) -> some View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Израсходовано за 7 дней").font(BrandFont.headline)
-                    .foregroundStyle(theme.textPrimary)
+                Text("Израсходовано за 7 дней").font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
 
                 HStack(spacing: Spacing.lg) {
-                    totalColumn(value: "\(MobileTariff.format(usage.totalGb)) ГБ", label: "Данные")
-                    Divider().frame(height: 36).overlay(theme.border)
-                    totalColumn(value: "\(usage.totalMinutes) мин", label: "Звонки")
+                    totalColumn(value: MobileTariff.format(usage.totalGb) + "\u{00A0}ГБ", label: "Интернет")
+                    Hairline(axis: .vertical).frame(height: 40)
+                    totalColumn(value: MoneyFormat.integer(usage.totalMinutes) + "\u{00A0}мин", label: "Звонки")
                 }
 
-                Text("Пик за день: \(MobileTariff.format(usage.peakGb)) ГБ")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Пик за день: " + MobileTariff.format(usage.peakGb) + "\u{00A0}ГБ")
+                    .font(BrandFont.footnote).monospacedDigit().foregroundStyle(theme.textSecondary)
             }
         }
     }
 
     private func totalColumn(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
-            Text(value).font(BrandFont.mono(22, weight: .semibold))
+            Text(value).font(BrandFont.title2).monospacedDigit()
                 .foregroundStyle(theme.textPrimary)
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(label).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -10,10 +10,8 @@ struct MobileCashback: Hashable, Sendable {
 
     var hasEarned: Bool { earnedGb >= 0.1 }
 
-    private static func fmt(_ v: Double) -> String {
-        v == v.rounded() ? String(format: "%.0f", v) : String(format: "%.1f", v)
-    }
-    var earnedLabel: String { Self.fmt(earnedGb) + " ГБ" }
-    var perMonthLabel: String { "≈ " + Self.fmt(perMonthGb) + " ГБ/мес" }
-    var creditedLabel: String { Self.fmt(creditedGb) + " ГБ" }
+    private static func fmt(_ v: Double) -> String { MobileTariff.format(v) }
+    var earnedLabel: String { Self.fmt(earnedGb) + "\u{00A0}ГБ" }
+    var perMonthLabel: String { "≈\u{00A0}" + Self.fmt(perMonthGb) + "\u{00A0}ГБ в месяц" }
+    var creditedLabel: String { Self.fmt(creditedGb) + "\u{00A0}ГБ" }
 }

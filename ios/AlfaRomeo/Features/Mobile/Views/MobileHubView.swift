@@ -6,8 +6,8 @@ import SwiftUI
 /// hubs use. (A nested `NavigationStack` here renders blank, since the hub is itself a pushed
 /// destination of the Home stack.)
 ///
-/// Shows the active profile's остатки (ГБ/минуты via ``ProgressBar``), the tier-linked тариф, and
-/// кэшбек гигабайтами. The tariff is **derived from the effective tier** (override → API), so it
+/// Shows the active profile's остатки (ГБ/минуты via ``ProgressBar``), a grouped list of sub-flows led
+/// by the tier-linked тариф, and кэшбек гигабайтами. The tariff is **derived from the effective tier** (override → API), so it
 /// always matches §7.1 — on Infinite it reads «Безлимит». Profiles without a plan get a «Подключить
 /// eSIM» state that opens the connect wizard.
 struct MobileHubView: View {
@@ -26,8 +26,9 @@ struct MobileHubView: View {
     var body: some View {
         ScrollView {
             content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -58,86 +59,53 @@ struct MobileHubView: View {
 
     @ViewBuilder
     private func connected(_ plan: MobilePlan) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
+        let roamingOn = store.roamingEnabled || tariff.isUnlimited
+        VStack(alignment: .leading, spacing: Spacing.section) {
             DataBalanceCard(tariff: tariff, usedGb: plan.usedGb, usedMin: plan.usedMin,
                             bonusGb: store.bonusGb, msisdn: plan.msisdn,
-                            roamingOn: store.roamingEnabled || tariff.isUnlimited)
+                            roamingOn: roamingOn)
 
-            tariffLine
+            GroupedSection {
+                navRow("square.stack.3d.up", "Тариф", subtitle: "Класс \(effectiveTier.displayName)",
+                       value: tariff.name, .tariffs)
+                navRow("simcard", "eSIM и номера", .esim)
+                navRow("chart.bar", "Использование", .usage)
+                navRow("airplane", "Роуминг", .roaming)
+                navRow("person.2", "Семейный пакет", value: familyCountLabel, .family)
+                navRow("creditcard", "Оплата связи", .payment(.topUp))
+            }
 
             CashbackGBCard(cashback: store.cashback(rate: tariff.cashbackGbPerMonth)) {
                 store.creditCashbackToPackage()
             }
 
-            actionsGrid
-
             if !store.payments.isEmpty { recentPayments }
         }
     }
 
-    private var tariffLine: some View {
-        Button { router.push(MobileRoute.tariffs) } label: {
-            SurfaceCard(padding: Spacing.md) {
-                HStack(spacing: Spacing.md) {
-                    Image(systemName: "simcard.fill").font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(theme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Тариф \(tariff.name)").font(BrandFont.bodyM.weight(.medium))
-                            .foregroundStyle(theme.textPrimary)
-                        Text("В связке с классом \(effectiveTier.displayName) (§7.1)")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    }
-                    Spacer()
-                    Text("Сменить").font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.accent)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(theme.textSecondary)
-                }
-            }
-        }
-        .buttonStyle(PressableButtonStyle())
+    private var familyCountLabel: String? {
+        let n = store.family.count
+        guard n > 0 else { return nil }
+        let (mod10, mod100) = (n % 10, n % 100)
+        let word = mod10 == 1 && mod100 != 11 ? "участник"
+            : (2...4).contains(mod10) && !(12...14).contains(mod100) ? "участника" : "участников"
+        return MoneyFormat.integer(n) + "\u{00A0}" + word
     }
 
-    private var actionsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: Spacing.md),
-                            GridItem(.flexible(), spacing: Spacing.md)], spacing: Spacing.md) {
-            actionTile("eSIM и номера", "simcard", .esim)
-            actionTile("Использование", "chart.bar.fill", .usage)
-            actionTile("Роуминг", "airplane", .roaming)
-            actionTile("Семейный пакет", "person.2.fill", .family)
-            actionTile("Оплата связи", "creditcard.fill", .payment(.topUp))
-            actionTile("Тарифы", "square.stack.3d.up.fill", .tariffs)
-        }
-    }
-
-    private func actionTile(_ title: String, _ icon: String, _ route: MobileRoute) -> some View {
+    private func navRow(_ icon: String, _ title: String, subtitle: String? = nil, value: String? = nil,
+                        _ route: MobileRoute) -> some View {
         Button { router.push(route) } label: {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Image(systemName: icon).font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(theme.accent)
-                Text(title).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(Spacing.md)
-            .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
+            ListRow(icon: icon, title: title, subtitle: subtitle, value: value, showsChevron: true)
         }
-        .buttonStyle(PressableButtonStyle())
+        .buttonStyle(.row)
     }
 
     private var recentPayments: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Платежи связи").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    let shown = Array(store.payments.prefix(3))
-                    ForEach(Array(shown.enumerated()), id: \.element.id) { i, p in
-                        ListRow(icon: p.purpose.icon, title: p.purpose.title,
-                                subtitle: p.sourceTitle + (p.isCrypto ? " · крипта" : ""),
-                                value: "−\(Int(p.amount)) ₽")
-                        if i < shown.count - 1 { Divider().overlay(theme.border) }
-                    }
-                }
+        GroupedSection("Платежи связи") {
+            ForEach(Array(store.payments.prefix(3))) { p in
+                ListRow(icon: p.purpose.icon, title: p.purpose.title,
+                        subtitle: p.sourceTitle,
+                        value: MoneyFormat.fiat(-p.amount))
             }
         }
     }
@@ -146,40 +114,46 @@ struct MobileHubView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Image(systemName: "simcard").font(.system(size: 28)).foregroundStyle(theme.accent)
-                    Text("Подключите Ромео Mobile").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Text("eSIM активируется мгновенно: по QR, с новым номером или переносом своего (MNP). Тариф — в связке с вашим классом (§7.1).")
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text("Ромео Mobile не подключён").font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                Text("eSIM по QR, с новым номером или переносом своего (MNP). Тариф зависит от вашего класса.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            PrimaryButton(title: "Подключить eSIM", icon: "plus") { router.push(MobileRoute.esim) }
-            Button { router.push(MobileRoute.tariffs) } label: {
-                Text("Посмотреть тарифы").font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.accent)
+            VStack(spacing: Spacing.sm) {
+                PrimaryButton(title: "Подключить eSIM") { router.push(MobileRoute.esim) }
+                TertiaryButton("Посмотреть тарифы") { router.push(MobileRoute.tariffs) }
             }
-            .buttonStyle(.plain)
         }
+        .padding(.top, Spacing.sm)
     }
 
     private var loadingState: some View {
-        VStack(spacing: Spacing.md) { ProgressView().controlSize(.large) }
-            .frame(maxWidth: .infinity, minHeight: 240)
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            SkeletonRow(showsGlyph: false)
+                .padding(.horizontal, Spacing.md)
+                .frame(minHeight: 160, alignment: .top)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            GroupedSection {
+                ForEach(0..<4, id: \.self) { _ in SkeletonRow(showsSubtitle: false) }
+            }
+        }
+        .accessibilityLabel("Загрузка")
     }
 
     private var errorState: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Label("Не удалось загрузить Ромео Mobile", systemImage: "exclamationmark.triangle")
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Не удалось загрузить Ромео Mobile")
                     .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                 Text("Проверьте соединение и попробуйте снова.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                SecondaryButton(title: "Повторить", icon: "arrow.clockwise") {
-                    Task { await store.load(api: api, profileId: profileId, force: true) }
-                }
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            }
+            SecondaryButton(title: "Повторить") {
+                Task { await store.load(api: api, profileId: profileId, force: true) }
             }
         }
+        .padding(.top, Spacing.sm)
     }
 }
 

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Выбор счёта списания (§7.1 «с любого счёта (вкл. крипту)»). One ``PaymentSource`` — fiat / цифр.₽
-/// account or crypto wallet — selectable. Crypto sources get the cold-gradient accent + a «Крипта» tag.
+/// Выбор счёта списания (§7.1 «с любого счёта (вкл. крипту)»). One ``PaymentSource`` (fiat / цифр.₽
+/// account or crypto wallet) as a selectable ``GroupedSection`` row: currency glyph, title, balance,
+/// trailing selection mark. Crypto sources carry a neutral «Крипта» tag.
 struct PaymentSourceRow: View {
     let source: PaymentSource
     let isSelected: Bool
@@ -9,30 +10,30 @@ struct PaymentSourceRow: View {
 
     @Environment(\.theme) private var theme
 
-    private var tint: Color { source.isCrypto ? (theme.accentCrypto.first ?? theme.accent) : theme.accent }
-
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: source.icon)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(tint)
-                    .frame(width: 36, height: 36)
-                    .background(tint.opacity(0.14),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            HStack(spacing: ListRow.glyphSpacing) {
+                GlyphCircle(systemImage: source.icon)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: Spacing.xs) {
-                        Text(source.title).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                        if source.isCrypto { Badge(kind: .text("Крипта"), tint: tint) }
+                    HStack(spacing: Spacing.xs + 2) {
+                        Text(source.title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                            .lineLimit(1)
+                        if source.isCrypto { Badge(kind: .text("Крипта")) }
                     }
-                    Text(source.balanceLabel).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text(source.balanceLabel).font(BrandFont.subheadline).monospacedDigit()
+                        .foregroundStyle(theme.textSecondary)
                 }
                 Spacer(minLength: Spacing.sm)
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20)).foregroundStyle(isSelected ? theme.accent : theme.border)
+                    .font(.system(size: 22))
+                    .foregroundStyle(isSelected ? theme.accent : theme.textTertiary)
             }
-            .padding(.vertical, Spacing.xs)
+            .padding(.vertical, Spacing.sm)
+            .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeightTwoLine, alignment: .leading)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

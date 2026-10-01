@@ -45,7 +45,9 @@ struct ESIMConnectView: View {
                 case .done:         doneStep
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -61,13 +63,13 @@ struct ESIMConnectView: View {
     private var methodStep: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Как подключить eSIM").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("Мгновенно — по QR, с новым номером или переносом своего (MNP). Тариф в связке с вашим классом (§7.1).")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                Text("Способ подключения").font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                Text("eSIM активируется сразу. Тариф зависит от вашего класса.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            VStack(spacing: Spacing.md) {
+            GroupedSection {
                 ForEach(ESIMMethod.allCases) { m in
                     ESIMMethodCard(method: m, isSelected: method == m) {
                         withAnimation(reduceMotion ? nil : Motion.snappy) { method = m }
@@ -75,7 +77,7 @@ struct ESIMConnectView: View {
                 }
             }
 
-            PrimaryButton(title: "Продолжить", icon: "arrow.right") {
+            PrimaryButton(title: "Продолжить") {
                 withAnimation(reduceMotion ? nil : Motion.smooth) { step = .details }
             }
         }
@@ -87,8 +89,8 @@ struct ESIMConnectView: View {
     private var detailsStep: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(method.title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text(method.subtitle).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                Text(method.title).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                Text(method.subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -98,7 +100,7 @@ struct ESIMConnectView: View {
             case .transfer:  transferDetails
             }
 
-            PrimaryButton(title: "Подключить eSIM", icon: "simcard") {
+            PrimaryButton(title: "Подключить eSIM") {
                 startProvisioning()
             }
             .disabled(method == .transfer && portedNumber.count < 10)
@@ -113,7 +115,7 @@ struct ESIMConnectView: View {
                     .foregroundStyle(theme.textPrimary)
                     .frame(maxWidth: .infinity)
                 Text("Сканируйте QR в приложении оператора (демо)")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -122,67 +124,57 @@ struct ESIMConnectView: View {
     }
 
     private var newNumberDetails: some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                ForEach(Array(candidateNumbers.enumerated()), id: \.element) { i, number in
-                    Button {
-                        withAnimation(reduceMotion ? nil : Motion.snappy) { chosenNumber = number }
-                    } label: {
-                        HStack(spacing: Spacing.md) {
-                            Text(number)
-                                .font(BrandFont.mono(17, weight: .medium))
-                                .foregroundStyle(theme.textPrimary)
-                            Spacer(minLength: Spacing.sm)
-                            Image(systemName: chosenNumber == number ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 20))
-                                .foregroundStyle(chosenNumber == number ? theme.accent : theme.border)
-                        }
-                        .padding(.vertical, Spacing.sm)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+        GroupedSection("Номер") {
+            ForEach(candidateNumbers, id: \.self) { number in
+                Button {
+                    withAnimation(reduceMotion ? nil : Motion.snappy) { chosenNumber = number }
+                } label: {
+                    HStack(spacing: Spacing.md) {
+                        Text(number)
+                            .font(BrandFont.bodyM)
+                            .monospacedDigit()
+                            .foregroundStyle(theme.textPrimary)
+                        Spacer(minLength: Spacing.sm)
+                        Image(systemName: chosenNumber == number ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 22))
+                            .foregroundStyle(chosenNumber == number ? theme.accent : theme.textTertiary)
                     }
-                    .buttonStyle(.plain)
-                    if i < candidateNumbers.count - 1 { Divider().overlay(theme.border) }
+                    .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.row)
             }
         }
     }
 
     private var transferDetails: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Ваш номер").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                TextField("Ваш номер", text: $portedNumber)
+        GroupedSection(footer: "Номер сохранится после переноса (MNP).") {
+            HStack(spacing: Spacing.md) {
+                Text("Номер").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                TextField("+7 900 000-00-00", text: $portedNumber)
                     .keyboardType(.phonePad)
-                    .font(BrandFont.mono(20, weight: .medium))
+                    .multilineTextAlignment(.trailing)
+                    .font(BrandFont.bodyM)
+                    .monospacedDigit()
                     .foregroundStyle(theme.textPrimary)
-                    .padding(Spacing.md)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
             }
+            .frame(minHeight: Spacing.rowMinHeight)
 
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Текущий оператор").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                Menu {
-                    ForEach(ESIMDonor.allCases) { d in
-                        Button(d.rawValue) { donor = d }
-                    }
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.accent)
-                        Text(donor.rawValue).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
-                    }
-                    .padding(Spacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            Menu {
+                ForEach(ESIMDonor.allCases) { d in
+                    Button(d.rawValue) { donor = d }
                 }
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Text("Текущий оператор").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Spacer(minLength: Spacing.sm)
+                    Text(donor.rawValue).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
+                }
+                .frame(maxWidth: .infinity, minHeight: Spacing.rowMinHeight, alignment: .leading)
+                .contentShape(Rectangle())
             }
-
-            Label("Номер сохранится (MNP)", systemImage: "checkmark.shield.fill")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
         }
     }
 
@@ -191,25 +183,24 @@ struct ESIMConnectView: View {
     private var provisioningStepView: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Подключаем eSIM").font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                Text("Подключаем eSIM").font(BrandFont.title2).foregroundStyle(theme.textPrimary)
                 Text("Это займёт несколько секунд (демо).")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             }
 
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    ForEach(Array(method.provisioningSteps.enumerated()), id: \.offset) { index, title in
-                        HStack(spacing: Spacing.md) {
-                            stepIcon(for: index)
-                                .frame(width: 24, height: 24)
-                            Text(title)
-                                .font(BrandFont.bodyM)
-                                .foregroundStyle(index <= provisioningStep ? theme.textPrimary : theme.textSecondary)
-                            Spacer(minLength: 0)
-                        }
+            GroupedSection {
+                ForEach(Array(method.provisioningSteps.enumerated()), id: \.offset) { index, title in
+                    HStack(spacing: Spacing.md) {
+                        stepIcon(for: index)
+                            .frame(width: 24, height: 24)
+                        Text(title)
+                            .font(BrandFont.bodyM)
+                            .foregroundStyle(index <= provisioningStep ? theme.textPrimary : theme.textSecondary)
+                        Spacer(minLength: 0)
                     }
+                    .frame(minHeight: Spacing.rowMinHeight)
+                    .groupedRowTextInset(24 + Spacing.md)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -223,7 +214,7 @@ struct ESIMConnectView: View {
             ProgressView().controlSize(.small)
         } else {
             Image(systemName: "circle")
-                .font(.system(size: 20)).foregroundStyle(theme.border)
+                .font(.system(size: 20)).foregroundStyle(theme.textTertiary)
         }
     }
 
@@ -233,23 +224,19 @@ struct ESIMConnectView: View {
         VStack(spacing: Spacing.lg) {
             Spacer(minLength: Spacing.xl)
 
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 72))
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 56))
                 .foregroundStyle(theme.success)
 
-            Text("eSIM активирована")
-                .font(BrandFont.title).foregroundStyle(theme.textPrimary)
-
-            VStack(spacing: Spacing.xs) {
-                Text("Ваш номер").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            VStack(spacing: Spacing.sm) {
+                Text("eSIM активирована")
+                    .font(BrandFont.title1).foregroundStyle(theme.textPrimary)
                 Text(store.plan?.msisdn ?? chosenNumber)
-                    .font(BrandFont.mono(22, weight: .semibold))
+                    .font(BrandFont.title2)
+                    .monospacedDigit()
                     .foregroundStyle(theme.textPrimary)
+                Text("Ваш номер").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             }
-            .padding(Spacing.md)
-            .frame(maxWidth: .infinity)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
 
             Spacer(minLength: Spacing.xl)
 

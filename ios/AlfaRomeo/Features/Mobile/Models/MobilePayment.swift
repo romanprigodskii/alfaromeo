@@ -16,7 +16,7 @@ enum MobilePaymentPurpose: String, Hashable, Sendable {
     var prompt: String {
         switch self {
         case .topUp:   return "Пополните счёт Ромео Mobile с любого счёта, включая крипту."
-        case .roaming: return "Оплатите роуминг криптой или стейблами прямо в поездке (§7.1)."
+        case .roaming: return "Оплатите роуминг криптой или стейблкоинами."
         case .tariff:  return "Спишем стоимость тарифа с выбранного счёта."
         }
     }
@@ -57,13 +57,13 @@ enum PaymentSource: Identifiable, Hashable, Sendable {
             case .crypto:       return "Крипто-счёт · \(a.currency)"
             case .digitalRuble: return "Цифровой рубль"
             }
-        case .wallet(let w):    return "\(w.asset) · \(w.chain)"
+        case .wallet(let w):    return "\(w.asset) · \(w.chain.capitalized)"
         }
     }
     var balanceLabel: String {
         switch self {
-        case .account(let a): return "\(Int(a.balance)) \(a.currency)"
-        case .wallet(let w):  return "\(w.balance) \(w.asset)"
+        case .account(let a): return MoneyFormat.amount(a.balance, currency: a.currency)
+        case .wallet(let w):  return MoneyFormat.amount(w.balance, currency: w.asset)
         }
     }
     var icon: String {

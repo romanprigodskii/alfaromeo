@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Остатки ГБ/минут + текущий тариф (§7.2 Mobile-хаб). Shows the MSISDN, the tier-linked tariff
-/// badge, animated ``ProgressBar`` for data + minutes, and a roaming chip. On the unlimited (Infinite)
-/// tariff there is no cap — it shows «Безлимит» instead of a progress fill (§7.1).
+/// Остатки ГБ/минут + текущий тариф (§7.2 Mobile-хаб). The one summary card on the hub: MSISDN and
+/// tariff, flat ``ProgressBar`` meters for data + minutes, and the roaming state. On the unlimited
+/// (Infinite) tariff there is no cap, so it shows «Безлимит» instead of a progress fill (§7.1).
 struct DataBalanceCard: View {
     let tariff: MobileTariff
     let usedGb: Double
@@ -20,35 +20,45 @@ struct DataBalanceCard: View {
     private var dataFraction: Double { dataCap.map { $0 > 0 ? min(1, usedGb / $0) : 0 } ?? 0 }
     private var minFraction: Double { minutesCap.map { $0 > 0 ? min(1, Double(usedMin) / Double($0)) : 0 } ?? 0 }
 
+    private static let nbsp = "\u{00A0}"
+
     var body: some View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.accent)
-                    Text(msisdn).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Spacer()
-                    Badge(kind: .text(tariff.name), tint: theme.accent)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(msisdn)
+                        .font(BrandFont.headline)
+                        .monospacedDigit()
+                        .foregroundStyle(theme.textPrimary)
+                    Spacer(minLength: Spacing.sm)
+                    Text(tariff.name)
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(theme.textSecondary)
                 }
 
                 if tariff.isUnlimited {
                     unlimitedRow
                 } else {
-                    meter(title: "Интернет", remaining: "\(format(remainingGb ?? 0)) ГБ осталось",
-                          total: "из \(format(dataCap ?? 0)) ГБ", fraction: dataFraction)
-                    meter(title: "Минуты", remaining: "\(remainingMin ?? 0) мин осталось",
-                          total: "из \(minutesCap ?? 0) мин", fraction: minFraction)
+                    meter(title: "Интернет",
+                          remaining: format(remainingGb ?? 0) + Self.nbsp + "ГБ",
+                          total: "из" + Self.nbsp + format(dataCap ?? 0) + Self.nbsp + "ГБ",
+                          fraction: dataFraction)
+                    meter(title: "Минуты",
+                          remaining: MoneyFormat.integer(remainingMin ?? 0) + Self.nbsp + "мин",
+                          total: "из" + Self.nbsp + MoneyFormat.integer(minutesCap ?? 0) + Self.nbsp + "мин",
+                          fraction: minFraction)
                 }
 
                 HStack(spacing: Spacing.sm) {
-                    Label(roamingOn ? "Роуминг включён" : "Роуминг выкл.",
-                          systemImage: roamingOn ? "airplane.circle.fill" : "airplane")
-                        .font(BrandFont.caption.weight(.medium))
-                        .foregroundStyle(roamingOn ? theme.accent : theme.textSecondary)
+                    Text(roamingOn ? "Роуминг включён" : "Роуминг выключен")
+                        .font(BrandFont.footnote)
+                        .foregroundStyle(theme.textSecondary)
                     if bonusGb > 0 {
-                        Spacer()
-                        Text("+\(format(bonusGb)) ГБ кэшбек")
-                            .font(BrandFont.caption.weight(.medium)).foregroundStyle(theme.success)
+                        Spacer(minLength: Spacing.sm)
+                        Text("+" + format(bonusGb) + Self.nbsp + "ГБ кэшбеком")
+                            .font(BrandFont.footnote)
+                            .monospacedDigit()
+                            .foregroundStyle(theme.success)
                     }
                 }
             }
@@ -56,27 +66,31 @@ struct DataBalanceCard: View {
     }
 
     private var unlimitedRow: some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: "infinity").font(.system(size: 22, weight: .bold)).foregroundStyle(theme.accent)
+        HStack(spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: "infinity")
             VStack(alignment: .leading, spacing: 2) {
-                Text("Безлимитный интернет и минуты").font(BrandFont.bodyM.weight(.medium))
+                Text("Безлимитный интернет и минуты").font(BrandFont.bodyM)
                     .foregroundStyle(theme.textPrimary)
-                Text("Тариф Infinite — без ограничений (§7.1)").font(BrandFont.caption)
+                Text("Класс Infinite").font(BrandFont.subheadline)
                     .foregroundStyle(theme.textSecondary)
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
     }
 
     private func meter(title: String, remaining: String, total: String, fraction: Double) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(title).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            HStack {
-                Text(remaining).font(BrandFont.body(15, weight: .medium)).foregroundStyle(theme.textPrimary)
-                Spacer()
-                Text(total).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        VStack(alignment: .leading, spacing: Spacing.xs + 2) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                Spacer(minLength: Spacing.sm)
+                Text(total).font(BrandFont.subheadline).monospacedDigit()
+                    .foregroundStyle(theme.textSecondary)
             }
-            ProgressBar(value: fraction, height: 8)
+            Text("Осталось " + remaining)
+                .font(BrandFont.headline)
+                .monospacedDigit()
+                .foregroundStyle(theme.textPrimary)
+            ProgressBar(value: fraction, height: 6)
         }
     }
 

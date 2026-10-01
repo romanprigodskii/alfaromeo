@@ -16,8 +16,8 @@ struct MobileTariff: Identifiable, Hashable, Sendable {
     var id: String { package.rawValue }
     var isUnlimited: Bool { dataGb == nil }
 
-    var dataLabel: String { dataGb.map { Self.format($0) + " ГБ" } ?? "Безлимит" }
-    var minutesLabel: String { minutes.map { "\($0) мин" } ?? "Безлимит" }
+    var dataLabel: String { dataGb.map { Self.format($0) + "\u{00A0}ГБ" } ?? "Безлимит" }
+    var minutesLabel: String { minutes.map { MoneyFormat.integer($0) + "\u{00A0}мин" } ?? "Безлимит" }
     var roamingLabel: String { roamingIncluded ? "Роуминг включён" : "Роуминг по запросу" }
 
     /// Build a tariff from a tier's mobile package (§7.1).
@@ -48,7 +48,8 @@ struct MobileTariff: Identifiable, Hashable, Sendable {
         .make(for: Entitlements.MobilePackage.unlimited),
     ]
 
+    /// GB / minutes quantity in the Russian format (`17,5`, `30`), via ``MoneyFormat`` (DESIGN §6).
     static func format(_ value: Double) -> String {
-        value == value.rounded() ? String(format: "%.0f", value) : String(format: "%.1f", value)
+        MoneyFormat.number(value, maxFractionDigits: 1)
     }
 }
