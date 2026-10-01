@@ -49,6 +49,8 @@ final class TransferFlowModel {
     var sourceAccount: Account?           // fiat rails
     var sourceWallet: CryptoWallet?       // crypto rail
     var destinationAccount: Account?      // between accounts
+    /// «Пополнить» from an account's detail: that account is picked as the destination once loaded.
+    var preselectedDestinationId: String?
 
     // MARK: Amount
     var amountText = ""
@@ -117,6 +119,12 @@ final class TransferFlowModel {
             Task { await LivePriceService.shared.start() }
         } else {
             sourceAccount = sourceAccount ?? defaultFiatSource()
+        }
+        if let id = preselectedDestinationId, recipient == nil,
+           let target = accounts.first(where: { $0.id == id }),
+           accounts.contains(where: { $0.isRubLike && $0.id != id }) {
+            preselectedDestinationId = nil
+            selectDestinationAccount(target)
         }
 
         // Tier → free abroad transfers (§4.1).

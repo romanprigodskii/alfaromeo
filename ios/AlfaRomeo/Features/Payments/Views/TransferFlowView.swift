@@ -13,8 +13,10 @@ struct TransferFlowView: View {
     @State private var model: TransferFlowModel
     private let bio = BiometricAuthenticator.available()
 
-    init(kind: TransferKind, biller: Biller? = nil) {
-        _model = State(initialValue: TransferFlowModel(kind: kind, biller: biller))
+    init(kind: TransferKind, biller: Biller? = nil, destinationAccountId: String? = nil) {
+        let model = TransferFlowModel(kind: kind, biller: biller)
+        model.preselectedDestinationId = destinationAccountId
+        _model = State(initialValue: model)
     }
 
     init(template: PaymentTemplate) {

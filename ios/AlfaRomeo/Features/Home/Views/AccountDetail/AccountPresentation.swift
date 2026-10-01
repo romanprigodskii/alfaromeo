@@ -125,6 +125,7 @@ enum AccountValuation {
 struct AccountQuickAction: Identifiable {
     enum Kind: Equatable {
         case transfer(TransferKind)   // → PaymentsRoute.transfer on the Home stack
+        case topUp                    // → PaymentsRoute.topUp: между счетами, зачисление на этот счёт
         case requisites               // → AccountRequisitesSheet
         case cryptoHub                // → HomeRoute.crypto
     }
@@ -138,13 +139,13 @@ struct AccountQuickAction: Identifiable {
         switch type {
         case .current, .savings:
             return [
-                AccountQuickAction(id: "topup", title: "Пополнить",  icon: "arrow.down.circle.fill",   kind: .transfer(.betweenAccounts)),
+                AccountQuickAction(id: "topup", title: "Пополнить",  icon: "arrow.down.circle.fill",   kind: .topUp),
                 AccountQuickAction(id: "send",  title: "Перевести",  icon: "arrow.up.right.circle.fill", kind: .transfer(.byPhone)),
                 AccountQuickAction(id: "req",   title: "Реквизиты",  icon: "doc.text.fill",            kind: .requisites),
             ]
         case .digitalRuble:
             return [
-                AccountQuickAction(id: "topup", title: "Пополнить",  icon: "arrow.down.circle.fill", kind: .transfer(.betweenAccounts)),
+                AccountQuickAction(id: "topup", title: "Пополнить",  icon: "arrow.down.circle.fill", kind: .topUp),
                 AccountQuickAction(id: "send",  title: "Перевести",  icon: "qrcode",                 kind: .transfer(.digitalRubleQR)),
                 AccountQuickAction(id: "req",   title: "Реквизиты",  icon: "doc.text.fill",          kind: .requisites),
             ]

@@ -7,6 +7,7 @@ import SwiftUI
 enum PaymentsRoute: Hashable {
     case transfer(TransferKind)           // переводы — recipient chosen in-flow
     case template(PaymentTemplate)        // шаблон → рельс с получателем и суммой из шаблона
+    case topUp(accountId: String)         // «Пополнить» счёт → между счетами, этот счёт уже выбран для зачисления
     case payBiller(billerId: String)      // ЖКУ / штраф / поставщик / шаблон → prefilled flow
     case section(BillerSection)           // Мои платежи / Счета ЖКУ / Штрафы ГАИ
     case suppliers                        // Платежи поставщикам (поиск + категории)
@@ -24,6 +25,8 @@ extension PaymentsRoute {
             TransferFlowView(kind: kind)
         case .template(let template):
             TransferFlowView(template: template)
+        case .topUp(let accountId):
+            TransferFlowView(kind: .betweenAccounts, destinationAccountId: accountId)
         case .payBiller(let id):
             if let biller = PaymentsMockData.biller(id: id) {
                 // Bill payments settle by requisites (0% комиссия); the flow titles itself by biller.

@@ -218,6 +218,7 @@ struct AccountDetailScreen: View {
     private func handle(_ action: AccountQuickAction, account: Account) {
         switch action.kind {
         case .transfer(let kind): router.push(PaymentsRoute.transfer(kind))
+        case .topUp:              router.push(PaymentsRoute.topUp(accountId: account.id))
         case .requisites:         showRequisites = true
         case .cryptoHub:          router.push(HomeRoute.crypto)
         }
