@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The AI copilot chat (§10.9): streaming token-by-token answers in message bubbles, a typing indicator,
-/// the cold AI gradient, a mode switcher (Поддержка / Финкоуч / Агент), one-tap escalation, and the
+/// a monochrome «AI» monogram, a mode switcher (Поддержка / Финкоуч / Агент), one-tap escalation, and the
 /// agentic confirm flow (draft card → Face ID → status). Works both as a sheet (floating button / a
 /// History operation) and pushed full-screen (the Chats support channel, `embedded`).
 struct CopilotChatView: View {
@@ -56,21 +56,22 @@ struct CopilotChatView: View {
             VStack(spacing: Spacing.xs) {
                 CopilotModePicker(mode: $model.mode)
                 Text(model.mode.hint)
-                    .font(BrandFont.micro)
+                    .font(BrandFont.footnote)
                     .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, embedded ? Spacing.sm : 0)
             .padding(.bottom, Spacing.sm)
 
-            Divider().overlay(theme.border)
+            Hairline()
 
             transcript(model)
 
             if model.quotaReached, let limit = model.aiLimit {
                 CopilotQuotaNotice(tier: model.tier, limit: limit)
-                    .padding(.horizontal, Spacing.md)
+                    .padding(.horizontal, Spacing.screen)
                     .padding(.top, Spacing.sm)
             }
 
@@ -94,32 +95,29 @@ struct CopilotChatView: View {
 
     private var sheetHeader: some View {
         HStack(spacing: Spacing.sm) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
-                .background(theme.cryptoGradient, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            GlyphCircle(text: "AI", size: 36)
             VStack(alignment: .leading, spacing: 0) {
                 Text("AI-копилот").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text(liveLabel).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                Text(liveLabel).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             }
             Spacer()
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 26))
+                    .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(theme.textSecondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Закрыть")
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
         .padding(.top, Spacing.md)
         .padding(.bottom, Spacing.sm)
     }
 
     private var liveLabel: String {
         guard let model else { return "Claude" }
-        return model.isLive ? "Claude · на связи" : "Claude · офлайн-демо"
+        return model.isLive ? "Claude, на связи" : "Claude, офлайн-демо"
     }
 
     private func transcript(_ model: CopilotChatModel) -> some View {
@@ -135,7 +133,8 @@ struct CopilotChatView: View {
                     if isFresh(model) { suggestions(model) }
                     Color.clear.frame(height: 1).id(Self.bottomAnchor)
                 }
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
             }
             .scrollDismissesKeyboard(.interactively)
             // Follow the stream WITHOUT animation (token-by-token), so there are no competing 0.2s
@@ -156,40 +155,15 @@ struct CopilotChatView: View {
     /// Tappable example prompts that fill + send via the existing model API (no new logic). They switch
     /// with the active mode and disappear after the first turn.
     private func suggestions(_ model: CopilotChatModel) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Примеры запросов")
-                .font(BrandFont.micro.weight(.semibold))
-                .foregroundStyle(theme.textSecondary)
-                .padding(.leading, Spacing.xs)
+        GroupedSection("Примеры запросов") {
             ForEach(suggestionPrompts(for: model.mode), id: \.text) { item in
                 Button {
                     model.input = item.text
                     model.send()
                 } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                            .frame(width: 30, height: 30)
-                            .background((theme.accentCrypto.first ?? theme.accent).opacity(0.12),
-                                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                        Text(item.text)
-                            .font(BrandFont.callout)
-                            .foregroundStyle(theme.textPrimary)
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: Spacing.xs)
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(theme.textSecondary)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, Spacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .stroke(theme.border, lineWidth: 1))
+                    ListRow(icon: item.icon, title: item.text, showsChevron: true)
                 }
-                .buttonStyle(PressableButtonStyle())
+                .buttonStyle(.row)
             }
         }
         .padding(.top, Spacing.sm)
@@ -210,7 +184,7 @@ struct CopilotChatView: View {
                     ("calendar", "Разбор трат за месяц")]
         case .agent:
             return [("arrow.up.right", "Переведи 5 000 ₽ на карту маме"),
-                    ("banknote.fill", "Открой вклад на 100 000 ₽"),
+                    ("banknote", "Открой вклад на 100 000 ₽"),
                     ("snowflake", "Заморозь мою карту"),
                     ("iphone", "Оплати мобильный на 500 ₽")]
         }

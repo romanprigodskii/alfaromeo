@@ -17,7 +17,7 @@ struct BusinessSectionStub: View {
             showsScopedSummary: isPrimary,
             onPushDemo: {
                 router.push(PlaceholderRoute(
-                    title: "Раздел · детально",
+                    title: "Подробности раздела",
                     blurb: "Экран открыт через NavigationStack и Router этой секции (§9). «Назад» возвращает в корень."
                 ))
             }

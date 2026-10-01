@@ -51,7 +51,7 @@ struct CopilotActionSheet: View {
             Spacer(minLength: Spacing.xl)
 
             Image(systemName: result.isExecuted ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 64, weight: .bold))
+                .font(.system(size: 56, weight: .regular))
                 .foregroundStyle(result.isExecuted ? theme.success : theme.danger)
 
             StatusPill(status: result.isExecuted ? .success : .declined)
@@ -61,7 +61,7 @@ struct CopilotActionSheet: View {
                 .foregroundStyle(theme.textPrimary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
 
             if let reason = result.reason, !result.isExecuted, reason != "biometric" {
                 Text(reason)
@@ -69,13 +69,13 @@ struct CopilotActionSheet: View {
                     .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
+                    .padding(.horizontal, Spacing.screen)
             }
 
             Spacer(minLength: Spacing.lg)
 
-            PrimaryButton(title: "Готово", icon: "checkmark") { finish(result) }
-                .padding(.horizontal, Spacing.lg)
+            PrimaryButton(title: "Готово") { finish(result) }
+                .padding(.horizontal, Spacing.screen)
         }
         .padding(.vertical, Spacing.xl)
     }

@@ -22,13 +22,13 @@ struct CopilotLaunch: Hashable, Sendable {
     /// no pre-seeded prompt, the human types the query; the context line frames what it can do.
     static let search = CopilotLaunch(
         mode: .support,
-        contextNote: "Поиск по приложению и помощник в одном. Спросите что угодно: «сколько ушло на кафе в мае», «открыть вклад», «заморозить карту» — найду ответ или подготовлю действие."
+        contextNote: "Поиск по приложению и помощник в одном. Спросите, например: «сколько ушло на кафе в мае», «открыть вклад», «заморозить карту». Найду ответ или подготовлю действие."
     )
 
     /// «Чат с банком» (§9.5) — the primary reference channel.
     static let bankChat = CopilotLaunch(
         mode: .support,
-        contextNote: "Чат с банком. Отвечаю по счетам, картам, продуктам и тарифам. Если нужен живой сотрудник — переключу на оператора в один тап."
+        contextNote: "Чат с банком. Отвечаю по счетам, картам, продуктам и тарифам. Если нужен живой сотрудник, переключу на оператора в один тап."
     )
 
     /// «Чат с оператором» (§9.5) — support with an explicit human-escalation path (no live operator;
@@ -36,7 +36,7 @@ struct CopilotLaunch: Hashable, Sendable {
     static let operatorChat = CopilotLaunch(
         mode: .support,
         seededPrompt: "Нужна помощь оператора.",
-        contextNote: "Сначала помогу я — так быстрее. В любой момент эскалирую на живого оператора: напишите «оператор» и я переведу диалог на человека."
+        contextNote: "Сначала помогу я, так быстрее. В любой момент эскалирую на живого оператора: напишите «оператор» и я переведу диалог на человека."
     )
 
     /// Open the copilot pre-seeded with a question about a specific operation (§10.7).
@@ -44,7 +44,7 @@ struct CopilotLaunch: Hashable, Sendable {
         CopilotLaunch(
             mode: .support,
             seededPrompt: "Объясни операцию «\(title)» на \(amount).",
-            contextNote: "Вопрос по операции \(id). Спросите что угодно — например, что это за списание или как его оспорить."
+            contextNote: "Вопрос по операции \(id). Спросите что угодно, например, что это за списание или как его оспорить."
         )
     }
 

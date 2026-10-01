@@ -26,23 +26,19 @@ struct SectionStubBody: View {
                     .foregroundStyle(theme.textSecondary)
 
                 if !rails.isEmpty {
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(rails.enumerated()), id: \.offset) { index, rail in
-                                Button(action: rail.action) {
-                                    ListRow(icon: rail.icon, title: rail.title,
-                                            subtitle: rail.subtitle, showsChevron: true)
-                                }
-                                .buttonStyle(.plain)
-                                if index < rails.count - 1 {
-                                    Divider().overlay(theme.border)
-                                }
+                    GroupedSection {
+                        ForEach(Array(rails.enumerated()), id: \.offset) { _, rail in
+                            Button(action: rail.action) {
+                                ListRow(icon: rail.icon, title: rail.title,
+                                        subtitle: rail.subtitle, showsChevron: true)
                             }
+                            .buttonStyle(.row)
                         }
                     }
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())

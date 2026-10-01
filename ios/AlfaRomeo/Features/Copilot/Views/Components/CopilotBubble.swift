@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One message row: a right-aligned accent bubble for the user; for the assistant, a cold-gradient
-/// avatar beside a surface bubble that can also host an action card, a result receipt, or an escalation
+/// One message row: a right-aligned accent bubble for the user; for the assistant, a monochrome «AI»
+/// monogram beside a surface bubble that can also host an action card, a result receipt, or an escalation
 /// pill (§10.9). Bubbles carry a small tail on the sender's side and a generous opposite-side inset.
 struct CopilotBubble: View {
     let message: CopilotMessage
@@ -48,7 +48,6 @@ struct CopilotBubble: View {
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, 14)
                         .background(theme.surface, in: bubbleShape(isUser: false))
-                        .overlay(bubbleShape(isUser: false).stroke(theme.border, lineWidth: 1))
                 } else if !message.text.isEmpty {
                     Text(message.text)
                         .font(BrandFont.body())
@@ -58,7 +57,6 @@ struct CopilotBubble: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                         .background(theme.surface, in: bubbleShape(isUser: false))
-                        .overlay(bubbleShape(isUser: false).stroke(theme.border, lineWidth: 1))
                 }
 
                 if let draft = message.draft {
@@ -80,12 +78,7 @@ struct CopilotBubble: View {
     }
 
     private var avatar: some View {
-        Image(systemName: "sparkles")
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: 30, height: 30)
-            .background(theme.cryptoGradient, in: Circle())
-            .accessibilityHidden(true)
+        GlyphCircle(text: "AI", size: 30)
     }
 
     private func resultRow(_ receipt: CopilotActionReceipt) -> some View {
@@ -98,10 +91,6 @@ struct CopilotBubble: View {
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(theme.border, lineWidth: 1)
-        )
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }

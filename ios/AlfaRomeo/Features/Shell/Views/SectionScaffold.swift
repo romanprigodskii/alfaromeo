@@ -33,7 +33,7 @@ struct SectionScaffold<Root: View>: View {
         // area is already inset by the tab bar, so no magic offset is needed.
         .overlay(alignment: .bottomTrailing) {
             AICopilotButton { shell.showCopilot() }
-                .padding(.trailing, Spacing.lg)
+                .padding(.trailing, Spacing.screen)
                 .padding(.bottom, Spacing.md)
         }
     }

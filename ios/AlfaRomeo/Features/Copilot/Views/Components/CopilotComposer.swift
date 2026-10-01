@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Chat input bar (§10.9): a growing pill text field, a gradient send button, and a one-tap escalation
+/// Chat input bar (§10.9): a growing text field, a flat accent send button, and a one-tap escalation
 /// to a human operator («позвать человека»). A hairline at the top separates the bar from the transcript.
 struct CopilotComposer: View {
     @Binding var text: String
@@ -18,16 +18,12 @@ struct CopilotComposer: View {
         VStack(spacing: Spacing.sm) {
             HStack {
                 Button(action: onEscalate) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "person.fill.questionmark")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text("Позвать человека").font(BrandFont.micro.weight(.medium))
-                    }
-                    .foregroundStyle(theme.textSecondary)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, 5)
-                    .background(theme.elevated, in: Capsule())
-                    .overlay(Capsule().stroke(theme.border, lineWidth: 1))
+                    Text("Позвать человека")
+                        .font(BrandFont.footnote.weight(.medium))
+                        .foregroundStyle(theme.textPrimary)
+                        .padding(.horizontal, Spacing.md - 4)
+                        .padding(.vertical, 6)
+                        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                 }
                 .buttonStyle(PressableButtonStyle())
                 .disabled(isStreaming)
@@ -44,18 +40,16 @@ struct CopilotComposer: View {
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, 11)
                     .frame(minHeight: 44)
-                    .background(theme.elevated, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(theme.border, lineWidth: 1))
+                    .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
+                        .stroke(theme.border, lineWidth: 0.5))
 
                 Button(action: onSend) {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(canSend ? theme.onAccent : theme.textTertiary)
                         .frame(width: 44, height: 44)
-                        .background(
-                            canSend ? AnyShapeStyle(theme.cryptoGradient) : AnyShapeStyle(theme.border),
-                            in: Circle()
-                        )
+                        .background(canSend ? theme.accent : theme.fill, in: Circle())
                 }
                 .buttonStyle(PressableButtonStyle())
                 .disabled(!canSend)
@@ -65,6 +59,6 @@ struct CopilotComposer: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
         .background(theme.surface)
-        .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+        .overlay(alignment: .top) { Hairline() }
     }
 }

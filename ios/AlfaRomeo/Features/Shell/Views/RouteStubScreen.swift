@@ -12,7 +12,7 @@ struct RouteStubScreen: View {
     var body: some View {
         VStack(spacing: Spacing.md) {
             Image(systemName: "hammer")
-                .font(.system(size: 32, weight: .semibold))
+                .font(.system(size: 32, weight: .regular))
                 .foregroundStyle(theme.textSecondary)
             Text(title)
                 .font(BrandFont.title)

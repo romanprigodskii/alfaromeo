@@ -23,7 +23,7 @@ enum CopilotMode: String, CaseIterable, Identifiable, Hashable, Sendable {
         switch self {
         case .support: return "bubble.left.and.text.bubble.right.fill"
         case .coach:   return "chart.line.uptrend.xyaxis"
-        case .agent:   return "wand.and.stars"
+        case .agent:   return "hand.tap"
         }
     }
 
@@ -32,7 +32,7 @@ enum CopilotMode: String, CaseIterable, Identifiable, Hashable, Sendable {
         switch self {
         case .support: return "Отвечаю по счетам, картам, продуктам и тарифам. Позову оператора, если нужно."
         case .coach:   return "Подскажу, где оптимизировать траты и куда отложить."
-        case .agent:   return "Подготовлю перевод, вклад или заморозку карты — выполните тапом и Face ID."
+        case .agent:   return "Подготовлю перевод, вклад или заморозку карты. Выполните тапом и Face ID."
         }
     }
 }

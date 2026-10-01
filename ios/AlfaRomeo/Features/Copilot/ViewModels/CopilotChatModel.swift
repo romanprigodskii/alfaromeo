@@ -38,7 +38,7 @@ final class CopilotChatModel {
     /// Seed the opening assistant note + optional pre-filled composer text (context entry points).
     func prepare(launch: CopilotLaunch) {
         guard messages.isEmpty else { return }
-        let opening = launch.contextNote ?? "Здравствуйте! Я Claude-копилот Альфа-Ромео. \(mode.hint)"
+        let opening = launch.contextNote ?? "Здравствуйте, я Claude-копилот Альфа-Ромео. \(mode.hint)"
         messages.append(CopilotMessage(role: .assistant, text: opening))
         if let seed = launch.seededPrompt { input = seed }
     }

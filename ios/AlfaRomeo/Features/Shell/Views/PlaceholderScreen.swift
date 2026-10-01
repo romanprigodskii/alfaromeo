@@ -13,7 +13,7 @@ struct PlaceholderScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if showsScopedSummary {
                     ScopedSummaryCard()
                     DashboardQuickActions()
@@ -24,23 +24,19 @@ struct PlaceholderScreen: View {
                     .foregroundStyle(theme.textSecondary)
 
                 if !items.isEmpty {
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                                ListRow(icon: "circle.dashed", title: item, subtitle: "Скоро")
-                                if index < items.count - 1 {
-                                    Divider().overlay(theme.border)
-                                }
-                            }
+                    GroupedSection {
+                        ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                            ListRow(icon: "circle.dashed", title: item, subtitle: "Скоро")
                         }
                     }
                 }
 
                 if let onPushDemo {
-                    PrimaryButton(title: "Открыть демо-экран", icon: "arrow.right", action: onPushDemo)
+                    PrimaryButton(title: "Открыть демо-экран", action: onPushDemo)
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
