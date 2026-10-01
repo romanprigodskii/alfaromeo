@@ -44,7 +44,8 @@ struct OpenDepositView: View {
                             progressDots
                             stepBody
                         }
-                        .padding(Spacing.md)
+                        .padding(.horizontal, Spacing.screen)
+                        .padding(.vertical, Spacing.md)
                     }
                     footer
                 }
@@ -62,73 +63,77 @@ struct OpenDepositView: View {
         switch step {
         case .amount:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Сумма вклада").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                SectionHeader("Сумма вклада")
                 SurfaceCard {
                     SavingsAmountField(amount: $draft.amount, symbol: "₽", presets: amountPresets)
                 }
-                hint("Минимум \(SavingsFormat.rub(product.minAmount)) · ставка \(SavingsFormat.percent(apy)) годовых")
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: SavingsRisk.insuredASV.systemImage).foregroundStyle(theme.success)
-                    Text(SavingsRisk.insuredASV.headline).font(BrandFont.caption).foregroundStyle(theme.success)
-                }
+                hint("Минимум \(SavingsFormat.rub(product.minAmount)), ставка \(SavingsFormat.percent(apy)) годовых")
+                insuredLine
             }
         case .term:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Срок").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                HStack(spacing: Spacing.sm) {
+                SectionHeader("Срок")
+                Picker("Срок", selection: $draft.termMonths.animation(Motion.snappy)) {
                     ForEach(product.termsMonths, id: \.self) { months in
-                        selectChip(label: "\(months) мес", selected: draft.termMonths == months) {
-                            withAnimation(Motion.snappy) { draft.termMonths = months }
-                        }
+                        Text("\(months) мес").tag(months)
                     }
                 }
-                SurfaceCard {
-                    summaryRow("Доход за срок", "≈ \(SavingsFormat.rub(draft.projectedInterest(apy: apy)))", tint: theme.success)
+                .pickerStyle(.segmented)
+                GroupedSection {
+                    summaryRow("Ставка", SavingsFormat.percent(apy) + " годовых")
+                    summaryRow("Доход за срок", "≈ \(SavingsFormat.rub(draft.projectedInterest(apy: apy)))")
                 }
             }
         case .options:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Опции").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                SurfaceCard {
-                    VStack(spacing: Spacing.sm) {
-                        if product.allowsCapitalization {
-                            Toggle(isOn: $draft.capitalize) {
-                                optionLabel("Капитализация процентов", "Проценты прибавляются к телу вклада")
-                            }.tint(theme.accent)
+                SectionHeader("Опции")
+                GroupedSection(footer: product.allowsWithdrawal
+                               ? "Снятие доступно без потери процентов."
+                               : "Досрочное снятие по сниженной ставке.") {
+                    if product.allowsCapitalization {
+                        Toggle(isOn: $draft.capitalize) {
+                            optionLabel("Капитализация процентов", "Проценты прибавляются к телу вклада")
                         }
-                        if product.allowsTopUp {
-                            Toggle(isOn: $draft.topUp) {
-                                optionLabel("Пополнение", "Доносить средства в течение срока")
-                            }.tint(theme.accent)
+                        .tint(theme.accent)
+                        .padding(.vertical, Spacing.rowVertical)
+                    }
+                    if product.allowsTopUp {
+                        Toggle(isOn: $draft.topUp) {
+                            optionLabel("Пополнение", "Доносить средства в течение срока")
                         }
-                        if !product.allowsCapitalization && !product.allowsTopUp {
-                            optionLabel("Без дополнительных опций", "Фиксированная ставка на весь срок")
-                        }
+                        .tint(theme.accent)
+                        .padding(.vertical, Spacing.rowVertical)
+                    }
+                    if !product.allowsCapitalization && !product.allowsTopUp {
+                        optionLabel("Без дополнительных опций", "Фиксированная ставка на весь срок")
+                            .padding(.vertical, Spacing.rowVertical)
                     }
                 }
-                hint(product.allowsWithdrawal ? "Снятие доступно без потери процентов." : "Досрочное снятие — по сниженной ставке.")
             }
         case .confirm:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Подтверждение").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                SurfaceCard {
-                    VStack(spacing: Spacing.sm) {
-                        summaryRow("Сумма", SavingsFormat.rub(draft.amount))
-                        summaryRow("Ставка", SavingsFormat.percent(apy) + " годовых", tint: theme.success)
-                        summaryRow("Срок", "\(draft.termMonths) мес")
-                        if product.allowsCapitalization { summaryRow("Капитализация", draft.capitalize ? "да" : "нет") }
-                        if product.allowsTopUp { summaryRow("Пополнение", draft.topUp ? "да" : "нет") }
-                        Divider().overlay(theme.border)
-                        summaryRow("Доход за срок", "≈ \(SavingsFormat.rub(draft.projectedInterest(apy: apy)))", tint: theme.success)
-                    }
+                SectionHeader("Подтверждение")
+                GroupedSection {
+                    summaryRow("Сумма", SavingsFormat.rub(draft.amount))
+                    summaryRow("Ставка", SavingsFormat.percent(apy) + " годовых")
+                    summaryRow("Срок", "\(draft.termMonths) мес")
+                    if product.allowsCapitalization { summaryRow("Капитализация", draft.capitalize ? "Да" : "Нет") }
+                    if product.allowsTopUp { summaryRow("Пополнение", draft.topUp ? "Да" : "Нет") }
+                    summaryRow("Доход за срок", "≈ \(SavingsFormat.rub(draft.projectedInterest(apy: apy)))")
                 }
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: SavingsRisk.insuredASV.systemImage).foregroundStyle(theme.success)
-                    Text(SavingsRisk.insuredASV.headline).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                }
+                insuredLine
             }
         case .status:
             EmptyView()
+        }
+    }
+
+    private var insuredLine: some View {
+        HStack(spacing: Spacing.xs) {
+            Image(systemName: "checkmark.shield").foregroundStyle(theme.success)
+            Text(SavingsRisk.insuredASV.headline)
+                .font(BrandFont.footnote)
+                .foregroundStyle(theme.textSecondary)
         }
     }
 
@@ -147,25 +152,26 @@ struct OpenDepositView: View {
 
     private var footer: some View {
         VStack(spacing: Spacing.sm) {
+            if step == .confirm {
+                Text("Подтверждение через \(bio.label)")
+                    .font(BrandFont.footnote)
+                    .foregroundStyle(theme.textSecondary)
+            }
             PrimaryButton(title: footerTitle, icon: footerIcon, isLoading: authorizing) { advance() }
                 .disabled(!canAdvance || authorizing)
-                .opacity(canAdvance ? 1 : 0.5)
-            if step == .confirm {
-                Text("Подтверждение операции биометрией (§10.6)")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            }
             if step != .amount {
                 SecondaryButton(title: "Назад") { goBack() }
             }
         }
-        .padding(Spacing.md)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.vertical, Spacing.sm)
         .background(theme.background)
     }
 
     private var footerTitle: String {
-        step == .confirm ? "Открыть вклад · \(bio.label)" : "Далее"
+        step == .confirm ? "Открыть вклад" : "Далее"
     }
-    private var footerIcon: String { step == .confirm ? bio.systemImage : "arrow.right" }
+    private var footerIcon: String? { step == .confirm ? bio.systemImage : nil }
 
     private var canAdvance: Bool {
         switch step {
@@ -211,7 +217,7 @@ struct OpenDepositView: View {
     private var progressDots: some View {
         HStack(spacing: Spacing.xs) {
             ForEach(0..<4, id: \.self) { i in
-                Capsule().fill(i <= step.rawValue ? theme.accent : theme.border).frame(height: 4)
+                Capsule().fill(i <= step.rawValue ? theme.accent : theme.fill).frame(height: 4)
             }
         }
     }
@@ -221,35 +227,25 @@ struct OpenDepositView: View {
         return [base, base * 2, base * 5].map { AmountPreset(label: SavingsFormat.rub($0), value: $0) }
     }
 
-    private func selectChip(label: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(BrandFont.callout)
-                .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
-                .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm)
-                .background(selected ? theme.accent : theme.elevated, in: Capsule())
-        }
-        .buttonStyle(PressableButtonStyle())
-    }
-
-    private func summaryRow(_ label: String, _ value: String, tint: Color? = nil) -> some View {
+    private func summaryRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-            Spacer()
-            Text(value).font(BrandFont.body().weight(.semibold)).foregroundStyle(tint ?? theme.textPrimary)
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+            Spacer(minLength: Spacing.sm)
+            Text(value).font(BrandFont.bodyM).monospacedDigit().foregroundStyle(theme.textPrimary)
         }
+        .frame(minHeight: Spacing.rowMinHeight)
     }
 
     private func optionLabel(_ title: String, _ subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-            Text(subtitle).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+            Text(subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func hint(_ text: String) -> some View {
-        Text(text).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        Text(text).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

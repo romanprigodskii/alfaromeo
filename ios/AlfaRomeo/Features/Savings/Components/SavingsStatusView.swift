@@ -3,13 +3,13 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Animated open-deposit / stake outcome (§10.6) — reuses the §9.2 medallion language: обработка →
-/// успех / отклонено + причина. A single medallion morphs between states. Honors Reduce Motion.
+/// Open-deposit / stake outcome (§10.6), in the §9.2 status language: обработка → успех / отклонено +
+/// причина. One flat medallion changes state; only the processing ring moves. Honors Reduce Motion.
 struct SavingsStatusView: View {
     let outcome: SavingsOutcome
     var successTitle: String       // e.g. "Вклад открыт" / "Стейкинг активен"
     var amountRub: Double
-    var caption: String            // e.g. "17.2% годовых · 6 мес"
+    var caption: String            // e.g. "17,2 % годовых · 6 мес"
     var onDone: () -> Void
     var onRetry: () -> Void
 
@@ -18,33 +18,36 @@ struct SavingsStatusView: View {
     @Environment(ShellState.self) private var shell: ShellState?   // optional → Previews need not inject it
 
     @State private var spin = false
-    @State private var pop = false
+    @State private var shown = false
 
     var body: some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(spacing: Spacing.lg) {
             Spacer(minLength: Spacing.xl)
 
             medallion
 
             VStack(spacing: Spacing.sm) {
                 Text(headline)
-                    .font(BrandFont.title)
+                    .font(BrandFont.title1)
                     .foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
-                Text(subtitle)
-                    .font(BrandFont.body())
-                    .foregroundStyle(theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(BrandFont.bodyM)
+                        .foregroundStyle(theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             if case .success = outcome {
-                VStack(spacing: Spacing.xxs) {
-                    AmountText(amount: amountRub, size: 26)
-                    Text(caption).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                VStack(spacing: Spacing.xs) {
+                    AmountText(amount: amountRub, size: 34, splitsKopecks: true)
+                    Text(caption)
+                        .font(BrandFont.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(theme.textSecondary)
                 }
-                .padding(.top, Spacing.xs)
             }
 
             Spacer(minLength: Spacing.lg)
@@ -52,7 +55,8 @@ struct SavingsStatusView: View {
             actions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.bottom, Spacing.md)
         .background(theme.background.ignoresSafeArea())
         .onAppear { startAnimations() }
         .onChange(of: outcomeKey) { _, _ in startAnimations() }
@@ -64,30 +68,24 @@ struct SavingsStatusView: View {
     private var medallion: some View {
         ZStack {
             Circle()
-                .fill(tint.opacity(0.14))
-                .frame(width: 132, height: 132)
-                .scaleEffect(isProcessing && !reduceMotion ? (spin ? 1.06 : 0.94) : 1)
-                .animation(isProcessing && !reduceMotion
-                           ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : nil,
-                           value: spin)
+                .fill(theme.fill)
+                .frame(width: 96, height: 96)
 
             if isProcessing {
                 Circle()
-                    .trim(from: 0, to: 0.72)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 104, height: 104)
+                    .trim(from: 0, to: 0.7)
+                    .stroke(theme.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .frame(width: 96, height: 96)
                     .rotationEffect(.degrees(spin ? 360 : 0))
                     .animation(reduceMotion ? nil : .linear(duration: 1).repeatForever(autoreverses: false),
                                value: spin)
             } else {
-                Circle().stroke(tint, lineWidth: 4).frame(width: 104, height: 104)
+                Image(systemName: symbol)
+                    .font(.system(size: 40, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .opacity(shown ? 1 : 0)
+                    .scaleEffect(shown || reduceMotion ? 1 : 0.85)
             }
-
-            Image(systemName: symbol)
-                .font(.system(size: 46, weight: .bold))
-                .foregroundStyle(tint)
-                .scaleEffect(pop ? 1 : 0.4)
-                .opacity(pop ? 1 : 0)
         }
         .accessibilityLabel(headline)
     }
@@ -97,14 +95,14 @@ struct SavingsStatusView: View {
         case .processing:
             EmptyView()
         case .success:
-            PrimaryButton(title: "Готово", icon: "checkmark") { onDone() }
+            PrimaryButton(title: "Готово") { onDone() }
         case .declined(let reason):
             VStack(spacing: Spacing.sm) {
-                PrimaryButton(title: "Повторить", icon: "arrow.clockwise") { onRetry() }
-                SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+                PrimaryButton(title: "Повторить") { onRetry() }
+                SecondaryButton(title: "Спросить у AI") {
                     shell?.showCopilot(.declined(reason: reason.title))
                 }
-                SecondaryButton(title: "Закрыть") { onDone() }
+                TertiaryButton("Закрыть") { onDone() }
             }
         }
     }
@@ -137,10 +135,11 @@ struct SavingsStatusView: View {
         }
     }
 
-    private var subtitle: String {
+    /// Success carries its data (amount + terms) below, so it needs no extra sentence.
+    private var subtitle: String? {
         switch outcome {
-        case .processing: return "Подтверждаем операцию…"
-        case .success:    return "Готово. Средства уже работают на вас."
+        case .processing: return "Подтверждаем операцию"
+        case .success:    return nil
         case .declined(let reason): return reason.message
         }
     }
@@ -155,9 +154,9 @@ struct SavingsStatusView: View {
 
     private func startAnimations() {
         spin = false
-        pop = false
+        shown = false
         if !reduceMotion { withAnimation(.linear(duration: 1)) { spin = true } }
-        withAnimation(reduceMotion ? nil : Motion.bouncy.delay(0.05)) { pop = true }
+        withAnimation(reduceMotion ? nil : Motion.smooth) { shown = true }
         notifyHaptic()
     }
 
@@ -175,6 +174,6 @@ struct SavingsStatusView: View {
 
 #Preview {
     SavingsStatusView(outcome: .success, successTitle: "Вклад открыт", amountRub: 500_000,
-                      caption: "17,2% годовых · 6 мес", onDone: {}, onRetry: {})
+                      caption: "17,2 % годовых · 6 мес", onDone: {}, onRetry: {})
         .environment(\.theme, .default)
 }

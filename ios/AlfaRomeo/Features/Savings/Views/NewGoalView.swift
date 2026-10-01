@@ -25,13 +25,14 @@ struct NewGoalView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
+                VStack(alignment: .leading, spacing: Spacing.section) {
                     emojiPicker
                     titleField
                     targetField
-                    autoTopUpCard
+                    autoTopUpSection
                 }
-                .padding(Spacing.md)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
             }
             footer
         }
@@ -41,88 +42,74 @@ struct NewGoalView: View {
     }
 
     private var emojiPicker: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Иконка").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+        VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+            SectionHeader("Иконка")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
                     ForEach(emojis, id: \.self) { item in
                         Button { withAnimation(Motion.snappy) { emoji = item } } label: {
-                            Text(item).font(.system(size: 26))
+                            Text(item).font(.system(size: 24))
                                 .frame(width: 48, height: 48)
-                                .background(emoji == item ? theme.accent.opacity(0.18) : theme.elevated,
-                                            in: RoundedRectangle(cornerRadius: Radius.md))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: Radius.md)
-                                        .stroke(emoji == item ? theme.accent : .clear, lineWidth: 1.5)
-                                )
+                                .background(emoji == item ? theme.fill : theme.surface, in: Circle())
+                                .overlay(Circle().stroke(emoji == item ? theme.accent : .clear, lineWidth: 1.5))
                         }
                         .buttonStyle(PressableButtonStyle())
+                        .accessibilityAddTraits(emoji == item ? .isSelected : [])
                     }
                 }
+                .padding(2)
             }
         }
     }
 
     private var titleField: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Название").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard {
-                TextField("Например, Отпуск 2035", text: $title)
-                    .font(BrandFont.body())
-                    .foregroundStyle(theme.textPrimary)
-            }
+        GroupedSection("Название") {
+            TextField("Например, Отпуск 2035", text: $title)
+                .font(BrandFont.bodyM)
+                .foregroundStyle(theme.textPrimary)
+                .frame(minHeight: Spacing.rowMinHeight)
         }
     }
 
     private var targetField: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Цель").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+        VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+            SectionHeader("Сумма цели")
             SurfaceCard {
                 SavingsAmountField(amount: $target, symbol: "₽",
-                                   presets: [.init(label: "100 000", value: 100_000),
-                                             .init(label: "300 000", value: 300_000),
-                                             .init(label: "1 000 000", value: 1_000_000)])
+                                   presets: [100_000, 300_000, 1_000_000].map {
+                                       AmountPreset(label: SavingsFormat.rub($0), value: $0)
+                                   })
             }
         }
     }
 
-    private var autoTopUpCard: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Авто-пополнение").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard {
-                VStack(spacing: Spacing.sm) {
-                    Toggle(isOn: $autoOn.animation(Motion.snappy)) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Откладывать каждый месяц").font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                            Text("Автоматический перевод в начале месяца").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                        }
-                    }
-                    .tint(theme.accent)
-
-                    if autoOn {
-                        Divider().overlay(theme.border)
-                        SavingsAmountField(amount: $monthly, symbol: "₽/мес",
-                                           presets: [.init(label: "5 000", value: 5_000),
-                                                     .init(label: "10 000", value: 10_000),
-                                                     .init(label: "25 000", value: 25_000)])
-                        if let months = monthsToTarget {
-                            HStack(spacing: Spacing.xs) {
-                                Image(systemName: "flag.checkered").foregroundStyle(theme.accent)
-                                Text("Цель достижима за \(months) мес").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
+    private var autoTopUpSection: some View {
+        GroupedSection("Авто-пополнение",
+                       footer: monthsToTarget.map { "Цель достижима за \($0)\(MoneyFormat.nbsp)мес" }) {
+            Toggle(isOn: $autoOn.animation(Motion.snappy)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Откладывать каждый месяц").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Text("Перевод в начале месяца").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
+            }
+            .tint(theme.accent)
+            .padding(.vertical, Spacing.rowVertical)
+
+            if autoOn {
+                SavingsAmountField(amount: $monthly, symbol: "₽/мес",
+                                   presets: [5_000, 10_000, 25_000].map {
+                                       AmountPreset(label: SavingsFormat.rub($0), value: $0)
+                                   })
+                    .padding(.vertical, Spacing.md)
             }
         }
     }
 
     private var footer: some View {
-        PrimaryButton(title: "Создать цель", icon: "checkmark") { create() }
+        PrimaryButton(title: "Создать цель") { create() }
             .disabled(target <= 0)
-            .opacity(target > 0 ? 1 : 0.5)
-            .padding(Spacing.md)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.vertical, Spacing.sm)
             .background(theme.background)
     }
 

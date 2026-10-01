@@ -17,18 +17,19 @@ struct SavingsDetailView: View {
     var body: some View {
         ScrollView {
             if let deposit {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
+                VStack(alignment: .leading, spacing: Spacing.section) {
                     hero(deposit)
                     terms(deposit)
-                    if isStake(deposit) { riskNote } else { insuredNote }
                     if canTopUp(deposit) {
-                        PrimaryButton(title: "Пополнить · 10 000 ₽", icon: "plus") {
-                            store.topUpDeposit(id: deposit.id, by: 10_000)
-                            flash("Пополнено на 10 000 ₽")
+                        PrimaryButton(title: "Пополнить на \(SavingsFormat.rub(Self.topUpStep))") {
+                            store.topUpDeposit(id: deposit.id, by: Self.topUpStep)
+                            flash("Пополнено на \(SavingsFormat.rub(Self.topUpStep))")
                         }
                     }
                 }
-                .padding(Spacing.md)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.xl)
             } else {
                 ContentUnavailableView("Продукт не найден", systemImage: "tray",
                                        description: Text("Этот вклад или стейк больше не доступен."))
@@ -47,55 +48,39 @@ struct SavingsDetailView: View {
         }
     }
 
+    private static let topUpStep: Double = 10_000
+
     // MARK: Sections
 
     private func hero(_ deposit: Deposit) -> some View {
-        SurfaceCard(elevated: true) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(isStake(deposit) ? "Стоимость стейка (live)" : "Сумма вклада")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                AmountText(amount: valueRub(deposit), size: 30).contentTransition(.numericText())
-                if isStake(deposit) {
-                    Text(SavingsFormat.units(deposit.principal, asset: deposit.asset ?? ""))
-                        .font(BrandFont.mono(14)).foregroundStyle(theme.textSecondary)
-                }
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            Text(isStake(deposit) ? "Стоимость стейка" : "Сумма вклада")
+                .font(BrandFont.subheadline)
+                .foregroundStyle(theme.textSecondary)
+            AmountText(amount: valueRub(deposit), size: 40, splitsKopecks: true)
+                .contentTransition(.numericText())
+            if isStake(deposit) {
+                Text(SavingsFormat.units(deposit.principal, asset: deposit.asset ?? ""))
+                    .font(BrandFont.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(theme.textSecondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(Motion.snappy, value: valueRub(deposit))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(Motion.snappy, value: valueRub(deposit))
     }
 
+    /// Terms with the honest risk note as the footer: АСВ insurance for a deposit, market risk for
+    /// a stake.
     private func terms(_ deposit: Deposit) -> some View {
-        SurfaceCard {
-            VStack(spacing: Spacing.sm) {
-                row("Ставка / APY", SavingsFormat.percent(deposit.rateApy), tint: theme.success)
-                if let term = deposit.term { row("Срок", "\(term) мес") }
-                if let days = daysUntil(deposit.lockUntil) {
-                    row(isStake(deposit) ? "Lock" : "До выплаты", days > 0 ? "\(days) дн" : "завершается")
-                }
-                Divider().overlay(theme.border)
-                row("Прогноз дохода за год", "≈ \(SavingsFormat.rub(projectedYearlyRub(deposit)))", tint: theme.success)
+        let risk: SavingsRisk = isStake(deposit) ? .marketRisk : .insuredASV
+        return GroupedSection("Условия", footer: risk.detail) {
+            row(isStake(deposit) ? "APY" : "Ставка", SavingsFormat.percent(deposit.rateApy))
+            if let term = deposit.term { row("Срок", "\(term) мес") }
+            if let days = daysUntil(deposit.lockUntil) {
+                row(isStake(deposit) ? "Lock" : "До выплаты", days > 0 ? "\(days) дн" : "Завершается")
             }
-        }
-    }
-
-    private var insuredNote: some View {
-        noteCard(SavingsRisk.insuredASV, tint: theme.success)
-    }
-    private var riskNote: some View {
-        noteCard(SavingsRisk.marketRisk, tint: theme.warning)
-    }
-
-    private func noteCard(_ risk: SavingsRisk, tint: Color) -> some View {
-        SurfaceCard {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Image(systemName: risk.systemImage).foregroundStyle(tint)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(risk.headline).font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                    Text(risk.detail).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+            row("Доход за год", "≈ \(SavingsFormat.rub(projectedYearlyRub(deposit)))")
         }
     }
 
@@ -129,12 +114,13 @@ struct SavingsDetailView: View {
         return days.map { max($0, 0) }
     }
 
-    private func row(_ label: String, _ value: String, tint: Color? = nil) -> some View {
+    private func row(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-            Spacer()
-            Text(value).font(BrandFont.body().weight(.semibold)).foregroundStyle(tint ?? theme.textPrimary)
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+            Spacer(minLength: Spacing.sm)
+            Text(value).font(BrandFont.bodyM).monospacedDigit().foregroundStyle(theme.textPrimary)
         }
+        .frame(minHeight: Spacing.rowMinHeight)
     }
 
     private func flash(_ text: String) {

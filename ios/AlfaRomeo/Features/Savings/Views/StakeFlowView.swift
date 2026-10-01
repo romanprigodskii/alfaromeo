@@ -60,7 +60,8 @@ struct StakeFlowView: View {
                             progressDots
                             stepBody
                         }
-                        .padding(Spacing.md)
+                        .padding(.horizontal, Spacing.screen)
+                        .padding(.vertical, Spacing.md)
                     }
                     footer
                 }
@@ -79,64 +80,56 @@ struct StakeFlowView: View {
         switch step {
         case .amount:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Сколько застейкать").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                SectionHeader("Сумма стейкинга")
                 SurfaceCard {
                     SavingsAmountField(amount: $draft.amountUnits, symbol: product.asset,
                                        presets: unitPresets, allowsDecimals: true)
                 }
-                // Live ₽ estimate — updates with each price tick (§10.6 «оценка стейка в ₽ по live-цене»).
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text("≈ \(SavingsFormat.rub(estimateRub))")
-                            .font(BrandFont.mono(24, weight: .semibold))
-                            .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                            .contentTransition(.numericText())
-                        Text("по курсу \(SavingsFormat.rub(unitPrice)) / \(product.asset) · live")
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                            .contentTransition(.numericText())
+                // Live ₽ estimate, updated on each price tick (§10.6 «оценка стейка в ₽ по live-цене»).
+                GroupedSection {
+                    summaryRow("В рублях", "≈ \(SavingsFormat.rub(estimateRub))")
+                        .animation(Motion.snappy, value: estimateRub)
+                    summaryRow("Курс 1 \(product.asset)", SavingsFormat.rub(unitPrice))
+                        .animation(Motion.snappy, value: unitPrice)
+                    if let balance = store.wallet(asset: product.asset)?.balance {
+                        summaryRow("Доступно", SavingsFormat.units(balance, asset: product.asset))
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .animation(Motion.snappy, value: estimateRub)
                 }
-                if let balance = store.wallet(asset: product.asset)?.balance {
-                    hint("Доступно: \(SavingsFormat.units(balance, asset: product.asset))")
-                }
-                hint("Минимум \(SavingsFormat.units(product.minUnits, asset: product.asset)) · APY \(SavingsFormat.percent(apy))")
+                hint("Минимум \(SavingsFormat.units(product.minUnits, asset: product.asset)), APY \(SavingsFormat.percent(apy))")
             }
         case .lock:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Срок lock").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                HStack(spacing: Spacing.sm) {
+                SectionHeader("Срок lock")
+                Picker("Срок lock", selection: $draft.lockDays.animation(Motion.snappy)) {
                     ForEach(product.lockOptionsDays, id: \.self) { days in
-                        selectChip(label: days == 0 ? "Гибкий" : "\(days) дн", selected: draft.lockDays == days) {
-                            withAnimation(Motion.snappy) { draft.lockDays = days }
-                        }
+                        Text(days == 0 ? "Гибкий" : "\(days) дн").tag(days)
                     }
                 }
+                .pickerStyle(.segmented)
                 hint(draft.lockDays == 0
                      ? "Гибкий стейкинг: вывод в любой момент, APY ниже."
-                     : "Чем дольше lock — тем выше доход. Досрочный вывод недоступен до конца срока.")
+                     : "Чем дольше lock, тем выше доход. Досрочный вывод недоступен до конца срока.")
             }
         case .risk:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Раскрытие риска").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                SectionHeader("Раскрытие риска")
                 StakeRiskDisclosure(accepted: $draft.riskAccepted)
             }
         case .confirm:
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Подтверждение").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                SurfaceCard {
-                    VStack(spacing: Spacing.sm) {
-                        summaryRow("Актив", product.name)
-                        summaryRow("Сумма", SavingsFormat.units(draft.amountUnits, asset: product.asset))
-                        summaryRow("≈ в рублях", SavingsFormat.rub(estimateRub), tint: theme.accentCrypto.first ?? theme.accent)
-                        summaryRow("APY", SavingsFormat.percent(apy))
-                        summaryRow("Lock", draft.lockDays == 0 ? "гибкий" : "\(draft.lockDays) дн")
-                    }
+                SectionHeader("Подтверждение")
+                GroupedSection {
+                    summaryRow("Актив", product.name)
+                    summaryRow("Сумма", SavingsFormat.units(draft.amountUnits, asset: product.asset))
+                    summaryRow("В рублях", "≈ \(SavingsFormat.rub(estimateRub))")
+                    summaryRow("APY", SavingsFormat.percent(apy))
+                    summaryRow("Срок lock", draft.lockDays == 0 ? "Гибкий" : "\(draft.lockDays) дн")
                 }
                 HStack(spacing: Spacing.xs) {
-                    Image(systemName: SavingsRisk.marketRisk.systemImage).foregroundStyle(theme.warning)
-                    Text(SavingsRisk.marketRisk.headline).font(BrandFont.caption).foregroundStyle(theme.warning)
+                    Image(systemName: "exclamationmark.triangle").foregroundStyle(theme.warning)
+                    Text(SavingsRisk.marketRisk.headline)
+                        .font(BrandFont.footnote)
+                        .foregroundStyle(theme.textSecondary)
                 }
                 if exceedsYearLimit { limitWarning }
             }
@@ -146,15 +139,16 @@ struct StakeFlowView: View {
     }
 
     private var limitWarning: some View {
-        SurfaceCard {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Image(systemName: "gauge.with.dots.needle.bottom.50percent").foregroundStyle(theme.danger)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Превышен годовой лимит").font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                    Text("Для неквалифицированного инвестора — 300 000 ₽ в год (§2.4). Уменьшите сумму или повысьте статус инвестора.")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            Image(systemName: "exclamationmark.circle").foregroundStyle(theme.danger)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Превышен годовой лимит")
+                    .font(BrandFont.headline)
+                    .foregroundStyle(theme.textPrimary)
+                Text("Для неквалифицированного инвестора лимит \(MoneyFormat.fiat(300_000)) в год. Уменьшите сумму или повысьте статус инвестора.")
+                    .font(BrandFont.footnote)
+                    .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -164,7 +158,7 @@ struct StakeFlowView: View {
             outcome: outcome,
             successTitle: "Стейкинг активен",
             amountRub: estimateRub,
-            caption: "\(SavingsFormat.percent(apy)) APY · \(draft.lockDays == 0 ? "гибкий" : "\(draft.lockDays) дн")",
+            caption: "APY \(SavingsFormat.percent(apy)) · \(draft.lockDays == 0 ? "гибкий lock" : "lock \(draft.lockDays) дн")",
             onDone: { router.pop() },
             onRetry: { retry() }
         )
@@ -174,25 +168,26 @@ struct StakeFlowView: View {
 
     private var footer: some View {
         VStack(spacing: Spacing.sm) {
+            if step == .confirm {
+                Text("Подтверждение через \(bio.label)")
+                    .font(BrandFont.footnote)
+                    .foregroundStyle(theme.textSecondary)
+            }
             PrimaryButton(title: footerTitle, icon: footerIcon, isLoading: authorizing) { advance() }
                 .disabled(!canAdvance || authorizing)
-                .opacity(canAdvance ? 1 : 0.5)
-            if step == .confirm {
-                Text("Подтверждение операции биометрией (§10.6)")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-            }
             if step != .amount {
                 SecondaryButton(title: "Назад") { goBack() }
             }
         }
-        .padding(Spacing.md)
+        .padding(.horizontal, Spacing.screen)
+        .padding(.vertical, Spacing.sm)
         .background(theme.background)
     }
 
     private var footerTitle: String {
-        step == .confirm ? "Подтвердить стейкинг · \(bio.label)" : "Далее"
+        step == .confirm ? "Подтвердить стейкинг" : "Далее"
     }
-    private var footerIcon: String { step == .confirm ? bio.systemImage : "arrow.right" }
+    private var footerIcon: String? { step == .confirm ? bio.systemImage : nil }
 
     private var canAdvance: Bool {
         switch step {
@@ -259,14 +254,14 @@ struct StakeFlowView: View {
     private var progressDots: some View {
         HStack(spacing: Spacing.xs) {
             ForEach(0..<4, id: \.self) { i in
-                Capsule().fill(i <= step.rawValue ? theme.accent : theme.border).frame(height: 4)
+                Capsule().fill(i <= step.rawValue ? theme.accent : theme.fill).frame(height: 4)
             }
         }
     }
 
     private var unitPresets: [AmountPreset] {
         if let balance = store.wallet(asset: product.asset)?.balance, balance > 0 {
-            return [(0.25, "25%"), (0.5, "50%"), (1.0, "Всё")].map { fraction, label in
+            return [(0.25, "25\(MoneyFormat.nbsp)%"), (0.5, "50\(MoneyFormat.nbsp)%"), (1.0, "Всё")].map { fraction, label in
                 AmountPreset(label: label, value: balance * fraction)
             }
         }
@@ -274,27 +269,21 @@ struct StakeFlowView: View {
         return [m, m * 5, m * 20].map { AmountPreset(label: SavingsFormat.units($0, asset: product.asset), value: $0) }
     }
 
-    private func selectChip(label: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(BrandFont.callout)
-                .foregroundStyle(selected ? theme.onAccent : theme.textPrimary)
-                .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm)
-                .background(selected ? theme.accent : theme.elevated, in: Capsule())
-        }
-        .buttonStyle(PressableButtonStyle())
-    }
-
-    private func summaryRow(_ label: String, _ value: String, tint: Color? = nil) -> some View {
+    private func summaryRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-            Spacer()
-            Text(value).font(BrandFont.body().weight(.semibold)).foregroundStyle(tint ?? theme.textPrimary)
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+            Spacer(minLength: Spacing.sm)
+            Text(value)
+                .font(BrandFont.bodyM)
+                .monospacedDigit()
+                .foregroundStyle(theme.textPrimary)
+                .contentTransition(.numericText())
         }
+        .frame(minHeight: Spacing.rowMinHeight)
     }
 
     private func hint(_ text: String) -> some View {
-        Text(text).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        Text(text).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

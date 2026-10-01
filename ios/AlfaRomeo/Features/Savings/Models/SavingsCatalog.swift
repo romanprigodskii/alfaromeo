@@ -18,14 +18,14 @@ enum SavingsRisk: Sendable {
     }
     var headline: String {
         switch self {
-        case .insuredASV: return "Застраховано АСВ до 1,4 млн ₽"
-        case .marketRisk: return "Рыночный риск · не застраховано"
+        case .insuredASV: return "Застраховано АСВ до 1,4\u{00A0}млн\u{00A0}₽"
+        case .marketRisk: return "Рыночный риск, не застраховано"
         }
     }
     var detail: String {
         switch self {
         case .insuredASV:
-            return "Возврат гарантирован государством через Агентство по страхованию вкладов в пределах 1,4 млн ₽. Доходность фиксированная."
+            return "Возврат гарантирован государством через Агентство по страхованию вкладов в пределах 1,4\u{00A0}млн\u{00A0}₽. Доходность фиксированная."
         case .marketRisk:
             return "Доходность и тело зависят от цены актива и сети. Это не вклад: средства не застрахованы АСВ, возможна потеря части стоимости."
         }
@@ -90,15 +90,15 @@ struct StakeProduct: Identifiable, Hashable, Sendable {
 enum SavingsCatalog {
     static let depositProducts: [DepositProduct] = [
         DepositProduct(
-            id: "dep_easy", name: "Лёгкий старт", tagline: "Снимай и пополняй когда угодно",
+            id: "dep_easy", name: "Лёгкий старт", tagline: "Пополнение и снятие",
             baseApy: 12.0, termsMonths: [3, 6, 12],
             allowsCapitalization: true, allowsTopUp: true, allowsWithdrawal: true, minAmount: 1_000),
         DepositProduct(
-            id: "dep_term", name: "Срочный 2035", tagline: "Выше ставка за фиксированный срок",
+            id: "dep_term", name: "Срочный 2035", tagline: "Без пополнения и снятия",
             baseApy: 16.5, termsMonths: [6, 12, 24],
             allowsCapitalization: true, allowsTopUp: false, allowsWithdrawal: false, minAmount: 30_000),
         DepositProduct(
-            id: "dep_max", name: "Максимум", tagline: "Премиальная ставка для крупной суммы",
+            id: "dep_max", name: "Максимум", tagline: "Без пополнения и снятия",
             baseApy: 18.0, termsMonths: [12, 18],
             allowsCapitalization: true, allowsTopUp: false, allowsWithdrawal: false, minAmount: 100_000),
     ]
@@ -106,7 +106,7 @@ enum SavingsCatalog {
     // Only BTC/ETH + stablecoins are admitted under the приходящий режим (§2.4); SOL/TON are tradable
     // in the Crypto Hub but intentionally NOT offered for staking on the licensed platform.
     static let stakeProducts: [StakeProduct] = [
-        StakeProduct(id: "stk_usdt", asset: "USDT", name: "USDT · стейблкоин",
+        StakeProduct(id: "stk_usdt", asset: "USDT", name: "Tether",
                      baseApy: 9.5, lockOptionsDays: [0, 30, 90], riskLevel: .low, minUnits: 100),
         StakeProduct(id: "stk_eth", asset: "ETH", name: "Ethereum",
                      baseApy: 4.2, lockOptionsDays: [0, 30, 90], riskLevel: .medium, minUnits: 0.01),
@@ -125,26 +125,26 @@ enum SavingsCatalog {
 // MARK: - Formatting helpers (shared across the module)
 
 enum SavingsFormat {
-    /// ₽ amount with thin-space grouping (matches ``AmountText``'s monetary look for inline strings).
-    static func rub(_ value: Double) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = value < 1_000 ? 2 : 0
-        f.groupingSeparator = "\u{2009}"
-        let n = f.string(from: NSNumber(value: value)) ?? "\(Int(value))"
-        return "\(n) ₽"
-    }
+    /// ₽ amount in Russian format through ``MoneyFormat`` (`1 119 200,50 ₽`, `30 000 ₽`).
+    static func rub(_ value: Double) -> String { MoneyFormat.fiat(value) }
 
-    /// Asset-unit amount with sensible precision (e.g. `0.015300 ETH`, `1 820 USDT`).
+    /// Asset-unit amount: crypto quantity for volatile assets (`0,0153 ETH`), fiat rules for
+    /// stablecoins (`1 820 USDT`).
     static func units(_ value: Double, asset: String) -> String {
-        let digits = value == 0 ? 0 : (value < 1 ? 6 : (value < 100 ? 4 : 2))
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = digits
-        f.groupingSeparator = "\u{2009}"
-        let n = f.string(from: NSNumber(value: value)) ?? "\(value)"
-        return "\(n) \(asset)"
+        MoneyFormat.amount(value, currency: asset)
     }
 
-    static func percent(_ value: Double) -> String { String(format: "%.1f%%", value) }
+    /// Rate / APY in percentage points: `17,2 %`, `12 %`.
+    static func percent(_ value: Double) -> String { MoneyFormat.percent(value, maxFractionDigits: 1) }
+
+    /// Rate difference in percentage points: `1,5 п.п.`.
+    static func points(_ value: Double) -> String {
+        MoneyFormat.number(value, maxFractionDigits: 1) + MoneyFormat.nbsp + "п.п."
+    }
+
+    /// Term range in months: `3–12 мес`, `12 мес`.
+    static func months(_ terms: [Int]) -> String {
+        guard let lo = terms.min(), let hi = terms.max() else { return "" }
+        return (lo == hi ? "\(lo)" : "\(lo)–\(hi)") + MoneyFormat.nbsp + "мес"
+    }
 }
