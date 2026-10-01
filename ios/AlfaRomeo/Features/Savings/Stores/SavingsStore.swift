@@ -18,6 +18,9 @@ final class SavingsStore {
     private(set) var deposits: [Deposit] = []        // активные вклады + стейки (API + локально открытые)
     private(set) var wallets: [CryptoWallet] = []     // балансы для пресетов суммы стейка
     private(set) var goals: [SavingsGoal] = []
+    /// Options chosen when a ruble deposit was opened here. The ``Deposit`` contract has no fields for
+    /// them, so they live beside it, keyed by deposit id. API deposits have no entry.
+    private(set) var depositOptions: [String: DepositOptions] = [:]
     private(set) var baseTier: Tier = .base
     private(set) var didLoad = false
     private(set) var loadFailed = false
@@ -118,13 +121,17 @@ final class SavingsStore {
 
     @discardableResult
     func openDeposit(profileId: String, product: DepositProduct,
-                     amount: Double, termMonths: Int, apy: Double) -> Deposit {
+                     amount: Double, termMonths: Int, apy: Double,
+                     capitalize: Bool = false, topUp: Bool = false) -> Deposit {
         seq += 1
         let dep = Deposit(
             id: "dep_r\(seq)", profileId: profileId, kind: .ruble, asset: nil,
             principal: amount, rateApy: apy, term: termMonths,
             lockUntil: Self.iso(monthsFromNow: termMonths))
         deposits.insert(dep, at: 0)
+        depositOptions[dep.id] = DepositOptions(
+            capitalize: capitalize && product.allowsCapitalization,
+            topUp: topUp && product.allowsTopUp)
         return dep
     }
 

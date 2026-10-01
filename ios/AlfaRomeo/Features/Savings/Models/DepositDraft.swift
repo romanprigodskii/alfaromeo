@@ -25,3 +25,10 @@ struct DepositDraft: Equatable {
         return capitalize ? simple * 1.03 : simple
     }
 }
+
+/// What the user chose for a ruble deposit at opening (§10.6): проценты капитализируются, вклад
+/// можно пополнять. Kept by ``SavingsStore`` next to the deposit.
+struct DepositOptions: Hashable {
+    var capitalize: Bool
+    var topUp: Bool
+}

@@ -208,7 +208,8 @@ struct OpenDepositView: View {
         withAnimation(Motion.smooth) { step = .status }
         try? await Task.sleep(for: .seconds(1.4))
         store.openDeposit(profileId: profileId, product: product,
-                          amount: draft.amount, termMonths: draft.termMonths, apy: apy)
+                          amount: draft.amount, termMonths: draft.termMonths, apy: apy,
+                          capitalize: draft.capitalize, topUp: draft.topUp)
         outcome = .success
     }
 

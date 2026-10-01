@@ -80,6 +80,10 @@ struct SavingsDetailView: View {
             if let days = daysUntil(deposit.lockUntil) {
                 row(isStake(deposit) ? "Lock" : "До выплаты", days > 0 ? "\(days) дн" : "Завершается")
             }
+            if let options = store.depositOptions[deposit.id] {
+                row("Капитализация", options.capitalize ? "Да" : "Нет")
+                row("Пополнение", options.topUp ? "Да" : "Нет")
+            }
             row("Доход за год", "≈ \(SavingsFormat.rub(projectedYearlyRub(deposit)))")
         }
     }
@@ -95,13 +99,21 @@ struct SavingsDetailView: View {
         }
     }
 
+    /// Simple interest, or monthly compounding when the deposit was opened with капитализация.
     private func projectedYearlyRub(_ d: Deposit) -> Double {
-        valueRub(d) * (d.rateApy / 100)
+        let rate = d.rateApy / 100
+        if store.depositOptions[d.id]?.capitalize == true {
+            return valueRub(d) * (pow(1 + rate / 12, 12) - 1)
+        }
+        return valueRub(d) * rate
     }
 
+    /// A deposit opened here follows the «Пополнение» choice; an API deposit keeps the demo rule
+    /// (top-up shown for ruble deposits).
     private func canTopUp(_ d: Deposit) -> Bool {
         guard d.kind == .ruble else { return false }
-        return SavingsCatalog.depositProducts.contains { $0.allowsTopUp }  // demo: top-up shown for ruble
+        if let options = store.depositOptions[d.id] { return options.topUp }
+        return SavingsCatalog.depositProducts.contains { $0.allowsTopUp }
     }
 
     private func title(_ d: Deposit) -> String {
