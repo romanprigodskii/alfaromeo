@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Чаты → «Обращения» → деталь (§9.5): a status timeline for one dispute, the disputed-operation
 /// summary, and one-tap entry to the AI / оператор. Reuses the shared ``DisputeTicket`` (the «оспорить»
-/// contract) looked up from ``HistoryStore`` — no second ticket type.
+/// contract) looked up from ``HistoryStore``, no second ticket type.
 struct DisputeDetailView: View {
     let ticketId: String
 
@@ -22,7 +22,8 @@ struct DisputeDetailView: View {
                     detailsCard(ticket)
                     actions(ticket)
                 }
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.md)
             } else {
                 notFound
             }
@@ -37,12 +38,7 @@ struct DisputeDetailView: View {
 
     private func header(_ ticket: DisputeTicket) -> some View {
         VStack(spacing: Spacing.sm) {
-            Image(systemName: "exclamationmark.bubble.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(theme.accent)
-                .frame(width: 64, height: 64)
-                .background(theme.accent.opacity(0.16),
-                            in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+            GlyphCircle(systemImage: "exclamationmark.bubble", size: 56)
             Text(ticket.status.title)
                 .font(BrandFont.title).foregroundStyle(theme.textPrimary)
             StatusPill(status: ticket.status.pill, text: ticket.id)
@@ -81,34 +77,28 @@ struct DisputeDetailView: View {
     }
 
     private func detailsCard(_ ticket: DisputeTicket) -> some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                ListRow(icon: "number", title: "Номер обращения", value: ticket.id)
-                divider
-                ListRow(icon: "building.2", title: "Получатель", value: ticket.counterparty ?? ticket.categoryTitle)
-                divider
-                ListRow(icon: "rublesign.circle", title: "Сумма операции", value: DisputeFormat.amount(ticket))
-                divider
-                ListRow(icon: "calendar", title: "Создано", value: DisputeFormat.created(ticket))
-                divider
-                ListRow(icon: "doc.text", title: "ID операции", value: ticket.txId)
-            }
+        GroupedSection {
+            ListRow(title: "Номер обращения", value: ticket.id)
+            ListRow(title: "Получатель", value: ticket.counterparty ?? ticket.categoryTitle)
+            ListRow(title: "Сумма операции", value: DisputeFormat.amount(ticket))
+            ListRow(title: "Создано", value: DisputeFormat.created(ticket))
+            ListRow(title: "ID операции", value: ticket.txId)
         }
     }
 
     private func actions(_ ticket: DisputeTicket) -> some View {
         VStack(spacing: Spacing.sm) {
-            SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+            SecondaryButton(title: "Спросить у AI") {
                 shell.showCopilot(.operation(
                     id: ticket.txId,
                     title: ticket.counterparty ?? ticket.categoryTitle,
                     amount: DisputeFormat.amount(ticket)))
             }
-            SecondaryButton(title: "Позвать оператора", icon: "headset") {
+            SecondaryButton(title: "Позвать оператора") {
                 shell.showCopilot(.operatorChat)
             }
-            Text("Среднее время ответа — до 24 часов. Если потребуется, эскалируем на живого оператора прямо в чате.")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Среднее время ответа до 24 часов. Если потребуется, подключим оператора прямо в чате.")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -117,14 +107,12 @@ struct DisputeDetailView: View {
     private var notFound: some View {
         VStack(spacing: Spacing.md) {
             Image(systemName: "questionmark.folder")
-                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textSecondary)
+                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textTertiary)
             Text("Обращение не найдено")
                 .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             Text("Возможно, оно относится к другому профилю.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity).padding(.top, Spacing.xxl)
     }
-
-    private var divider: some View { Divider().overlay(theme.border) }
 }

@@ -31,19 +31,19 @@ final class NotificationsStore {
         func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
         return [
             AppNotification(id: "n1", kind: .payment, title: "Платёж выполнен",
-                            body: "Перевод 12 400 ₽ на карту ··4921 прошёл успешно.",
+                            body: "Перевод \(MoneyFormat.fiat(12_400)) на карту ··4921 прошёл успешно.",
                             date: ago(1), isRead: false),
             AppNotification(id: "n2", kind: .security, title: "Новый вход в приложение",
-                            body: "Вход с нового устройства iPhone 16 Pro. Если это не вы — заморозьте доступ в «Безопасности».",
+                            body: "Вход с нового устройства iPhone 16 Pro. Если это не вы, заморозьте доступ в «Безопасности».",
                             date: ago(5), isRead: false),
             AppNotification(id: "n3", kind: .product, title: "Кэшбек за май начислен",
-                            body: "Начислено 1 830 ₽. Категории на июнь можно поменять в «Выгоде».",
+                            body: "Начислено \(MoneyFormat.fiat(1_830)). Категории на июнь можно поменять в «Выгоде».",
                             date: ago(26), isRead: false),
             AppNotification(id: "n4", kind: .system, title: "Цифровой рубль",
                             body: "Кошелёк и универсальный QR уже доступны в разделе «Оплата».",
                             date: ago(50), isRead: true),
             AppNotification(id: "n5", kind: .payment, title: "Зачисление зарплаты",
-                            body: "Поступление 95 000 ₽. Отложить часть на накопительный счёт?",
+                            body: "Поступление \(MoneyFormat.fiat(95_000)). Отложить часть на накопительный счёт?",
                             date: ago(74), isRead: true),
         ]
     }

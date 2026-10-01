@@ -19,22 +19,18 @@ struct DisputesListView: View {
                 if store.tickets.isEmpty {
                     empty
                 } else {
-                    Text("Открываются из операции в «Истории» → «Оспорить». Здесь — их статус и переписка.")
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(store.tickets.enumerated()), id: \.element.id) { index, ticket in
-                                Button { router.push(ChatsRoute.disputeDetail(ticketId: ticket.id)) } label: {
-                                    row(ticket)
-                                }
-                                .buttonStyle(.plain)
-                                if index < store.tickets.count - 1 { Divider().overlay(theme.border) }
+                    GroupedSection(footer: "Обращение создаётся из операции в «Истории» кнопкой «Оспорить». Здесь его статус и переписка.") {
+                        ForEach(store.tickets, id: \.id) { ticket in
+                            Button { router.push(ChatsRoute.disputeDetail(ticketId: ticket.id)) } label: {
+                                row(ticket)
                             }
+                            .buttonStyle(.row)
                         }
                     }
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -45,40 +41,47 @@ struct DisputesListView: View {
         .task(id: profileId) { await store.load(api: api, profileId: profileId) }
     }
 
+    /// Text row: counterparty and amount, then the ticket number and its status pill.
     private func row(_ ticket: DisputeTicket) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: "exclamationmark.bubble.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(theme.accent)
-                .frame(width: 36, height: 36)
-                .background(theme.accent.opacity(0.14),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ticket.counterparty ?? ticket.categoryTitle)
-                    .font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                Text("\(ticket.id) · \(DisputeFormat.amount(ticket))")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        HStack(spacing: Spacing.sm + 4) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                    Text(ticket.counterparty ?? ticket.categoryTitle)
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Spacer(minLength: Spacing.sm)
+                    Text(DisputeFormat.amount(ticket))
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        .monospacedDigit()
+                        .fixedSize()
+                }
+                HStack(spacing: Spacing.sm) {
+                    Text(ticket.id)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                        .lineLimit(1)
+                    Spacer(minLength: Spacing.sm)
+                    StatusPill(status: ticket.status.pill, text: ticket.status.title)
+                }
             }
-            Spacer(minLength: Spacing.sm)
-            StatusPill(status: ticket.status.pill, text: ticket.status.title)
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textSecondary)
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
         }
-        .padding(.vertical, Spacing.sm)
-        .contentShape(Rectangle())
+        .padding(.vertical, Spacing.rowVertical)
     }
 
     private var empty: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Spacing.sm) {
             Image(systemName: "checkmark.bubble")
-                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textSecondary)
+                .font(.system(size: 40, weight: .light)).foregroundStyle(theme.textTertiary)
+                .padding(.bottom, Spacing.xs)
             Text("Обращений пока нет")
                 .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            Text("Если с операцией что-то не так — откройте её в «Истории» и нажмите «Оспорить». Обращение появится здесь.")
-                .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+            Text("Если с операцией что-то не так, откройте её в «Истории» и нажмите «Оспорить». Обращение появится здесь.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity).padding(.top, Spacing.xxl)
+        .padding(.horizontal, Spacing.md)
     }
 }

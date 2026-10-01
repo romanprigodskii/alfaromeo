@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Чаты (§9.5): a messenger-style dialog list. The AI-поддержка (Claude) channel — the primary support
-/// channel — is pinned on top, followed by the bank / operator / обращения / уведомления dialogs. Each
+/// Чаты (§9.5): a messenger-style dialog list in one ``GroupedSection``. The AI-поддержка (Claude)
+/// channel, the primary support channel, is pinned on top, followed by the bank / operator / обращения / уведомления dialogs. Each
 /// row reads like a conversation entry: an avatar, the channel name, a last-message preview, presence or
 /// time, and an unread badge. Routing is unchanged:
 /// • «Чат с банком» / «Чат с оператором» open the live ``CopilotChatView`` with the matching context
@@ -21,44 +21,39 @@ struct ChatsHubView: View {
 
     var body: some View {
         ScrollView {
-            SurfaceCard(padding: Spacing.md) {
-                VStack(spacing: 0) {
-                    dialog(title: "AI-поддержка",
-                           preview: "Спросите что угодно — отвечу и подготовлю действие",
-                           icon: "sparkles", gradient: true, online: true) {
-                        router.push(CopilotRoute.chat(.standard))
-                    }
-                    rowDivider
-                    dialog(title: "Чат с банком",
-                           preview: "Счета, карты, продукты и тарифы",
-                           icon: "building.columns", tint: theme.accent, online: true) {
-                        router.push(CopilotRoute.chat(.bankChat))
-                    }
-                    rowDivider
-                    dialog(title: "Чат с оператором",
-                           preview: "Помогу и переключу на живого сотрудника",
-                           icon: "headset", tint: theme.accent, online: true) {
-                        router.push(CopilotRoute.chat(.operatorChat))
-                    }
-                    rowDivider
-                    dialog(title: "Обращения",
-                           preview: disputesPreview,
-                           icon: "exclamationmark.bubble.fill", tint: theme.warning,
-                           time: latestTicket.map { relative($0.createdAt) },
-                           badge: history.tickets.count) {
-                        router.push(ChatsRoute.disputes)
-                    }
-                    rowDivider
-                    dialog(title: "Уведомления",
-                           preview: notificationsPreview,
-                           icon: "bell.badge.fill", tint: theme.accent,
-                           time: latestNotification.map { relative($0.date) },
-                           badge: notifications.unreadCount) {
-                        router.push(ChatsRoute.notifications)
-                    }
+            GroupedSection {
+                dialog(title: "AI-поддержка",
+                       preview: "Ответит и подготовит действие",
+                       icon: "text.bubble", online: true) {
+                    router.push(CopilotRoute.chat(.standard))
+                }
+                dialog(title: "Чат с банком",
+                       preview: "Счета, карты, продукты и тарифы",
+                       icon: "building.columns", online: true) {
+                    router.push(CopilotRoute.chat(.bankChat))
+                }
+                dialog(title: "Чат с оператором",
+                       preview: "Переключит на сотрудника банка",
+                       icon: "headset", online: true) {
+                    router.push(CopilotRoute.chat(.operatorChat))
+                }
+                dialog(title: "Обращения",
+                       preview: disputesPreview,
+                       icon: "exclamationmark.bubble",
+                       time: latestTicket.map { relative($0.createdAt) },
+                       badge: history.tickets.count) {
+                    router.push(ChatsRoute.disputes)
+                }
+                dialog(title: "Уведомления",
+                       preview: notificationsPreview,
+                       icon: "bell",
+                       time: latestNotification.map { relative($0.date) },
+                       badge: notifications.unreadCount) {
+                    router.push(ChatsRoute.notifications)
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
         .contentMargins(.bottom, 96, for: .scrollContent)
@@ -71,66 +66,55 @@ struct ChatsHubView: View {
 
     // MARK: - Dialog row
 
+    private static let avatarSize: CGFloat = 44
+    private static let avatarSpacing: CGFloat = 12
+
+    /// A messenger-style row: monochrome avatar, channel name, one-line preview, presence or time,
+    /// and an unread count.
     private func dialog(title: String, preview: String, icon: String,
-                        gradient: Bool = false, tint: Color? = nil, online: Bool = false,
-                        time: String? = nil, badge: Int = 0,
+                        online: Bool = false, time: String? = nil, badge: Int = 0,
                         action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                avatar(icon: icon, gradient: gradient, tint: tint ?? theme.accent, online: online)
-                VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: Self.avatarSpacing) {
+                avatar(icon: icon, online: online)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(BrandFont.headline).foregroundStyle(theme.textPrimary).lineLimit(1)
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary).lineLimit(1)
                     Text(preview)
-                        .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                         .lineLimit(1).truncationMode(.tail)
                 }
                 Spacer(minLength: Spacing.sm)
-                VStack(alignment: .trailing, spacing: 6) {
-                    if online {
-                        Text("онлайн")
-                            .font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.success)
-                    } else if let time {
-                        Text(time).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                if time != nil || badge > 0 {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        if let time {
+                            Text(time)
+                                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                                .monospacedDigit()
+                        }
+                        if badge > 0 { Badge(kind: .count(badge), tint: theme.accent) }
                     }
-                    if badge > 0 { unreadBadge(badge) }
+                    .fixedSize()
                 }
             }
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
+            .padding(.vertical, Spacing.rowVertical)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .groupedRowTextInset(Self.avatarSize + Self.avatarSpacing)
     }
 
-    private func avatar(icon: String, gradient: Bool, tint: Color, online: Bool) -> some View {
-        ZStack(alignment: .bottomTrailing) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(gradient ? Color.white : tint)
-                .frame(width: 52, height: 52)
-                .background {
-                    if gradient { Circle().fill(theme.cryptoGradient) }
-                    else { Circle().fill(tint.opacity(0.14)) }
+    /// Monochrome avatar; a small green dot marks a channel that answers right now (presence is state).
+    private func avatar(icon: String, online: Bool) -> some View {
+        GlyphCircle(systemImage: icon, size: Self.avatarSize)
+            .overlay(alignment: .bottomTrailing) {
+                if online {
+                    Circle().fill(theme.success).frame(width: 10, height: 10)
+                        .overlay(Circle().stroke(theme.surface, lineWidth: 2))
+                        .offset(x: 1, y: 1)
                 }
-            if online {
-                Circle().fill(theme.success).frame(width: 13, height: 13)
-                    .overlay(Circle().stroke(theme.surface, lineWidth: 2))
             }
-        }
-    }
-
-    private func unreadBadge(_ count: Int) -> some View {
-        Text("\(count)")
-            .font(BrandFont.micro.weight(.bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .frame(minWidth: 20)
-            .background(theme.accent, in: Capsule())
-    }
-
-    private var rowDivider: some View {
-        Divider().overlay(theme.border).padding(.leading, 52 + Spacing.md)
+            .accessibilityElement()
+            .accessibilityLabel(online ? "онлайн" : "")
     }
 
     // MARK: - Live preview / time (read-only on the shared stores)
@@ -142,13 +126,15 @@ struct ChatsHubView: View {
         notifications.items.max { $0.date < $1.date }
     }
     private var disputesPreview: String {
-        if let t = latestTicket { return "\(t.status.title) · \(t.counterparty ?? t.categoryTitle)" }
+        if let t = latestTicket { return "\(t.counterparty ?? t.categoryTitle) · \(t.status.title)" }
         return "Споры по операциям"
     }
     private var notificationsPreview: String {
         latestNotification?.title ?? "Платежи, безопасность, продукты"
     }
     private func relative(_ date: Date) -> String {
+        // A ticket opened this minute reads «сейчас», not «через 0 сек.».
+        if abs(date.timeIntervalSinceNow) < 60 { return "сейчас" }
         let f = RelativeDateTimeFormatter()
         f.locale = Locale(identifier: "ru_RU")
         f.unitsStyle = .short

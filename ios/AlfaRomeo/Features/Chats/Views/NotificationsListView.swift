@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Чаты → «Уведомления» (§9.5): a demo feed with read/unread state. Tapping a row marks it read (the
-/// unread dot clears and the hub badge drops); «Прочитать все» clears the lot. Source —
+/// unread dot clears and the hub badge drops); «Прочитать все» clears the lot. Source:
 /// ``NotificationsStore`` (session, demo).
 struct NotificationsListView: View {
     @Environment(\.theme) private var theme
@@ -10,28 +10,28 @@ struct NotificationsListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
                 if store.unreadCount > 0 {
-                    HStack {
+                    HStack(alignment: .firstTextBaseline) {
                         Text("\(store.unreadCount) непрочитанных")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
                         Spacer()
                         Button("Прочитать все") { store.markAllRead() }
-                            .font(BrandFont.caption.weight(.semibold))
+                            .font(BrandFont.subheadline.weight(.medium))
                             .foregroundStyle(theme.accent)
                     }
+                    .padding(.horizontal, Spacing.xs)
                 }
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(store.items.enumerated()), id: \.element.id) { index, item in
-                            Button { store.markRead(item.id) } label: { row(item) }
-                                .buttonStyle(.plain)
-                            if index < store.items.count - 1 { Divider().overlay(theme.border) }
-                        }
+                GroupedSection {
+                    ForEach(store.items) { item in
+                        Button { store.markRead(item.id) } label: { row(item) }
+                            .buttonStyle(.row)
                     }
                 }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.background.ignoresSafeArea())
@@ -40,41 +40,34 @@ struct NotificationsListView: View {
         .contentMargins(.bottom, 96, for: .scrollContent)
     }
 
+    /// Monochrome glyph, title (semibold + accent dot while unread), the message body, then the time.
     private func row(_ item: AppNotification) -> some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            Image(systemName: item.kind.icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(tint(item.kind))
-                .frame(width: 36, height: 36)
-                .background(tint(item.kind).opacity(0.14),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: Spacing.xs) {
+        HStack(alignment: .top, spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: item.kind.icon)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Spacing.xs + 2) {
                     Text(item.title)
-                        .font(BrandFont.bodyM.weight(item.isRead ? .medium : .semibold))
+                        .font(item.isRead ? BrandFont.bodyM : BrandFont.headline)
                         .foregroundStyle(theme.textPrimary)
-                    if !item.isRead { Circle().fill(theme.accent).frame(width: 7, height: 7) }
-                    Spacer(minLength: Spacing.xs)
-                    Text(relative(item.date))
-                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                        .layoutPriority(1)
+                    if !item.isRead {
+                        Circle().fill(theme.accent).frame(width: 7, height: 7)
+                            .accessibilityLabel("Не прочитано")
+                    }
+                    Spacer(minLength: 0)
                 }
                 Text(item.body)
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
+                Text(relative(item.date))
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .padding(.top, 2)
             }
         }
-        .padding(.vertical, Spacing.sm)
-        .contentShape(Rectangle())
-        .opacity(item.isRead ? 0.72 : 1)
-    }
-
-    private func tint(_ kind: AppNotification.Kind) -> Color {
-        switch kind {
-        case .security: return theme.danger
-        case .payment:  return theme.accent
-        case .product:  return theme.success
-        case .system:   return theme.warning
-        }
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private func relative(_ date: Date) -> String {
