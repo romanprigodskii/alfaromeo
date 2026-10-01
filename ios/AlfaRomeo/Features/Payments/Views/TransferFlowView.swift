@@ -143,6 +143,10 @@ struct TransferFlowView: View {
                 get: { model.cardNumber },
                 set: { model.cardNumber = String($0.filter(\.isNumber).prefix(16)) }
             ), placeholder: "0000 0000 0000 0000", keyboard: .numberPad, mono: true)
+            PrimaryButton(title: "Далее") {
+                withAnimation(Motion.smooth) { model.commitCard() }
+            }
+            .disabled(model.cardNumber.filter(\.isNumber).count < 16)
             SectionHeader("Или выберите получателя").padding(.top, Spacing.sm)
             ContactPickerList(contacts: model.registeredContacts) { contact in
                 withAnimation(Motion.smooth) { model.selectRegisteredRecipient(contact) }

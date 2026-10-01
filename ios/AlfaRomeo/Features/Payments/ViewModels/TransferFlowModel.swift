@@ -350,6 +350,8 @@ final class TransferFlowModel {
     func commitCard() {
         let digits = cardNumber.filter(\.isNumber)
         guard digits.count >= 16 else { return }
+        selectedContactId = nil
+        recipientPhone = nil   // a typed card is a local demo move, not a /transfer to a registered user
         recipient = Recipient(name: "Карта получателя", detail: "···· \(digits.suffix(4))", icon: "creditcard")
         step = .amount
     }
