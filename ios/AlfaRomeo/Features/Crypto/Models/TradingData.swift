@@ -94,7 +94,7 @@ enum ChartIndicator: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .none:   return "—"
+        case .none:   return "Нет"
         case .volume: return "Объём"
         case .macd:   return "MACD"
         }

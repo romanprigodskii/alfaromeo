@@ -15,7 +15,7 @@ struct TradeHistoryView: View {
                 if !openOrders.isEmpty { openOrdersSection }
                 activitySection
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -26,23 +26,21 @@ struct TradeHistoryView: View {
 
     private var openOrdersSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Открытые ордера").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(openOrders.enumerated()), id: \.element.id) { index, order in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        HStack(spacing: Spacing.md) {
-                            AssetGlyph(symbol: order.asset, size: 36)
+            GroupedSection("Открытые ордера") {
+                    ForEach(openOrders) { order in
+                        HStack(spacing: ListRow.glyphSpacing) {
+                            AssetGlyph(symbol: order.asset, size: ListRow.glyphSize)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(order.side == .buy ? "Покупка" : "Продажа") \(order.asset)")
-                                    .font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
-                                Text("Лимит · \(CryptoFormat.qty(order.qty, symbol: order.asset))")
-                                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                                    .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                                Text("Лимит, \(CryptoFormat.qty(order.qty, symbol: order.asset))")
+                                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                                    .monospacedDigit()
                             }
                             Spacer(minLength: Spacing.sm)
                             VStack(alignment: .trailing, spacing: 2) {
                                 if let price = order.price {
-                                    Text(CryptoFormat.rub(price, fraction: 0)).font(BrandFont.callout.weight(.medium))
+                                    Text(CryptoFormat.rub(price, fraction: 0)).font(BrandFont.bodyM)
                                         .foregroundStyle(theme.textPrimary).monospacedDigit()
                                 }
                                 StatusPill(status: .pending, text: "В книге")
@@ -53,16 +51,16 @@ struct TradeHistoryView: View {
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
-                                    .font(.system(size: 15, weight: .bold))
+                                    .font(.system(size: 15, weight: .semibold))
                                     .foregroundStyle(theme.textSecondary)
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
                             }
                             .accessibilityLabel("Действия с ордером")
                         }
-                        .padding(.vertical, Spacing.sm)
+                        .padding(.vertical, Spacing.rowVertical)
+                        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
                     }
-                }
             }
         }
         .confirmationDialog(
@@ -76,50 +74,43 @@ struct TradeHistoryView: View {
             }
             Button("Оставить", role: .cancel) { cancelTarget = nil }
         } message: {
-            Text("Ордер ещё не исполнен — средства не списаны. Он будет снят из книги заявок.")
+            Text("Ордер ещё не исполнен, средства не списаны. Он будет снят из книги заявок.")
         }
     }
 
     @ViewBuilder private var activitySection: some View {
-        Text("Операции").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
         if store.activity.isEmpty {
+            SectionHeader("Операции")
             ContentUnavailableView("Пока нет операций", systemImage: "clock",
                                    description: Text("Покупки, обмены и переводы появятся здесь."))
                 .frame(maxWidth: .infinity).padding(.top, Spacing.xl)
         } else {
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.activity.enumerated()), id: \.element.id) { index, item in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        row(item)
-                    }
-                }
+            GroupedSection("Операции") {
+                ForEach(store.activity) { item in row(item) }
             }
         }
     }
 
     private func row(_ item: CryptoActivity) -> some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle().fill((theme.accentCrypto.first ?? theme.accent).opacity(0.14)).frame(width: 38, height: 38)
-                Image(systemName: item.kind.icon).font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-            }
+        HStack(spacing: ListRow.glyphSpacing) {
+            GlyphCircle(systemImage: item.kind.icon, size: ListRow.glyphSize)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary).lineLimit(1)
-                Text("\(item.kind.label) · \(item.subtitle)").font(BrandFont.caption).foregroundStyle(theme.textSecondary).lineLimit(1)
+                Text(item.title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary).lineLimit(1)
+                Text(item.subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).lineLimit(1)
             }
             Spacer(minLength: Spacing.sm)
             VStack(alignment: .trailing, spacing: 2) {
                 if item.rubAmount != 0 {
-                    AmountText(amount: item.rubAmount, size: 15, showsSign: true, colorBySign: true)
+                    AmountText(amount: item.rubAmount, size: 17, showsSign: true, colorBySign: true)
                 } else {
-                    Text(CryptoFormat.qty(item.qty, symbol: item.asset)).font(BrandFont.amountS).foregroundStyle(theme.textPrimary)
+                    Text(CryptoFormat.qty(item.qty, symbol: item.asset)).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        .monospacedDigit()
                 }
-                Text(Self.dateLabel(item.at)).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                Text(Self.dateLabel(item.at)).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             }
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private static let dateFormatter: DateFormatter = {

@@ -11,15 +11,12 @@ struct ExternalWalletLinkView: View {
     @State private var addressText = ""
     @State private var labelText = ""
 
-    private let columns = [GridItem(.flexible(), spacing: Spacing.md), GridItem(.flexible(), spacing: Spacing.md)]
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 watchOnlyNote
 
-                Text("Выберите кошелёк").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                LazyVGrid(columns: columns, spacing: Spacing.md) {
+                GroupedSection("Кошелёк") {
                     ForEach(ExternalWalletProvider.allCases) { provider in
                         ExternalWalletProviderTile(provider: provider) {
                             selectedProvider = provider
@@ -30,20 +27,16 @@ struct ExternalWalletLinkView: View {
                 }
 
                 if !store.externalWallets.isEmpty {
-                    Text("Привязанные").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(store.externalWallets.enumerated()), id: \.element.id) { index, wallet in
-                                if index > 0 { Divider().overlay(theme.border) }
-                                ExternalWalletRow(wallet: wallet, valueRub: value(wallet)) {
-                                    withAnimation { store.unlinkExternalWallet(id: wallet.id) }
-                                }
+                    GroupedSection("Привязанные") {
+                        ForEach(store.externalWallets) { wallet in
+                            ExternalWalletRow(wallet: wallet, valueRub: value(wallet)) {
+                                withAnimation { store.unlinkExternalWallet(id: wallet.id) }
                             }
                         }
                     }
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -57,45 +50,36 @@ struct ExternalWalletLinkView: View {
     }
 
     private var watchOnlyNote: some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: "eye.fill").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-            Text("Только просмотр (watch-only). Подключения к блокчейну не происходит — баланс оценивается по адресу и live-ценам.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
+        Text("Только просмотр: подключения к блокчейну нет, баланс оценивается по адресу и live-ценам.")
+            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func linkSheet(_ provider: ExternalWalletProvider) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack(spacing: Spacing.sm) {
-                ZStack {
-                    Circle().fill(theme.cryptoGradient).frame(width: 40, height: 40)
-                    Image(systemName: provider.icon).font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
-                }
+            HStack(spacing: Spacing.md) {
+                GlyphCircle(systemImage: provider.icon, size: 44)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(provider.label).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                    Text(provider.tagline).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text(provider.label).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                    Text(provider.tagline).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
             }
 
-            Text("Адрес кошелька").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text("Адрес кошелька").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             TextField(provider.addressPlaceholder, text: $addressText)
-                .font(BrandFont.mono(14))
+                .font(BrandFont.code(14))
                 .foregroundStyle(theme.textPrimary)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
                 .padding(Spacing.md)
-                .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+                .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
 
-            HStack(spacing: Spacing.sm) {
-                SecondaryButton(title: "Вставить пример", icon: "doc.on.clipboard") {
-                    addressText = sampleAddress(provider)
-                }
+            SecondaryButton(title: "Вставить пример") {
+                addressText = sampleAddress(provider)
             }
 
-            PrimaryButton(title: "Привязать (watch-only)", icon: "link") {
+            PrimaryButton(title: "Привязать для просмотра") {
                 let address = addressText.trimmingCharacters(in: .whitespaces).isEmpty ? sampleAddress(provider) : addressText
                 store.linkExternalWallet(provider: provider, address: address, label: labelText)
                 selectedProvider = nil

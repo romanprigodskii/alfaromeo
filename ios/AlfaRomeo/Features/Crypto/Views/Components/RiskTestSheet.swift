@@ -36,21 +36,16 @@ struct RiskTestSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                Text("Тест на риски").font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            }
-            Text("Короткий тест перед первой крипто-сделкой — требование для неквалифицированных инвесторов (§2.4). ЦФА он не касается.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text("Тест на риски").font(BrandFont.title1).foregroundStyle(theme.textPrimary)
+            Text("\(questions.count) вопроса перед первой крипто-сделкой. Обязателен для неквалифицированных инвесторов, ЦФА не касается.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func questionBlock(_ q: RiskTestQuestion) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(q.prompt).font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
+            Text(q.prompt).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
             ForEach(Array(q.options.enumerated()), id: \.offset) { index, option in
                 optionRow(q: q, index: index, option: option)
             }
@@ -66,15 +61,14 @@ struct RiskTestSheet: View {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
                     .font(.system(size: 17))
-                    .foregroundStyle(selected ? (theme.accentCrypto.first ?? theme.accent) : theme.textSecondary)
-                Text(option).font(BrandFont.callout).foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(selected ? theme.accent : theme.textSecondary)
+                Text(option).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
-            .padding(Spacing.sm)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                .stroke(selected ? (theme.accentCrypto.first ?? theme.accent) : theme.border, lineWidth: selected ? 1.5 : 1))
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.rowVertical)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -83,11 +77,11 @@ struct RiskTestSheet: View {
     @ViewBuilder private var footer: some View {
         if case .failed(let s) = result {
             Text("Правильно \(s) из \(questions.count). Нужно минимум \(CryptoRiskTest.passThreshold). Проверьте ответы и попробуйте снова.")
-                .font(BrandFont.caption.weight(.medium))
-                .foregroundStyle(theme.danger)
+                .font(BrandFont.footnote)
+                .foregroundStyle(theme.statusInk(.danger))
                 .fixedSize(horizontal: false, vertical: true)
         }
-        PrimaryButton(title: "Пройти тест", icon: "checkmark.shield") {
+        PrimaryButton(title: "Пройти тест") {
             if score >= CryptoRiskTest.passThreshold {
                 result = .passed
                 onPass()
@@ -102,7 +96,7 @@ struct RiskTestSheet: View {
 
 #Preview {
     RiskTestSheet(onPass: {}, onCancel: {})
-        .padding(Spacing.lg)
+        .padding(Spacing.screen)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.default.background)
         .environment(\.theme, .default)

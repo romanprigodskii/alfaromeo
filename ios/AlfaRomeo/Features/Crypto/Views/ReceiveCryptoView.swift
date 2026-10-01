@@ -31,7 +31,7 @@ struct ReceiveCryptoView: View {
                     AssetGlyph(symbol: asset, size: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Принять \(asset)").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                        Text("Сеть: \(network?.name ?? networks.first?.name ?? "")").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        Text("Сеть: \(network?.name ?? networks.first?.name ?? "")").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     }
                     Spacer()
                 }
@@ -41,18 +41,15 @@ struct ReceiveCryptoView: View {
 
                 NetworkFeePicker(networks: networks, selected: $network)
 
-                SecondaryButton(title: copied ? "Адрес скопирован" : "Скопировать адрес",
-                                icon: copied ? "checkmark" : "doc.on.doc") {
+                SecondaryButton(title: copied ? "Адрес скопирован" : "Скопировать адрес") {
                     copyAddress()
                 }
-                Button { showRequest = true } label: {
-                    Label(requested ? "Запрос отправлен · ещё раз" : "Запросить у контакта", systemImage: requested ? "checkmark.circle" : "person.crop.circle.badge.plus")
-                        .font(BrandFont.callout.weight(.medium))
-                        .foregroundStyle(requested ? theme.success : (theme.accentCrypto.first ?? theme.accent))
-                }
-                .buttonStyle(.plain)
+                Button(requested ? "Запросить ещё раз" : "Запросить у контакта") { showRequest = true }
+                    .font(BrandFont.bodyM.weight(.medium))
+                    .foregroundStyle(theme.accent)
+                    .buttonStyle(.plain)
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -77,15 +74,15 @@ struct ReceiveCryptoView: View {
                     .scaledToFit()
                     .frame(width: 180, height: 180)
                     .padding(Spacing.sm)
-                    .background(.white, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    .background(Color(hex: 0xFDFCFC), in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                 Text(address)
-                    .font(BrandFont.mono(13))
-                    .foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.code(13))
+                    .foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.horizontal, Spacing.md)
                 Text("Отправляйте только \(asset) в сети \(network?.name ?? "")")
-                    .font(BrandFont.micro).foregroundStyle(theme.warning)
+                    .font(BrandFont.footnote).foregroundStyle(theme.statusInk(.warning))
             }
             .frame(maxWidth: .infinity)
         }

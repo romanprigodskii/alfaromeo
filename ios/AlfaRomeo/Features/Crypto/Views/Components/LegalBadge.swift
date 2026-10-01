@@ -1,25 +1,25 @@
 import SwiftUI
 
-/// «ЦФА · 259-ФЗ · легально» — the legal stamp on the digital-financial-asset path (§2.4 narrative:
-/// ЦФА is the white, already-legal route, distinct from crypto). Cold gradient pill so it visually
-/// belongs to the digital-asset family while signalling its regulated status.
+/// «ЦФА по 259-ФЗ»: the legal stamp on the digital-financial-asset path (§2.4 narrative: ЦФА is the
+/// white, already-legal route, distinct from crypto). A neutral badge (caption 12 medium, radius 8,
+/// `fill`) with a seal glyph; no tint, it is a fact, not a state.
 struct LegalBadge: View {
-    var text: String = "ЦФА · 259-ФЗ · легально"
+    var text: String = "ЦФА по 259-ФЗ"
     var compact: Bool = false
 
     @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: Spacing.xs) {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: compact ? 10 : 12, weight: .bold))
+            Image(systemName: "checkmark.seal")
+                .font(.system(size: compact ? 11 : 13, weight: .regular))
             Text(text)
-                .font(compact ? BrandFont.micro : BrandFont.caption.weight(.semibold))
+                .font(compact ? BrandFont.micro : BrandFont.footnote.weight(.medium))
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, compact ? Spacing.sm : Spacing.md)
-        .padding(.vertical, compact ? 3 : Spacing.xs)
-        .background(theme.cryptoGradient, in: Capsule())
+        .foregroundStyle(theme.textPrimary)
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, compact ? 2 : Spacing.xs)
+        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
         .accessibilityLabel("ЦФА, по 259-ФЗ, легальный инструмент")
     }
 }

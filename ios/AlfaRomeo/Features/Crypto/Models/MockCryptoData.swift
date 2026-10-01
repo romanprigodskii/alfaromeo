@@ -22,7 +22,7 @@ enum MockCryptoData {
         CDFA(id: "cfa_metr", ticker: "METR", name: "Метры в Москве",
              issuer: "ООО «ПИК-Токен»", operatorName: "Мастерчейн", category: .realEstate,
              priceRub: 5_300, yieldPct: 9.2, dayChangePct: 0.6,
-             about: "Токенизированная доля в арендной недвижимости. Доход — от арендных платежей, распределяется держателям.",
+             about: "Токенизированная доля в арендной недвижимости. Доход от арендных платежей, распределяется держателям.",
              minUnits: 1),
         CDFA(id: "cfa_romeo_eq", ticker: "ROMEO", name: "Доля в Ромео Капитал",
              issuer: "ООО «Ромео Капитал»", operatorName: "Лайтхаус", category: .equity,
@@ -32,7 +32,7 @@ enum MockCryptoData {
         CDFA(id: "cfa_techfund", ticker: "TECH", name: "Технологический фонд",
              issuer: "АО «Тинькофф Капитал»", operatorName: "Т-ЦФА", category: .fund,
              priceRub: 1_240, yieldPct: 12.0, dayChangePct: -0.7,
-             about: "Диверсифицированный фонд из ЦФА технологических компаний. Доходность — историческая, не гарантирована.",
+             about: "Диверсифицированный фонд из ЦФА технологических компаний. Доходность историческая, не гарантирована.",
              minUnits: 1),
     ]
 

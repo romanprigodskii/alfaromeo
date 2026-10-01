@@ -34,14 +34,14 @@ struct CryptoHubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 PortfolioHeroCard(summary: summary, source: prices.source, isStale: prices.isStale,
                                   denomination: $denomination, usdRub: prices.usdRub)
                 quickActions
                 segmentPicker
                 if segment == .crypto { cryptoSection } else { cfaSection }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -68,37 +68,19 @@ struct CryptoHubView: View {
     // MARK: Quick actions
 
     private var quickActions: some View {
-        HStack(spacing: Spacing.sm) {
-            action("Купить", "cart.fill") { router.push(CryptoRoute.trade(symbol: tradableDefault, side: .buy)) }
-            action("Обмен", "arrow.2.squarepath") { router.push(CryptoRoute.convert(asset: tradableDefault)) }
-            action("Отправить", "paperplane.fill") { router.push(CryptoRoute.send(asset: defaultAsset)) }
-            action("Принять", "qrcode") { router.push(CryptoRoute.receive(asset: defaultAsset)) }
+        QuickActionRow {
+            QuickActionButton("Купить", systemImage: "plus") { router.push(CryptoRoute.trade(symbol: tradableDefault, side: .buy)) }
+            QuickActionButton("Обмен", systemImage: "arrow.left.arrow.right") { router.push(CryptoRoute.convert(asset: tradableDefault)) }
+            QuickActionButton("Отправить", systemImage: "arrow.up") { router.push(CryptoRoute.send(asset: defaultAsset)) }
+            QuickActionButton("Принять", systemImage: "qrcode") { router.push(CryptoRoute.receive(asset: defaultAsset)) }
         }
-    }
-
-    private func action(_ title: String, _ icon: String, _ tap: @escaping () -> Void) -> some View {
-        Button(action: tap) {
-            VStack(spacing: Spacing.xs) {
-                ZStack {
-                    Circle().fill(theme.cryptoGradient).frame(width: 48, height: 48)
-                    Image(systemName: icon).font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
-                }
-                Text(title).font(BrandFont.micro.weight(.medium)).foregroundStyle(theme.textPrimary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PressableButtonStyle())
     }
 
     private var segmentPicker: some View {
-        VStack(spacing: Spacing.sm) {
-            Picker("", selection: $segment) {
-                ForEach(PortfolioSegment.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            Text(segment.caption).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        Picker("Раздел", selection: $segment) {
+            ForEach(PortfolioSegment.allCases) { Text($0.title).tag($0) }
         }
+        .pickerStyle(.segmented)
     }
 
     // MARK: Крипта
@@ -109,94 +91,93 @@ struct CryptoHubView: View {
         } else {
             let bank = store.cryptoPositions(using: prices).filter { !$0.watchOnly }
 
-            if investorStatus == .unqualified { investorLimitStrip }
-
-            sectionHeader("Мои монеты", actionTitle: nil) {}
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(bank.enumerated()), id: \.element.id) { index, position in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        PositionRow(position: position, denomination: denomination, usdRub: prices.usdRub) {
-                            router.push(CryptoRoute.assetDetail(symbol: position.routeId))
-                        }
+            GroupedSection("Мои монеты") {
+                ForEach(bank) { position in
+                    PositionRow(position: position, denomination: denomination, usdRub: prices.usdRub) {
+                        router.push(CryptoRoute.assetDetail(symbol: position.routeId))
                     }
-                    if bank.isEmpty {
-                        Text("Нет монет. Купите BTC, ETH или стейблкоин.")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, Spacing.sm)
-                    }
+                }
+                if bank.isEmpty {
+                    emptyRow("Нет монет. Купите BTC, ETH или стейблкоин.")
                 }
             }
 
-            sectionHeader("Внешние кошельки", actionTitle: "Привязать") { router.push(CryptoRoute.linkExternalWallet) }
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.externalWallets.enumerated()), id: \.element.id) { index, wallet in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        ExternalWalletRow(wallet: wallet, valueRub: externalValue(wallet),
-                                          denomination: denomination, usdRub: prices.usdRub) {
-                            withAnimation { store.unlinkExternalWallet(id: wallet.id) }
-                        }
+            GroupedSection("Внешние кошельки", actionTitle: "Привязать",
+                           action: { router.push(CryptoRoute.linkExternalWallet) }) {
+                ForEach(store.externalWallets) { wallet in
+                    ExternalWalletRow(wallet: wallet, valueRub: externalValue(wallet),
+                                      denomination: denomination, usdRub: prices.usdRub) {
+                        withAnimation { store.unlinkExternalWallet(id: wallet.id) }
                     }
-                    if store.externalWallets.isEmpty {
-                        Text("Привяжите MetaMask, Trust, Ledger или TON — баланс появится здесь read-only.")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, Spacing.sm)
-                    }
+                }
+                if store.externalWallets.isEmpty {
+                    emptyRow("MetaMask, Trust, Ledger или TON: баланс появится здесь в режиме просмотра.")
                 }
             }
 
-            ComplianceBanner { router.push(CryptoRoute.investorStatus) }
+            GroupedSection("Ограничения") {
+                if investorStatus == .unqualified { investorLimitRow }
+                Text(CryptoCatalog.complianceNote)
+                    .font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, Spacing.rowVertical)
+                Button { router.push(CryptoRoute.investorStatus) } label: {
+                    ListRow(icon: "checkmark.shield", title: "Статус инвестора и лимиты", showsChevron: true)
+                }
+                .buttonStyle(.row)
+            }
         }
     }
 
-    private var investorLimitStrip: some View {
+    /// Неквал limit usage (§2.4): used / yearly cap with a flat progress bar. Opens the status screen.
+    private var investorLimitRow: some View {
         Button { router.push(CryptoRoute.investorStatus) } label: {
-            SurfaceCard(padding: Spacing.md) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    HStack {
-                        Text("Лимит неквал-инвестора").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Spacer()
-                        if !store.riskTestPassed {
-                            Text("Тест не пройден").font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.warning)
-                        }
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(theme.textSecondary)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                HStack(spacing: Spacing.sm) {
+                    Text("Лимит неквал-инвестора").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Spacer(minLength: Spacing.sm)
+                    if !store.riskTestPassed {
+                        StatusPill(status: .warning, text: "Тест не пройден")
                     }
-                    ProgressBar(value: store.investorUsedRub / CryptoCompliance.yearlyLimitRub, useCryptoGradient: true)
-                    Text("Использовано \(CryptoFormat.rub(store.investorUsedRub)) из \(CryptoFormat.rub(CryptoCompliance.yearlyLimitRub)) в год")
-                        .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.textTertiary)
                 }
+                ProgressBar(value: store.investorUsedRub / CryptoCompliance.yearlyLimitRub)
+                Text("\(CryptoFormat.rub(store.investorUsedRub)) из \(CryptoFormat.rub(CryptoCompliance.yearlyLimitRub)) в год")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
+            .padding(.vertical, Spacing.rowVertical)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(PressableButtonStyle())
+        .buttonStyle(.row)
     }
 
     // MARK: ЦФА
 
     @ViewBuilder private var cfaSection: some View {
         let holdings = store.cfaPositions()
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack { LegalBadge(); Spacer() }
-            Text("Легальный путь цифровых активов: токенизированные инструменты от эмитентов через операторов в реестре ЦБ. Без крипто-лимитов и теста — только обычный KYC.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            LegalBadge()
+            Text("Токенизированные инструменты эмитентов через операторов из реестра ЦБ. Без крипто-лимитов и теста на риски, только обычный KYC.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         if !holdings.isEmpty {
-            sectionHeader("Мои ЦФА", actionTitle: nil) {}
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(holdings.enumerated()), id: \.element.id) { index, position in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        PositionRow(position: position, denomination: denomination, usdRub: prices.usdRub) {
-                            router.push(CryptoRoute.cfaDetail(id: position.routeId))
-                        }
+            GroupedSection("Мои ЦФА") {
+                ForEach(holdings) { position in
+                    PositionRow(position: position, denomination: denomination, usdRub: prices.usdRub) {
+                        router.push(CryptoRoute.cfaDetail(id: position.routeId))
                     }
                 }
             }
         }
 
-        sectionHeader("Каталог ЦФА", actionTitle: nil) {}
-        VStack(spacing: Spacing.md) {
+        GroupedSection("Каталог ЦФА") {
             ForEach(MockCryptoData.cdfas) { cdfa in
                 CDFACard(cdfa: cdfa, holdingUnits: store.cfaUnits(cdfaId: cdfa.id)) {
                     router.push(CryptoRoute.cfaDetail(id: cdfa.id))
@@ -208,28 +189,20 @@ struct CryptoHubView: View {
     // MARK: Helpers
 
     private var loading: some View {
-        VStack(spacing: Spacing.md) {
-            ProgressView().tint(theme.accentCrypto.first ?? theme.accent)
-            Text("Загружаем портфель…").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        GroupedSection {
+            SkeletonRow()
+            SkeletonRow()
+            SkeletonRow()
         }
-        .frame(maxWidth: .infinity, minHeight: 160)
+        .accessibilityLabel("Загружаем портфель")
     }
 
-    private func sectionHeader(_ title: String, actionTitle: String?, action: @escaping () -> Void) -> some View {
-        HStack {
-            Text(title).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-            Spacer()
-            if let actionTitle {
-                Button(action: action) {
-                    HStack(spacing: 2) {
-                        Text(actionTitle); Image(systemName: "plus.circle.fill").font(.system(size: 12, weight: .semibold))
-                    }
-                    .font(BrandFont.caption.weight(.semibold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                }
-                .buttonStyle(.plain)
-            }
-        }
+    private func emptyRow(_ text: String) -> some View {
+        Text(text)
+            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, Spacing.rowVertical)
     }
 
     private func externalValue(_ wallet: ExternalWallet) -> Double {

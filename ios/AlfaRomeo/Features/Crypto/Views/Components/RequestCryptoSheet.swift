@@ -28,7 +28,7 @@ struct RequestCryptoSheet: View {
                     form
                 }
             }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
         }
         .background(theme.background.ignoresSafeArea())
         .scrollIndicators(.hidden)
@@ -38,9 +38,9 @@ struct RequestCryptoSheet: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            header(title: "Запросить \(asset)", subtitle: "Выберите контакт и сумму — отправим запрос на оплату.")
+            Text("Запросить \(asset)").font(BrandFont.title1).foregroundStyle(theme.textPrimary)
 
-            Text("Контакт").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text("Контакт").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.md) {
                     ForEach(PaymentsMockData.contacts) { contact in
@@ -54,16 +54,15 @@ struct RequestCryptoSheet: View {
             AmountEntry(text: $amountText, symbol: asset,
                         secondary: "Сумма к запросу", secondaryIsWarning: false)
 
-            PrimaryButton(title: selected.map { "Запросить у \($0.name.split(separator: " ").first.map(String.init) ?? $0.name)" } ?? "Запросить",
-                          icon: "paperplane.fill") {
+            PrimaryButton(title: selected.map { "Запросить у \($0.name.split(separator: " ").first.map(String.init) ?? $0.name)" } ?? "Запросить") {
                 guard let contact = selected, amount > 0 else { return }
                 withAnimation { sent = true }
                 onSent(contact, amount)
             }
             .disabled(!canSend)
 
-            Text("Это запрос на оплату — деньги не списываются. Контакт получит ваш адрес для перевода.")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Это запрос на оплату, деньги не списываются. Контакт получит ваш адрес для перевода.")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -73,12 +72,12 @@ struct RequestCryptoSheet: View {
         return Button { selected = contact } label: {
             VStack(spacing: Spacing.xs) {
                 ZStack {
-                    Circle().fill(isOn ? AnyShapeStyle(theme.cryptoGradient) : AnyShapeStyle(theme.elevated))
+                    Circle().fill(isOn ? theme.textPrimary : theme.fill)
                         .frame(width: 52, height: 52)
-                    Text(contact.initials).font(BrandFont.headline).foregroundStyle(isOn ? .white : theme.textPrimary)
+                    Text(contact.initials).font(BrandFont.headline).foregroundStyle(isOn ? theme.background : theme.textPrimary)
                 }
                 Text(contact.name.split(separator: " ").first.map(String.init) ?? contact.name)
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary).lineLimit(1)
+                    .font(BrandFont.footnote).foregroundStyle(isOn ? theme.textPrimary : theme.textSecondary).lineLimit(1)
             }
             .frame(width: 64)
         }
@@ -90,49 +89,40 @@ struct RequestCryptoSheet: View {
     private func confirmation(_ contact: PaymentContact) -> some View {
         VStack(spacing: Spacing.lg) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 60, weight: .bold))
+                .font(.system(size: 56, weight: .regular))
                 .foregroundStyle(theme.success)
 
             VStack(spacing: Spacing.xs) {
-                Text("Запрос отправлен").font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                Text("Запрос отправлен").font(BrandFont.title1).foregroundStyle(theme.textPrimary)
                 Text("\(contact.name) получит запрос на \(CryptoFormat.qty(amount, symbol: asset)).")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
 
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    requestRow("Кому", contact.name)
-                    Divider().overlay(theme.border)
-                    requestRow("Сумма", CryptoFormat.qty(amount, symbol: asset))
-                    Divider().overlay(theme.border)
-                    requestRow("На адрес", shortAddress)
-                }
+            GroupedSection {
+                requestRow("Кому", contact.name)
+                requestRow("Сумма", CryptoFormat.qty(amount, symbol: asset))
+                requestRow("На адрес", shortAddress, code: true)
             }
 
-            Text("Контакт сможет отправить \(asset) на ваш адрес одним тапом. Зачисление — после подтверждения сети.")
-                .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+            Text("Контакт сможет отправить \(asset) на ваш адрес одним тапом. Зачисление после подтверждения сети.")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
 
-            PrimaryButton(title: "Готово", icon: "checkmark") { dismiss() }
+            PrimaryButton(title: "Готово") { dismiss() }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Spacing.md)
     }
 
-    private func requestRow(_ label: String, _ value: String) -> some View {
+    private func requestRow(_ label: String, _ value: String, code: Bool = false) -> some View {
         HStack {
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
             Spacer()
-            Text(value).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
+            Text(value).font(code ? BrandFont.code(15) : BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                .monospacedDigit()
         }
-    }
-
-    private func header(title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-        }
+        .padding(.vertical, Spacing.rowVertical)
     }
 
     private var shortAddress: String {

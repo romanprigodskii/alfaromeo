@@ -31,7 +31,7 @@ struct ConvertView: View {
                 case .status:  EmptyView()
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -65,19 +65,17 @@ struct ConvertView: View {
             )
 
             if model.direction != .swap {
-                Button { model.inputInAsset.toggle() } label: {
-                    Label("Ввод в \(model.inputInAsset ? "₽" : model.asset)", systemImage: "arrow.up.arrow.down")
-                        .font(BrandFont.caption.weight(.medium))
-                        .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                }
-                .buttonStyle(.plain)
+                Button("Ввод в \(model.inputInAsset ? "₽" : model.asset)") { model.inputInAsset.toggle() }
+                    .font(BrandFont.subheadline.weight(.medium))
+                    .foregroundStyle(theme.accent)
+                    .buttonStyle(.plain)
             }
 
             gateView
 
             if model.spreadTier == .standard {
-                UpsellCard(title: "Pro: спред ниже",
-                           message: "На Pro и Infinite спред на обмене меньше — конвертация выгоднее.",
+                UpsellCard(title: "Спред ниже на Pro",
+                           message: "На Pro и Infinite спред на обмене меньше, конвертация выгоднее.",
                            recommendedTier: .pro)
             }
 
@@ -87,7 +85,7 @@ struct ConvertView: View {
     }
 
     private var secondaryLine: String {
-        if model.insufficientFunds { return "Недостаточно средств · доступно \(CryptoFormat.qty(model.balance, symbol: model.asset))" }
+        if model.insufficientFunds { return "Недостаточно средств, доступно \(CryptoFormat.qty(model.balance, symbol: model.asset))" }
         return "Получите ≈ \(model.getText)"
     }
 
@@ -98,15 +96,16 @@ struct ConvertView: View {
             }
         } label: {
             HStack(spacing: Spacing.sm) {
-                AssetGlyph(symbol: model.asset, size: 32)
+                AssetGlyph(symbol: model.asset, size: ListRow.glyphSize)
                 Text(model.asset).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(theme.textSecondary)
+                Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
                 Spacer()
-                Text(CryptoFormat.rub(model.midPrice)).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                Text(CryptoFormat.rub(model.midPrice)).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
-            .padding(Spacing.md)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         }
     }
 
@@ -133,8 +132,8 @@ struct ConvertView: View {
                     rows: confirmRows
                 )
 
-                PrimaryButton(title: expired ? "Обновить курс" : "Подтвердить · Face ID",
-                              icon: expired ? "arrow.clockwise" : "faceid",
+                PrimaryButton(title: expired ? "Обновить курс" : "Подтвердить",
+                              icon: expired ? nil : "faceid",
                               isLoading: model.authorizing) {
                     Task { await model.authorize() }
                 }
@@ -145,7 +144,7 @@ struct ConvertView: View {
 
     private var titleForConfirm: String {
         switch model.direction {
-        case .sell: return "Обмен \(model.asset) → ₽ по live-курсу"
+        case .sell: return "Продажа \(model.asset) за ₽ по live-курсу"
         case .buy:  return "Покупка \(model.asset) по live-курсу"
         case .swap: return "Обмен стейблкоинов 1:1"
         }
@@ -182,10 +181,14 @@ struct ConvertView: View {
         .background(theme.background.ignoresSafeArea())
     }
 
+    /// Strips the unit (joined by a regular or no-break space) so the confirm legs show the bare number.
     private func numberOnly(_ s: String) -> String {
-        s.replacingOccurrences(of: " ₽", with: "")
-         .replacingOccurrences(of: " \(model.asset)", with: "")
-         .replacingOccurrences(of: " \(model.counterStable)", with: "")
+        var out = s
+        for unit in ["₽", model.asset, model.counterStable] {
+            out = out.replacingOccurrences(of: "\u{00A0}\(unit)", with: "")
+                     .replacingOccurrences(of: " \(unit)", with: "")
+        }
+        return out
     }
 }
 

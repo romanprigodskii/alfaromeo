@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// One position in the unified portfolio (§9.6): asset mark, name + source, quantity, and the live ₽
-/// value with a 24h delta. External (watch-only) positions carry a clear read-only badge. The value
+/// One position in the unified portfolio (§9.6): coin logo, name + quantity, and the live ₽ value
+/// with a 24h delta. External (watch-only) positions carry a neutral read-only tag. A grouped-list
+/// row (docs/DESIGN.md §5). The value
 /// updates as ``LivePriceService`` ticks (the parent rebuilds positions from live prices).
 struct PositionRow: View {
     let position: CryptoPosition
@@ -18,27 +19,21 @@ struct PositionRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: Spacing.md) {
-                AssetGlyph(symbol: position.symbol, size: 42)
+            HStack(spacing: ListRow.glyphSpacing) {
+                AssetGlyph(symbol: position.symbol, size: ListRow.glyphSize)
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: Spacing.xs) {
                         Text(position.title)
-                            .font(BrandFont.bodyM.weight(.semibold))
+                            .font(BrandFont.bodyM)
                             .foregroundStyle(theme.textPrimary)
                             .lineLimit(1)
-                        if position.watchOnly {
-                            Text("watch-only")
-                                .font(BrandFont.micro.weight(.medium))
-                                .foregroundStyle(theme.textSecondary)
-                                .padding(.horizontal, 6).padding(.vertical, 1)
-                                .background(theme.elevated, in: Capsule())
-                                .overlay(Capsule().stroke(theme.border, lineWidth: 1))
-                        }
+                        if position.watchOnly { WatchOnlyTag() }
                     }
-                    Text(position.subtitle)
-                        .font(BrandFont.caption)
+                    Text(CryptoFormat.qty(position.qty, symbol: position.symbol))
+                        .font(BrandFont.subheadline)
                         .foregroundStyle(theme.textSecondary)
+                        .monospacedDigit()
                         .lineLimit(1)
                 }
 
@@ -46,28 +41,42 @@ struct PositionRow: View {
 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(CryptoFormat.money(position.valueRub, denom: denomination, usdRub: usdRub, fraction: 0))
-                        .font(BrandFont.amountS)
+                        .font(BrandFont.bodyM)
                         .foregroundStyle(theme.textPrimary)
                         .monospacedDigit()
                         .contentTransition(reduceMotion ? .identity : .numericText())
                         .animation(reduceMotion ? nil : Motion.snappy, value: position.valueRub)
                         .animation(reduceMotion ? nil : Motion.snappy, value: denomination)
-                    HStack(spacing: Spacing.xs) {
-                        Text(CryptoFormat.qty(position.qty, symbol: position.symbol))
-                            .font(BrandFont.micro)
-                            .foregroundStyle(theme.textSecondary)
-                        if let change {
-                            Text(CryptoFormat.pct(change))
-                                .font(BrandFont.micro.weight(.semibold))
-                                .foregroundStyle(change >= 0 ? theme.success : theme.danger)
-                        }
+                    if let change {
+                        Text(CryptoFormat.pct(change))
+                            .font(BrandFont.subheadline)
+                            .foregroundStyle(change >= 0 ? theme.success : theme.danger)
+                            .monospacedDigit()
                     }
                 }
             }
-            .padding(.vertical, Spacing.sm)
+            .padding(.vertical, Spacing.rowVertical)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressableButtonStyle())
+        .buttonStyle(.row)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
+    }
+}
+
+/// Neutral «только просмотр» tag for watch-only (external) holdings: caption 12 medium on `fill`.
+struct WatchOnlyTag: View {
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        Text("просмотр")
+            .font(BrandFont.micro)
+            .lineLimit(1)
+            .fixedSize()
+            .foregroundStyle(theme.textSecondary)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
+            .accessibilityLabel("Только просмотр")
     }
 }
 

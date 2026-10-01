@@ -9,7 +9,8 @@ struct CryptoConfirmRow: Identifiable, Hashable {
     var accent: Bool = false
 }
 
-/// The «Подтверждение» summary for crypto operations (§10.8): крупная пара «отдаёте → получаете», курс
+/// The «Подтверждение» summary for crypto operations (§10.8), one grouped list: the «отдаёте → получаете»
+/// pair as the first row, then курс
 /// по live-цене, спред (зависит от тира), комиссия и итог — pure presentation, values precomputed by
 /// the flow model. Used by convert / trade; send reuses the Payments ``ConfirmSummaryCard``.
 struct CryptoConfirmCard: View {
@@ -23,52 +24,51 @@ struct CryptoConfirmCard: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(spacing: Spacing.md) {
-            Text(title).font(BrandFont.headline).foregroundStyle(theme.textSecondary)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(title)
+                .font(BrandFont.subheadline)
+                .foregroundStyle(theme.textSecondary)
+                .padding(.horizontal, Spacing.md)
+            GroupedSection {
+                HStack(alignment: .center, spacing: Spacing.sm) {
+                    leg(title: "Отдаёте", value: payValue, symbol: paySymbol)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(theme.textTertiary)
+                    leg(title: "Получаете", value: getValue, symbol: getSymbol)
+                }
+                .padding(.vertical, Spacing.md)
 
-            HStack(alignment: .center, spacing: Spacing.md) {
-                leg(title: "Отдаёте", value: payValue, symbol: paySymbol)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                leg(title: "Получаете", value: getValue, symbol: getSymbol)
-            }
-
-            SurfaceCard(padding: Spacing.sm) {
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        if index > 0 { Divider().overlay(theme.border) }
-                        HStack {
-                            Text(row.label)
-                                .font(BrandFont.callout)
-                                .foregroundStyle(theme.textSecondary)
-                            Spacer(minLength: Spacing.sm)
-                            Text(row.value)
-                                .font(row.emphasized ? BrandFont.headline : BrandFont.callout.weight(.medium))
-                                .foregroundStyle(row.accent ? (theme.accentCrypto.first ?? theme.accent) : theme.textPrimary)
-                                .monospacedDigit()
-                        }
-                        .padding(.vertical, Spacing.sm)
+                ForEach(rows) { row in
+                    HStack {
+                        Text(row.label)
+                            .font(BrandFont.bodyM)
+                            .foregroundStyle(theme.textSecondary)
+                        Spacer(minLength: Spacing.sm)
+                        Text(row.value)
+                            .font(row.emphasized ? BrandFont.headline : BrandFont.bodyM)
+                            .foregroundStyle(theme.textPrimary)
+                            .monospacedDigit()
+                            .multilineTextAlignment(.trailing)
                     }
+                    .padding(.vertical, Spacing.rowVertical)
                 }
             }
         }
     }
 
     private func leg(title: String, value: String, symbol: String) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Text(title).font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+        VStack(spacing: Spacing.xxs) {
+            Text(title).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             Text(value)
-                .font(BrandFont.mono(20, weight: .semibold))
+                .font(BrandFont.amountFace(22))
                 .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-            Text(symbol).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(symbol).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.md)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 }
 

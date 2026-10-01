@@ -2,7 +2,7 @@ import SwiftUI
 
 /// ЦФА (детейл) (§9.6 🆕). The legal 259-ФЗ path: эмитент + оператор ИС, доходность, цена в ₽, and a
 /// mock buy/hold flow. Crucially **not** gated by the crypto квал/неквал rules or the 300к лимит — only
-/// ordinary KYC applies (the user is already verified). Cold gradient + ``LegalBadge`` mark the family.
+/// ordinary KYC applies (the user is already verified). ``LegalBadge`` marks the regulated path.
 struct CDFADetailView: View {
     let cdfaId: String
 
@@ -31,20 +31,22 @@ struct CDFADetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 header(cdfa)
-                HStack { LegalBadge(); Spacer() }
-                Text("Это ЦФА — легальный цифровой актив по 259-ФЗ. Покупка без крипто-лимитов и теста на риски, только обычный KYC.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    LegalBadge()
+                    Text("Легальный цифровой актив по 259-ФЗ. Покупка без крипто-лимитов и теста на риски, только обычный KYC.")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                }
 
+                if owned > 0 { holdingCard(cdfa) }
                 detailsCard(cdfa)
                 aboutCard(cdfa)
-                if owned > 0 { holdingCard(cdfa) }
 
-                PrimaryButton(title: "Купить ЦФА", icon: "cart.fill") {
+                PrimaryButton(title: "Купить ЦФА") {
                     unitsText = CryptoFormat.plain(cdfa.minUnits)
                     showBuy = true
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .scrollIndicators(.hidden)
@@ -56,81 +58,76 @@ struct CDFADetailView: View {
         HStack(spacing: Spacing.md) {
             AssetGlyph(symbol: cdfa.ticker, systemImage: cdfa.category.icon, size: 52)
             VStack(alignment: .leading, spacing: 2) {
-                Text(cdfa.name).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("\(cdfa.category.label) · \(cdfa.ticker)").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(cdfa.name).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                Text("\(cdfa.category.label), \(cdfa.ticker)").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 AmountText(amount: cdfa.priceRub, size: 22)
                 Text(CryptoFormat.pct(cdfa.dayChangePct))
-                    .font(BrandFont.callout.weight(.semibold))
+                    .font(BrandFont.subheadline)
                     .foregroundStyle(cdfa.dayChangePct >= 0 ? theme.success : theme.danger)
+                    .monospacedDigit()
             }
         }
     }
 
     private func detailsCard(_ cdfa: CDFA) -> some View {
-        SurfaceCard {
-            VStack(spacing: 0) {
-                row("Эмитент", cdfa.issuer)
-                Divider().overlay(theme.border)
-                row("Оператор ИС", cdfa.operatorName)
-                Divider().overlay(theme.border)
-                row("Статус", cdfa.registryNote, accent: true)
-                Divider().overlay(theme.border)
-                row("Доходность", cdfa.yieldPct > 0 ? cdfa.yieldLabel : "—")
-                Divider().overlay(theme.border)
-                row("Цена за единицу", CryptoFormat.rub(cdfa.priceRub))
-            }
+        GroupedSection("Параметры") {
+            row("Эмитент", cdfa.issuer)
+            row("Оператор ИС", cdfa.operatorName)
+            row("Статус", cdfa.registryNote)
+            row("Доходность", cdfa.yieldPct > 0 ? cdfa.yieldLabel : "Нет")
+            row("Цена за единицу", CryptoFormat.rub(cdfa.priceRub))
         }
     }
 
     private func aboutCard(_ cdfa: CDFA) -> some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Об инструменте").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text(cdfa.about).font(BrandFont.callout).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
-            }
+        GroupedSection("Об инструменте") {
+            Text(cdfa.about).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, Spacing.rowVertical)
         }
     }
 
     private func holdingCard(_ cdfa: CDFA) -> some View {
-        SurfaceCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("В портфеле").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                    Text("\(CryptoFormat.qty(owned)) ед.").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                }
-                Spacer()
-                AmountText(amount: owned * cdfa.priceRub, size: 20)
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("В портфеле").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                Text("\(CryptoFormat.qty(owned)) ед.").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                    .monospacedDigit()
             }
+            Spacer()
+            AmountText(amount: owned * cdfa.priceRub, size: 20)
         }
     }
 
-    private func row(_ label: String, _ value: String, accent: Bool = false) -> some View {
-        HStack {
-            Text(label).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+    private func row(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
             Spacer(minLength: Spacing.sm)
             Text(value)
-                .font(BrandFont.callout.weight(.medium))
-                .foregroundStyle(accent ? (theme.accentCrypto.first ?? theme.accent) : theme.textPrimary)
+                .font(BrandFont.bodyM)
+                .foregroundStyle(theme.textPrimary)
+                .monospacedDigit()
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.rowVertical)
     }
 
     // MARK: Buy sheet (mock, KYC-only)
 
     private func buySheet(_ cdfa: CDFA) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Покупка \(cdfa.ticker)").font(BrandFont.title).foregroundStyle(theme.textPrimary)
+            Text("Покупка \(cdfa.ticker)").font(BrandFont.title1).foregroundStyle(theme.textPrimary)
             HStack {
-                Text("Количество единиц").font(BrandFont.callout).foregroundStyle(theme.textSecondary)
+                Text("Количество единиц").font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
                 Spacer()
                 TextField("0", text: $unitsText)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
-                    .font(BrandFont.mono(20, weight: .medium))
+                    .font(BrandFont.amountFace(22, weight: .medium))
                     .foregroundStyle(theme.textPrimary)
                     .frame(width: 120)
             }
@@ -141,7 +138,7 @@ struct CDFADetailView: View {
                 Text(CryptoFormat.rub(units * cdfa.priceRub)).font(BrandFont.headline).foregroundStyle(theme.textPrimary).monospacedDigit()
             }
             LegalBadge(compact: true)
-            PrimaryButton(title: "Купить · Face ID", icon: "faceid", isLoading: authorizing) {
+            PrimaryButton(title: "Купить", icon: "faceid", isLoading: authorizing) {
                 Task { await buy(cdfa) }
             }
             .disabled(units < cdfa.minUnits)

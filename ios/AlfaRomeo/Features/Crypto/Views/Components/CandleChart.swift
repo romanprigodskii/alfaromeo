@@ -26,7 +26,7 @@ struct CandleChart: View {
     }
     private var xDomain: ClosedRange<Double> { -0.5...(Double(max(candles.count, 1)) - 0.5) }
     private var barWidth: CGFloat { max(2, min(9, 250.0 / Double(max(candles.count, 1)))) }
-    private var line: Color { theme.accentCrypto.last ?? theme.accent }
+    private var line: Color { theme.textPrimary }
 
     var body: some View {
         Group {
@@ -44,12 +44,11 @@ struct CandleChart: View {
                              yStart: .value("min", domain.lowerBound),
                              yEnd: .value("₽", c.c))
                         .interpolationMethod(.catmullRom)
-                        .foregroundStyle(.linearGradient(colors: [line.opacity(0.28), line.opacity(0.02)],
-                                                          startPoint: .top, endPoint: .bottom))
+                        .foregroundStyle(line.opacity(0.05))
                     LineMark(x: .value("i", item.offset), y: .value("₽", c.c))
                         .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .foregroundStyle(theme.cryptoGradient)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .foregroundStyle(line)
                 } else {
                     RuleMark(x: .value("i", item.offset),
                              yStart: .value("low", c.l), yEnd: .value("high", c.h))
@@ -69,12 +68,12 @@ struct CandleChart: View {
         .chartXAxis(.hidden)
         .chartYAxis {
             AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine().foregroundStyle(theme.border.opacity(0.6))
+                AxisGridLine().foregroundStyle(theme.border)
                 AxisValueLabel {
                     if let v = value.as(Double.self) {
-                        Text(CryptoFormat.compactRub(v))
+                        Text(axisLabel(v))
                             .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
-                            .frame(width: axisLabelWidth, alignment: .leading)
+                            .lineLimit(1).minimumScaleFactor(0.7)                            .frame(width: axisLabelWidth, alignment: .leading)
                     }
                 }
             }
@@ -82,10 +81,15 @@ struct CandleChart: View {
     }
 
     private var placeholder: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).fill(theme.elevated)
-            ProgressView().tint(theme.accentCrypto.first ?? theme.accent)
-        }
+        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            .fill(theme.fill)
+            .accessibilityLabel("Загружаем график")
+    }
+
+    /// Axis price: millions keep two decimals so tight intraday gridlines stay distinct («7,05 млн»).
+    private func axisLabel(_ v: Double) -> String {
+        guard abs(v) >= 1_000_000 else { return CryptoFormat.compactRub(v) }
+        return "\(MoneyFormat.number(v / 1_000_000, maxFractionDigits: 2))\(MoneyFormat.nbsp)млн"
     }
 
     private func color(for c: PriceCandle) -> Color { c.c >= c.o ? theme.success : theme.danger }

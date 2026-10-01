@@ -21,13 +21,12 @@ struct StakingTeaserView: View {
                 howItWorks
                 comparisonCard
                 Text("Полноценный стейкинг с выбором валидатора и сроком блокировки появится в обновлении 2.2.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
-                PrimaryButton(title: notified ? "Уведомим вас" : "Сообщить о запуске",
-                              icon: notified ? "checkmark" : "bell.badge") {
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                PrimaryButton(title: notified ? "Уведомим вас" : "Сообщить о запуске") {
                     withAnimation { notified = true }
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -37,62 +36,53 @@ struct StakingTeaserView: View {
     }
 
     private var hero: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             HStack(spacing: Spacing.sm) {
-                AssetGlyph(symbol: symbol, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Стейкинг \(symbol)").font(BrandFont.headline).foregroundStyle(.white)
-                    Text("Вклад нового поколения").font(BrandFont.caption).foregroundStyle(.white.opacity(0.85))
-                }
+                AssetGlyph(symbol: symbol, size: ListRow.glyphSize)
+                Text("Доходность \(symbol)").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 Spacer()
             }
-            Text("до \(CryptoFormat.pct(apy, fraction: 1))")
-                .font(BrandFont.mono(34, weight: .bold)).foregroundStyle(.white)
-            Text("годовых · начисление ежедневно").font(BrandFont.caption).foregroundStyle(.white.opacity(0.85))
+            Text("до \(MoneyFormat.percent(apy, maxFractionDigits: 1))")
+                .font(BrandFont.heroAmount).foregroundStyle(theme.textPrimary)
+                .monospacedDigit()
+            Text("годовых, начисление ежедневно").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             if balance > 0 {
                 Text("Доступно для стейкинга: \(CryptoFormat.qty(balance, symbol: symbol))")
-                    .font(BrandFont.caption.weight(.medium)).foregroundStyle(.white)
-                    .padding(.horizontal, Spacing.sm).padding(.vertical, Spacing.xs)
-                    .background(.white.opacity(0.18), in: Capsule())
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textPrimary)
+                    .monospacedDigit()
+                    .padding(.top, Spacing.xs)
             }
         }
-        .padding(Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.cryptoGradient)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
     }
 
     private var howItWorks: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Как это работает").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                step("1", "Блокируете монеты", "Активы остаются вашими, но участвуют в обеспечении сети.")
-                step("2", "Получаете вознаграждение", "APY начисляется ежедневно в той же монете.")
-                step("3", "Выводите когда нужно", "По окончании срока блокировки — без штрафов.")
-            }
+        GroupedSection("Как это работает") {
+            step("1", "Блокируете монеты", "Активы остаются вашими, но участвуют в обеспечении сети.")
+            step("2", "Получаете вознаграждение", "APY начисляется ежедневно в той же монете.")
+            step("3", "Выводите, когда нужно", "По окончании срока блокировки, без штрафов.")
         }
     }
 
     private func step(_ n: String, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            ZStack {
-                Circle().fill((theme.accentCrypto.first ?? theme.accent).opacity(0.16)).frame(width: 28, height: 28)
-                Text(n).font(BrandFont.caption.weight(.bold)).foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-            }
+        HStack(alignment: .top, spacing: ListRow.glyphSpacing) {
+            GlyphCircle(text: n, size: ListRow.glyphSize)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                Text(detail).font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                Text(detail).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, Spacing.rowVertical)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 
     private var comparisonCard: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Честно о рисках").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Стейкинг — не вклад: доход выше, но без страхования АСВ и с волатильностью цены монеты. Рублёвый вклад надёжнее, крипто-стейкинг потенциально доходнее.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
-            }
+        GroupedSection("Риски") {
+            Text("Стейкинг не вклад: доход выше, но без страхования АСВ и с волатильностью цены монеты. Рублёвый вклад надёжнее, крипто-стейкинг потенциально доходнее.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, Spacing.rowVertical)
         }
     }
 }

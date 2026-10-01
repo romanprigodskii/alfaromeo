@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A round asset mark for the hub, rows, and detail headers. Real coins render their **brand logo** on
 /// the coin's brand colour via ``CoinLogo`` (Bitcoin ₿, Ethereum diamond, Solana bars, TON crystal,
-/// ₮/$ stablecoins). A `systemImage` (e.g. a ЦФА category glyph) or an unknown ticker (AURUM…) keeps
-/// the cold crypto/ЦФА gradient with the SF Symbol / ticker (§13.1).
+/// ₮/$ stablecoins). A `systemImage` (e.g. a ЦФА category glyph) or an unknown ticker (AURUM…) is a
+/// neutral ``GlyphCircle``: colour comes only from real coin logos (docs/DESIGN.md §2).
 struct AssetGlyph: View {
     let symbol: String
     var systemImage: String? = nil
@@ -17,28 +17,23 @@ struct AssetGlyph: View {
     }
 
     var body: some View {
-        // A known coin → its real brand logo. `systemImage` (ЦФА categories) and unknown tickers stay
-        // on the cold gradient.
+        // A known coin → its real brand logo. `systemImage` (ЦФА categories) and unknown tickers get a
+        // neutral fill circle with an ink glyph.
         if systemImage == nil, CoinVisual.isKnown(symbol) {
             CoinLogo(symbol: symbol, size: size)
+        } else if let systemImage {
+            GlyphCircle(systemImage: systemImage, size: size)
+                .accessibilityHidden(true)
         } else {
-            ZStack {
-                Circle().fill(theme.cryptoGradient)
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.system(size: size * 0.42, weight: .semibold))
-                        .foregroundStyle(.white)
-                } else {
-                    Text(ticker)
-                        .font(BrandFont.mono(size * 0.3, weight: .bold))
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 2)
-                }
-            }
-            .frame(width: size, height: size)
-            .accessibilityHidden(true)
+            Text(ticker)
+                .font(.system(size: size * 0.3, weight: .semibold))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .foregroundStyle(theme.textPrimary)
+                .padding(.horizontal, 2)
+                .frame(width: size, height: size)
+                .background(theme.fill, in: Circle())
+                .accessibilityHidden(true)
         }
     }
 }

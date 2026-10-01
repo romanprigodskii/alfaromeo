@@ -1,54 +1,40 @@
 import Foundation
 
-/// Shared number formatting for the Crypto hub (§9.6). Mirrors the DS conventions used elsewhere
-/// (thin-space grouping `U+2009`, real minus `U+2212`) so amounts read consistently with
-/// ``AmountText`` and the Payments flows. Pure value helpers — no view state.
+/// Shared number formatting for the Crypto hub (§9.6). Every on-screen number goes through the
+/// design-system ``MoneyFormat`` (docs/DESIGN.md §6); this enum only adds the ₽/$ denomination and
+/// per-magnitude quantity precision. Pure value helpers, no view state.
 enum CryptoFormat {
 
     // MARK: ₽
 
-    /// `1 234 567 ₽` — fiat amount, thin-space grouped, up to 2 fraction digits.
+    /// `1 234 567 ₽`: fiat amount via ``MoneyFormat`` (NBSP grouping, decimal comma, U+2212 minus).
+    /// `fraction: 0` rounds to whole roubles (live-ticking totals); otherwise the fiat rule applies
+    /// (whole → no decimals, else exactly two).
     static func rub(_ value: Double, fraction: Int = 0) -> String {
-        let f = rubFormatter
-        f.maximumFractionDigits = fraction
-        let magnitude = f.string(from: NSNumber(value: abs(value))) ?? "\(Int(abs(value)))"
-        let sign = value < 0 ? "\u{2212}" : ""
-        return "\(sign)\(magnitude)\u{00A0}₽"
+        MoneyFormat.fiat(fraction == 0 ? value.rounded() : value)
     }
 
-    /// `1,2 млн ₽` / `320 тыс ₽` — compact, for chart axes and tight chips.
+    /// `1,2 млн ₽` / `320 тыс. ₽`: compact, for chart axes and tight summaries.
     static func compactRub(_ value: Double) -> String {
-        let v = abs(value)
-        let sign = value < 0 ? "\u{2212}" : ""
-        if v >= 1_000_000 { return "\(sign)\(trim(v / 1_000_000)) млн ₽" }
-        if v >= 1_000 { return "\(sign)\(Int((v / 1_000).rounded())) тыс ₽" }
-        return "\(sign)\(Int(v.rounded())) ₽"
+        MoneyFormat.compact(value)
     }
 
     // MARK: $ (display denomination toggle, §9.6)
 
-    /// `$1 234` — fiat amount in dollars, thin-space grouped (mirrors ``rub(_:fraction:)``).
+    /// `1 234 $`: fiat amount in dollars (mirrors ``rub(_:fraction:)``).
     static func usd(_ value: Double, fraction: Int = 0) -> String {
-        let f = rubFormatter
-        f.maximumFractionDigits = fraction
-        let magnitude = f.string(from: NSNumber(value: abs(value))) ?? "\(Int(abs(value)))"
-        let sign = value < 0 ? "\u{2212}" : ""
-        return "\(sign)$\(magnitude)"
+        MoneyFormat.fiat(fraction == 0 ? value.rounded() : value, currency: "$")
     }
 
-    /// `$1,2 млн` / `$320 тыс` — compact dollars (mirrors ``compactRub(_:)``).
+    /// `1,2 млн $` / `320 тыс. $`: compact dollars (mirrors ``compactRub(_:)``).
     static func compactUsd(_ value: Double) -> String {
-        let v = abs(value)
-        let sign = value < 0 ? "\u{2212}" : ""
-        if v >= 1_000_000 { return "\(sign)$\(trim(v / 1_000_000)) млн" }
-        if v >= 1_000 { return "\(sign)$\(Int((v / 1_000).rounded())) тыс" }
-        return "\(sign)$\(Int(v.rounded()))"
+        MoneyFormat.compact(value, currency: "$")
     }
 
     // MARK: Denomination-aware (₽/$ toggle)
 
     /// Render a **₽-denominated** amount in the chosen display currency. In `.usd` the ₽ value is
-    /// divided by the live `usdRub` rate (``LivePriceService/usdRub``). Stored values stay in ₽ —
+    /// divided by the live `usdRub` rate (``LivePriceService/usdRub``). Stored values stay in ₽,
     /// display only (§9.6).
     static func money(_ rub: Double, denom: PortfolioDenomination, usdRub: Double, fraction: Int = 0) -> String {
         switch denom {
@@ -67,13 +53,10 @@ enum CryptoFormat {
 
     // MARK: Asset quantity
 
-    /// Asset units with sensible precision per magnitude (e.g. `0,1423 BTC`, `1 820,40 USDT`).
+    /// Asset units via ``MoneyFormat/crypto(_:symbol:maxFractionDigits:sign:)``, zeros trimmed, with
+    /// precision capped per magnitude (`0,1423 BTC`, `1 820,4 USDT`).
     static func qty(_ value: Double, symbol: String? = nil) -> String {
-        let f = qtyFormatter
-        f.maximumFractionDigits = fractionDigits(for: value)
-        let s = f.string(from: NSNumber(value: value)) ?? "\(value)"
-        if let symbol { return "\(s) \(symbol)" }
-        return s
+        MoneyFormat.crypto(value, symbol: symbol, maxFractionDigits: fractionDigits(for: value))
     }
 
     /// Digits to show for a balance: more for small fractional crypto, fewer for large balances.
@@ -83,20 +66,15 @@ enum CryptoFormat {
         case 0:            return 0
         case ..<1:         return 6
         case ..<100:       return 4
-        case ..<10_000:    return 2
         default:           return 2
         }
     }
 
     // MARK: Percent
 
-    /// `+2,4 %` / `−1,1 %` with a real minus and a leading plus.
+    /// `+2,4 %` / `−1,1 %`: always signed, real minus, NBSP before `%`.
     static func pct(_ value: Double, fraction: Int = 2) -> String {
-        let f = pctFormatter
-        f.maximumFractionDigits = fraction
-        let magnitude = f.string(from: NSNumber(value: abs(value))) ?? "\(abs(value))"
-        let sign = value < 0 ? "\u{2212}" : "+"
-        return "\(sign)\(magnitude) %"
+        MoneyFormat.percent(value, maxFractionDigits: fraction, sign: .always)
     }
 
     /// A plain, ungrouped editable string for seeding amount fields (locale decimal separator).
@@ -117,25 +95,6 @@ enum CryptoFormat {
 
     // MARK: - Private
 
-    private static func trim(_ value: Double) -> String {
-        String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
-    }
-
-    private static let rubFormatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{00A0}"; f.minimumFractionDigits = 0  // NBSP — visible group gap in the proportional amount font
-        return f
-    }()
-    private static let qtyFormatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.groupingSeparator = "\u{00A0}"; f.minimumFractionDigits = 0  // NBSP — visible group gap in the proportional amount font
-        return f
-    }()
-    private static let pctFormatter: NumberFormatter = {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        f.minimumFractionDigits = 0
-        return f
-    }()
     private static let plainFormatter: NumberFormatter = {
         let f = NumberFormatter(); f.numberStyle = .decimal
         f.usesGroupingSeparator = false; f.maximumFractionDigits = 8

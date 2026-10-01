@@ -10,38 +10,24 @@ struct ComplianceBanner: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "shield.lefthalf.filled")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                Text("Комплаенс крипты")
-                    .font(BrandFont.headline)
-                    .foregroundStyle(theme.textPrimary)
-            }
+            Text("Комплаенс крипты")
+                .font(BrandFont.headline)
+                .foregroundStyle(theme.textPrimary)
             Text(CryptoCatalog.complianceNote)
-                .font(BrandFont.caption)
+                .font(BrandFont.subheadline)
                 .foregroundStyle(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let onInvestorStatus {
-                Button(action: onInvestorStatus) {
-                    HStack(spacing: Spacing.xs) {
-                        Text("Статус инвестора и лимиты")
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
-                    }
-                    .font(BrandFont.caption.weight(.semibold))
-                    .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                }
-                .buttonStyle(.plain)
+                Button("Статус инвестора и лимиты", action: onInvestorStatus)
+                    .font(BrandFont.subheadline.weight(.medium))
+                    .foregroundStyle(theme.accent)
+                    .buttonStyle(.plain)
             }
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke((theme.accentCrypto.first ?? theme.accent).opacity(0.4), lineWidth: 1)
-        )
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }

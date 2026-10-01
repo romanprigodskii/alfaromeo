@@ -10,12 +10,9 @@ struct NetworkFeePicker: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Сеть").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
-            VStack(spacing: Spacing.sm) {
-                ForEach(networks) { network in
-                    row(network)
-                }
+        GroupedSection("Сеть") {
+            ForEach(networks) { network in
+                row(network)
             }
         }
     }
@@ -25,38 +22,36 @@ struct NetworkFeePicker: View {
         return Button {
             selected = network
         } label: {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundStyle(isSelected ? (theme.accentCrypto.first ?? theme.accent) : theme.textSecondary)
+            HStack(spacing: ListRow.glyphSpacing) {
                 VStack(alignment: .leading, spacing: 2) {
+                    Text(network.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                     HStack(spacing: Spacing.xs) {
-                        Text(network.name).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
+                        Text(network.etaLabel)
                         if network.congested {
-                            HStack(spacing: 2) {
-                                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 9, weight: .bold))
-                                Text("перегружена").font(BrandFont.micro.weight(.semibold))
-                            }
-                            .foregroundStyle(theme.warning)
+                            Text("перегружена").foregroundStyle(theme.statusInk(.warning))
                         }
                     }
-                    Text(network.etaLabel).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
                 }
                 Spacer(minLength: Spacing.sm)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(CryptoFormat.rub(network.feeRub, fraction: 0))
-                        .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary).monospacedDigit()
-                    Text("комиссия сети").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                        .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary).monospacedDigit()
+                    Text("комиссия").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
+                Image(systemName: "checkmark")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(theme.accent)
+                    .opacity(isSelected ? 1 : 0)
+                    .frame(width: 20)
             }
-            .padding(Spacing.md)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(isSelected ? (theme.accentCrypto.first ?? theme.accent) : theme.border,
-                        lineWidth: isSelected ? 1.5 : 1))
+            .padding(.vertical, Spacing.rowVertical)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

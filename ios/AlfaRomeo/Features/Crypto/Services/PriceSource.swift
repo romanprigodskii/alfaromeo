@@ -45,7 +45,7 @@ enum PriceSource: Hashable, Sendable {
         switch self {
         case .backend:            return "Сервер банка"
         case .exchange(let venue): return "\(venue.title) · USDT × курс ЦБ"
-        case .demo:               return "Демо — нет связи с биржей"
+        case .demo:               return "Демо: нет связи с биржей"
         }
     }
 }

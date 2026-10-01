@@ -26,12 +26,12 @@ struct CryptoStatusView: View {
             Spacer(minLength: Spacing.xl)
             medallion
             VStack(spacing: Spacing.sm) {
-                Text(title).font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                Text(title).font(BrandFont.title1).foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
                 Text(subtitle).font(BrandFont.body()).foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, Spacing.lg)
+                    .padding(.horizontal, Spacing.screen)
             }
             if !outcome.isProcessing, amount != 0 {
                 AmountText(amount: amount, currency: currency, size: 24).padding(.top, Spacing.xs)
@@ -40,7 +40,7 @@ struct CryptoStatusView: View {
             actions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.lg)
+        .padding(Spacing.screen)
         .background(theme.background.ignoresSafeArea())
         .onAppear { startAnimations() }
         .onChange(of: outcomeKey) { _, _ in startAnimations() }
@@ -63,7 +63,7 @@ struct CryptoStatusView: View {
                 Circle().stroke(tint, lineWidth: 4).frame(width: 104, height: 104)
             }
             Image(systemName: symbol)
-                .font(.system(size: 46, weight: .bold))
+                .font(.system(size: 44, weight: .semibold))
                 .foregroundStyle(tint)
                 .scaleEffect(pop ? 1 : 0.4)
                 .opacity(pop ? 1 : 0)
@@ -76,11 +76,11 @@ struct CryptoStatusView: View {
         case .processing:
             EmptyView()
         case .success:
-            PrimaryButton(title: "Готово", icon: "checkmark") { onClose() }
+            PrimaryButton(title: "Готово") { onClose() }
         case .declined(let r):
             VStack(spacing: Spacing.sm) {
-                PrimaryButton(title: "Повторить", icon: "arrow.clockwise") { onRetry() }
-                SecondaryButton(title: "Спросить у AI", icon: "sparkles") {
+                PrimaryButton(title: "Повторить") { onRetry() }
+                SecondaryButton(title: "Спросить у AI") {
                     shell?.showCopilot(.declined(reason: r.title))
                 }
                 SecondaryButton(title: "Закрыть") { onClose() }

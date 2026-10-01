@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// Крипто-актив (детейл) (§9.6), light like the rest of the app: a live price header, the
-/// exchange-style ``TradingChartView`` (таймфреймы +
-/// свечи + индикатор), the order book (``OrderBookView``), Купить/Продать (зелёная/красная,
-/// compliance-gated to BTC/ETH/TON + стейблы), asset info and the staking teaser. Non-tradable held
-/// assets (SOL) stay view-only: chart yes, order book / trading no — a soft compliance note (§2.4).
+/// exchange-style ``TradingChartView`` (таймфреймы + свечи + индикатор), the order book
+/// (``OrderBookView``), Купить/Продать (зелёная/красная, compliance-gated to BTC/ETH/TON + стейблы),
+/// holding + staking entry and asset info as grouped lists. Non-tradable held assets (SOL) stay
+/// view-only: chart yes, order book / trading no, with a soft compliance note (§2.4).
 struct AssetDetailView: View {
     let symbol: String
 
@@ -37,12 +37,11 @@ struct AssetDetailView: View {
                         router.push(CryptoRoute.trade(symbol: symbol, side: side, price: tappedPrice))
                     }
                 }
-                holdingCard
                 tradeActions
-                infoCard
-                stakingTeaser
+                holdingSection
+                infoSection
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -56,11 +55,11 @@ struct AssetDetailView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: Spacing.md) {
-            AssetGlyph(symbol: symbol, size: 52)
+        HStack(alignment: .top, spacing: Spacing.md) {
+            AssetGlyph(symbol: symbol, size: 48)
             VStack(alignment: .leading, spacing: 2) {
-                Text(asset?.name ?? symbol).font(BrandFont.title).foregroundStyle(theme.textPrimary)
-                Text("\(symbol) · \(asset?.chain ?? "")").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(asset?.name ?? symbol).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
+                Text("\(symbol), \(asset?.chain ?? "")").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 PriceSourceBadge(source: prices.source, isStale: prices.isStale)
                     .padding(.top, 2)
             }
@@ -69,25 +68,9 @@ struct AssetDetailView: View {
                 AmountText(amount: price, size: 22)
                 if let change {
                     Text(CryptoFormat.pct(change))
-                        .font(BrandFont.callout.weight(.semibold))
+                        .font(BrandFont.subheadline)
                         .foregroundStyle(change >= 0 ? theme.success : theme.danger)
-                }
-            }
-        }
-    }
-
-    // MARK: Holding
-
-    @ViewBuilder private var holdingCard: some View {
-        if balance > 0 {
-            SurfaceCard {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("В портфеле").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        Text(CryptoFormat.qty(balance, symbol: symbol)).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    }
-                    Spacer()
-                    AmountText(amount: balance * price, size: 20)
+                        .monospacedDigit()
                 }
             }
         }
@@ -97,56 +80,78 @@ struct AssetDetailView: View {
 
     @ViewBuilder private var tradeActions: some View {
         if tradable {
-            HStack(spacing: Spacing.md) {
-                TradeActionButton(title: "Купить", side: .buy, icon: "arrow.down.left") {
-                    router.push(CryptoRoute.trade(symbol: symbol, side: .buy))
-                }
-                TradeActionButton(title: "Продать", side: .sell, icon: "arrow.up.right") {
-                    router.push(CryptoRoute.trade(symbol: symbol, side: .sell))
-                }
-            }
-            HStack(spacing: Spacing.md) {
-                SecondaryButton(title: "Обмен", icon: "arrow.2.squarepath") { router.push(CryptoRoute.convert(asset: symbol)) }
-                SecondaryButton(title: "Отправить", icon: "paperplane") { router.push(CryptoRoute.send(asset: symbol)) }
-            }
-        } else {
-            SurfaceCard {
+            VStack(spacing: Spacing.sm) {
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(theme.warning)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Торговля недоступна в РФ-режиме").font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                        Text("Доступны BTC, ETH, TON и стейблы (§2.4). \(symbol) можно держать и просматривать.")
-                            .font(BrandFont.caption).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    TradeActionButton(title: "Купить", side: .buy) {
+                        router.push(CryptoRoute.trade(symbol: symbol, side: .buy))
+                    }
+                    TradeActionButton(title: "Продать", side: .sell) {
+                        router.push(CryptoRoute.trade(symbol: symbol, side: .sell))
                     }
                 }
+                HStack(spacing: Spacing.sm) {
+                    SecondaryButton(title: "Обмен") { router.push(CryptoRoute.convert(asset: symbol)) }
+                    SecondaryButton(title: "Отправить") { router.push(CryptoRoute.send(asset: symbol)) }
+                }
             }
-        }
-    }
-
-    // MARK: Info + staking
-
-    private var infoCard: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Об активе").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                infoRow("Сеть", asset?.chain ?? symbol)
-                Divider().overlay(theme.border)
-                infoRow("Тип", (asset?.isStablecoin == true) ? "Стейблкоин" : "Криптовалюта")
-                Divider().overlay(theme.border)
-                infoRow(prices.isLive ? "Курс (live)" : "Курс (демо)", CryptoFormat.rub(price))
-                Divider().overlay(theme.border)
-                infoRow("Источник цены", prices.source.detail)
-                if case .exchange = prices.source, let fx = prices.fx {
-                    Divider().overlay(theme.border)
-                    infoRow(fxLabel(fx), CryptoFormat.rub(fx.usdRub, fraction: 2))
+        } else {
+            HStack(alignment: .top, spacing: Spacing.sm) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(theme.statusInk(.warning))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Торговля недоступна в РФ-режиме").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                    Text("Доступны BTC, ETH, TON и стейблкоины. \(symbol) можно держать и просматривать.")
+                        .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
     }
 
-    /// «Курс ЦБ на 02.10» — names the rate's origin so the ₽ conversion is auditable.
+    // MARK: Holding + staking
+
+    @ViewBuilder private var holdingSection: some View {
+        if balance > 0 || model.stakingApy != nil {
+            GroupedSection {
+                if balance > 0 {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("В портфеле").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                            Text(CryptoFormat.qty(balance, symbol: symbol))
+                                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).monospacedDigit()
+                        }
+                        Spacer()
+                        AmountText(amount: balance * price, size: 17)
+                    }
+                    .padding(.vertical, Spacing.rowVertical)
+                }
+                if let apy = model.stakingApy {
+                    Button { router.push(CryptoRoute.staking(symbol: symbol)) } label: {
+                        ListRow(icon: "lock", title: "Стейкинг \(symbol)",
+                                subtitle: "До \(MoneyFormat.percent(apy, maxFractionDigits: 1)) годовых",
+                                showsChevron: true)
+                    }
+                    .buttonStyle(.row)
+                }
+            }
+        }
+    }
+
+    // MARK: Info
+
+    private var infoSection: some View {
+        GroupedSection("Об активе") {
+            infoRow("Сеть", asset?.chain ?? symbol)
+            infoRow("Тип", (asset?.isStablecoin == true) ? "Стейблкоин" : "Криптовалюта")
+            infoRow(prices.isLive ? "Курс (live)" : "Курс (демо)", CryptoFormat.rub(price))
+            infoRow("Источник цены", prices.source.detail)
+            if case .exchange = prices.source, let fx = prices.fx {
+                infoRow(fxLabel(fx), CryptoFormat.rub(fx.usdRub, fraction: 2))
+            }
+        }
+    }
+
+    /// «Курс ЦБ на 02.10»: names the rate's origin so the ₽ conversion is auditable.
     private func fxLabel(_ fx: FxRateClient.Rate) -> String {
         let origin: String
         switch fx.origin {
@@ -160,34 +165,14 @@ struct AssetDetailView: View {
     }
 
     private func infoRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            Spacer()
-            Text(value).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
+        HStack(alignment: .firstTextBaseline) {
+            Text(label).font(BrandFont.bodyM).foregroundStyle(theme.textSecondary)
+            Spacer(minLength: Spacing.sm)
+            Text(value).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                .monospacedDigit()
+                .multilineTextAlignment(.trailing)
         }
-        .padding(.vertical, 2)
-    }
-
-    @ViewBuilder private var stakingTeaser: some View {
-        if let apy = model.stakingApy {
-            Button { router.push(CryptoRoute.staking(symbol: symbol)) } label: {
-                SurfaceCard {
-                    HStack(spacing: Spacing.md) {
-                        ZStack {
-                            Circle().fill(theme.cryptoGradient).frame(width: 40, height: 40)
-                            Image(systemName: "lock.circle.fill").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Стейкинг \(symbol)").font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                            Text("До \(CryptoFormat.pct(apy, fraction: 1)) годовых · вклад нового поколения").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textSecondary)
-                    }
-                }
-            }
-            .buttonStyle(PressableButtonStyle())
-        }
+        .padding(.vertical, Spacing.rowVertical)
     }
 }
 

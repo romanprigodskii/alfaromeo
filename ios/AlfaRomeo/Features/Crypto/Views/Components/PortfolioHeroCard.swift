@@ -1,15 +1,16 @@
 import SwiftUI
 
 /// The unified ₽-equivalent header for the digital-asset hub (§9.6: «единый ₽-эквивалент портфеля
-/// сверху»). One cold-gradient hero over крипта + ЦФА + внешние кошельки, with the live 24h delta and
-/// an honest price-source badge (``PriceSourceBadge``: «LIVE · Binance» pulsing while a real feed
-/// streams, «Демо-цены» offline). The total ticks as prices update.
+/// сверху»): one total over крипта + ЦФА + внешние кошельки, the live 24h delta and an honest
+/// price-source badge (``PriceSourceBadge``: «LIVE · Binance» pulsing while a real feed streams,
+/// «Демо-цены» offline). Flat on the screen background (docs/DESIGN.md §2/§4): no card, no gradient.
+/// The total ticks as prices update.
 struct PortfolioHeroCard: View {
     let summary: PortfolioSummary
-    /// Active leg of ``LivePriceService`` — drives the source badge.
+    /// Active leg of ``LivePriceService``, drives the source badge.
     let source: PriceSource
     var isStale: Bool = false
-    /// Display currency for the total + breakdowns (§9.6 ₽/$ toggle). The card hosts the toggle.
+    /// Display currency for the total + breakdowns (§9.6 ₽/$ toggle). The header hosts the toggle.
     @Binding var denomination: PortfolioDenomination
     /// Live USD/₽ rate used when `denomination == .usd` (``LivePriceService/usdRub``).
     var usdRub: Double = 1
@@ -21,47 +22,37 @@ struct PortfolioHeroCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack(spacing: Spacing.sm) {
-                Text("Цифровые активы")
-                    .font(BrandFont.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.85))
-                Spacer()
-                PriceSourceBadge(source: source, isStale: isStale, style: .onGradient)
-            }
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                HStack(spacing: Spacing.sm) {
+                    Text("Цифровые активы")
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                    Spacer(minLength: Spacing.sm)
+                    PriceSourceBadge(source: source, isStale: isStale)
+                }
 
-            Text(CryptoFormat.money(summary.totalRub, denom: denomination, usdRub: usdRub, fraction: 0))
-                .font(BrandFont.mono(34, weight: .bold))
-                .foregroundStyle(.white)
-                .monospacedDigit()
-                .contentTransition(reduceMotion ? .identity : .numericText())
-                .animation(reduceMotion ? nil : Motion.snappy, value: summary.totalRub)
-                .animation(reduceMotion ? nil : Motion.snappy, value: denomination)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                Text(CryptoFormat.money(summary.totalRub, denom: denomination, usdRub: usdRub, fraction: 0))
+                    .font(BrandFont.heroAmount)
+                    .foregroundStyle(theme.textPrimary)
+                    .monospacedDigit()
+                    .contentTransition(reduceMotion ? .identity : .numericText())
+                    .animation(reduceMotion ? nil : Motion.snappy, value: summary.totalRub)
+                    .animation(reduceMotion ? nil : Motion.snappy, value: denomination)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
-            HStack(spacing: Spacing.sm) {
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: 12, weight: .bold))
+                HStack(spacing: Spacing.sm) {
                     // The % is denomination-independent; only the absolute amount re-expresses in $.
-                    Text("\(CryptoFormat.money(abs(summary.change24hRub), denom: denomination, usdRub: usdRub, fraction: 0)) · \(CryptoFormat.pct(summary.change24hPct))")
-                        .font(BrandFont.callout.weight(.semibold))
+                    Text("\(signedMoney) (\(CryptoFormat.pct(summary.change24hPct))) за 24 ч")
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(up ? theme.success : theme.danger)
                         .monospacedDigit()
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)   // real 24h figures vary in width — never wrap the %
-                    Text("за 24ч").font(BrandFont.caption).opacity(0.8)
+                        .minimumScaleFactor(0.7)   // real 24h figures vary in width, never wrap the %
+                    Spacer(minLength: Spacing.sm)
+                    denomToggle
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, Spacing.sm)
-                .padding(.vertical, Spacing.xs)
-                .background(.white.opacity(0.18), in: Capsule())
-
-                Spacer(minLength: Spacing.xs)
-
-                denomToggle
             }
-
-            Divider().overlay(.white.opacity(0.25))
 
             HStack(spacing: Spacing.md) {
                 breakdown("Крипта", summary.cryptoRub - summary.externalRub)
@@ -69,14 +60,15 @@ struct PortfolioHeroCard: View {
                 breakdown("Внешние", summary.externalRub)
             }
         }
-        .padding(Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.cryptoGradient)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
     }
 
-    /// Bybit-style ₽/$ denomination switch — a small two-segment pill on the gradient. White-filled
-    /// selected segment, translucent-white idle. Toggles total + breakdowns + positions (via the hub).
+    private var signedMoney: String {
+        let amount = CryptoFormat.money(abs(summary.change24hRub), denom: denomination, usdRub: usdRub, fraction: 0)
+        return (up ? "+" : MoneyFormat.minus) + amount
+    }
+
+    /// ₽/$ denomination switch: a small flat two-segment control (fill track, surface thumb).
     private var denomToggle: some View {
         HStack(spacing: 0) {
             ForEach(PortfolioDenomination.allCases) { d in
@@ -85,20 +77,21 @@ struct PortfolioHeroCard: View {
                     withAnimation(reduceMotion ? nil : Motion.snappy) { denomination = d }
                 } label: {
                     Text(d.symbol)
-                        .font(BrandFont.caption.weight(.bold))
-                        .monospacedDigit()
-                        .frame(width: 30, height: 26)
-                        .foregroundStyle(selected ? Color.black.opacity(0.85) : .white.opacity(0.7))
+                        .font(BrandFont.footnote.weight(.semibold))
+                        .frame(width: 32, height: 26)
+                        .foregroundStyle(selected ? theme.textPrimary : theme.textSecondary)
                         .background {
-                            if selected { Capsule().fill(.white.opacity(0.95)) }
+                            if selected {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.surface)
+                            }
                         }
-                        .contentShape(Capsule())
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(3)
-        .background(.white.opacity(0.18), in: Capsule())
+        .padding(2)
+        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Валюта отображения")
         .accessibilityValue(denomination == .rub ? "Рубли" : "Доллары")
@@ -107,10 +100,10 @@ struct PortfolioHeroCard: View {
 
     private func breakdown(_ title: String, _ value: Double) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(BrandFont.micro).foregroundStyle(.white.opacity(0.75))
+            Text(title).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             Text(CryptoFormat.compactMoney(value, denom: denomination, usdRub: usdRub))
-                .font(BrandFont.callout.weight(.semibold))
-                .foregroundStyle(.white)
+                .font(BrandFont.callout)
+                .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

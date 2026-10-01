@@ -155,9 +155,9 @@ final class TradeOrderModel {
 
     var confirmVerb: String {
         switch (orderType, side) {
-        case (.market, .buy):  return "Купить · Face ID"
-        case (.market, .sell): return "Продать · Face ID"
-        case (.limit, _):      return "Разместить ордер · Face ID"
+        case (.market, .buy):  return "Купить"
+        case (.market, .sell): return "Продать"
+        case (.limit, _):      return "Разместить ордер"
         }
     }
 

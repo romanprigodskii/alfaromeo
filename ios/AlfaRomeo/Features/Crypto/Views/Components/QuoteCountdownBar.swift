@@ -2,7 +2,7 @@ import SwiftUI
 
 /// TTL countdown for a live quote (§10.8 «re-quote с TTL при волатильности»). Pure presentation —
 /// the parent drives `remaining` (e.g. from a `TimelineView`) and reacts to expiry. When the quote is
-/// live it shows a shrinking cold-gradient bar + seconds; at zero it warns that the rate must refresh.
+/// live it shows a shrinking flat bar + seconds; at zero it warns that the rate must refresh.
 struct QuoteCountdownBar: View {
     let remaining: TimeInterval
     var total: TimeInterval = 20
@@ -16,29 +16,30 @@ struct QuoteCountdownBar: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: expired ? "clock.arrow.circlepath" : "clock")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(expired ? theme.warning : (theme.accentCrypto.first ?? theme.accent))
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(expired ? theme.warning : theme.textSecondary)
 
             if expired {
-                Text("Курс обновился — подтвердите заново")
-                    .font(BrandFont.caption.weight(.medium))
+                Text("Курс обновился, подтвердите заново")
+                    .font(BrandFont.footnote.weight(.medium))
                     .foregroundStyle(theme.warning)
             } else {
                 Text("Курс действует \(seconds) с")
-                    .font(BrandFont.caption.weight(.medium))
+                    .font(BrandFont.footnote)
                     .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
 
             Spacer(minLength: Spacing.sm)
 
-            ProgressBar(value: fraction, useCryptoGradient: !expired, height: 4)
+            ProgressBar(value: fraction, tint: theme.textPrimary, height: 4)
                 .frame(width: 64)
                 .opacity(expired ? 0.3 : 1)
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .background(theme.elevated, in: Capsule())
-        .animation(.easeInOut(duration: 0.3), value: expired)
+        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
+        .animation(Motion.smooth, value: expired)
     }
 }
 

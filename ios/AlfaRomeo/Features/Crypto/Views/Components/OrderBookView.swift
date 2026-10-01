@@ -32,8 +32,8 @@ struct OrderBookView: View {
 
     private var header: some View {
         HStack {
-            Text("Стакан").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
-            // Depth is mocked around the live mid (§11.4) — say so, the price above it is real.
+            Text("Стакан").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            // Depth is mocked around the live mid (§11.4): say so, the price above it is real.
             Text("демо-глубина").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
             Spacer()
             Text("Цена, ₽").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
@@ -71,14 +71,14 @@ struct OrderBookView: View {
     private var centre: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: (change ?? 0) >= 0 ? "arrow.up.right" : "arrow.down.right")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(changeColor)
             Text(priceStr(mid))
                 .font(BrandFont.mono(22, weight: .semibold))
                 .foregroundStyle(changeColor)
                 .monospacedDigit()
             Spacer()
-            Text("≈ $\(usdStr)")
+            Text("≈ \(usdStr)\u{00A0}$")
                 .font(BrandFont.caption)
                 .foregroundStyle(theme.textSecondary)
                 .monospacedDigit()
@@ -89,7 +89,7 @@ struct OrderBookView: View {
 
     private var ratioBar: some View {
         HStack(spacing: Spacing.sm) {
-            Text("B \(book.bidPercent)%").font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.success)
+            Text("B \(book.bidPercent)\u{00A0}%").font(BrandFont.micro).foregroundStyle(theme.statusInk(.success)).monospacedDigit()
             GeometryReader { geo in
                 HStack(spacing: 0) {
                     Rectangle().fill(theme.success).frame(width: max(0, geo.size.width * book.bidShare))
@@ -98,7 +98,7 @@ struct OrderBookView: View {
             }
             .frame(height: 5)
             .clipShape(Capsule())
-            Text("\(book.askPercent)% S").font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.danger)
+            Text("\(book.askPercent)\u{00A0}% S").font(BrandFont.micro).foregroundStyle(theme.statusInk(.danger)).monospacedDigit()
         }
         .padding(.horizontal, Spacing.sm)
         .padding(.top, Spacing.xxs)
@@ -109,11 +109,10 @@ struct OrderBookView: View {
         return change >= 0 ? theme.success : theme.danger
     }
 
-    // `CryptoFormat.rub` joins amount and ₽ with a NO-BREAK SPACE — strip that, or «≈ $84 646 ₽» leaks.
+    /// Bare price (the column header names the currency): whole units from 1 000, kopecks below.
     private func priceStr(_ p: Double) -> String {
-        CryptoFormat.rub(p, fraction: p >= 1000 ? 0 : 2).replacingOccurrences(of: "\u{00A0}₽", with: "")
+        let digits = p >= 1000 ? 0 : 2
+        return MoneyFormat.number(p, minFractionDigits: digits, maxFractionDigits: digits)
     }
-    private var usdStr: String {
-        CryptoFormat.rub(usd, fraction: usd >= 1000 ? 0 : 2).replacingOccurrences(of: "\u{00A0}₽", with: "")
-    }
+    private var usdStr: String { priceStr(usd) }
 }

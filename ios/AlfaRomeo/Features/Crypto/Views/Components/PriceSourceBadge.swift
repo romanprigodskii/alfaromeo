@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Honest price-source chip (§11.4): «LIVE · Binance» / «LIVE · сервер» with a pulsing dot while a real
 /// feed streams, «Binance · задержка» in amber when it goes quiet, «Демо-цены» in amber on the local
-/// walk. Two looks: `.onGradient` (translucent white, for the crypto hero) and `.surface` (tinted
-/// capsule on light cards, StatusPill-style ink colours for AA contrast).
+/// walk. Two looks: `.surface` (tinted pill, StatusPill-style ink colours for AA contrast; the
+/// default everywhere) and the legacy `.onGradient` (translucent white, for dark imagery).
 struct PriceSourceBadge: View {
     enum Style { case onGradient, surface }
 
@@ -42,13 +42,13 @@ struct PriceSourceBadge: View {
                 .animation(healthy && !reduceMotion ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : nil,
                            value: pulse)
             Text(title)
-                .font(BrandFont.micro.weight(.bold))
+                .font(BrandFont.micro)
                 .lineLimit(1)
         }
         .foregroundStyle(foreground)
         .padding(.horizontal, Spacing.sm)
         .padding(.vertical, 3)
-        .background(capsule, in: Capsule())
+        .background(capsule, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
         .onAppear { pulse = true }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(isStale ? "\(source.accessibilityLabel), обновление задерживается" : source.accessibilityLabel)
@@ -63,7 +63,7 @@ struct PriceSourceBadge: View {
             PriceSourceBadge(source: .demo, style: .onGradient)
         }
         .padding()
-        .background(Theme.default.cryptoGradient)
+        .background(Theme.default.textPrimary)
         PriceSourceBadge(source: .backend)
         PriceSourceBadge(source: .exchange(.bybit))
         PriceSourceBadge(source: .exchange(.binance), isStale: true)

@@ -93,7 +93,7 @@ struct QRScannerView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Закрыть")
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
         .padding(.top, Spacing.md)
     }
 
@@ -124,13 +124,13 @@ struct QRScannerView: View {
                 Text(reason == .denied ? "Нет доступа к камере" : "Камера недоступна")
                     .font(BrandFont.title).foregroundStyle(.white)
                 Text(reason == .denied
-                     ? "Разрешите доступ к камере в Настройках — или вставьте адрес вручную."
+                     ? "Разрешите доступ к камере в Настройках или вставьте адрес вручную."
                      : "На симуляторе нет камеры. Вставьте адрес из буфера или подставьте демо-адрес для проверки потока.")
                     .font(BrandFont.callout).foregroundStyle(.white.opacity(0.75))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
 
             VStack(spacing: Spacing.sm) {
                 Button { pasteFromClipboard() } label: {
@@ -140,14 +140,14 @@ struct QRScannerView: View {
                     label("Подставить демо-адрес", "wand.and.stars")
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
 
             if pasteFailed {
                 Text("В буфере нет похожего на адрес текста.")
                     .font(BrandFont.caption).foregroundStyle(theme.warning)
             }
         }
-        .padding(Spacing.lg)
+        .padding(Spacing.screen)
     }
 
     private func label(_ title: String, _ icon: String) -> some View {

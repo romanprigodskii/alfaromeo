@@ -73,26 +73,21 @@ struct TradingChartView: View {
             ForEach(Timeframe.allCases) { tf in
                 Button { timeframe = tf } label: {
                     Text(tf.title)
-                        .font(BrandFont.caption.weight(.semibold))
-                        .foregroundStyle(timeframe == tf ? .white : theme.textSecondary)
-                        .frame(minWidth: 34, minHeight: 28)
-                        .background {
-                            if timeframe == tf {
-                                Capsule().fill(theme.cryptoGradient)
-                            } else {
-                                Capsule().fill(theme.elevated)
-                            }
-                        }
+                        .font(BrandFont.footnote.weight(.medium))
+                        .foregroundStyle(timeframe == tf ? theme.background : theme.textPrimary)
+                        .frame(minWidth: 38, minHeight: 28)
+                        .background(timeframe == tf ? theme.textPrimary : theme.fill,
+                                    in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                 }
                 .buttonStyle(PressableButtonStyle())
             }
             Spacer(minLength: Spacing.xs)
             Button { style = (style == .candles ? .line : .candles) } label: {
                 Image(systemName: style.icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(theme.textPrimary)
-                    .frame(width: 32, height: 28)
-                    .background(Capsule().fill(theme.elevated))
+                    .frame(width: 34, height: 28)
+                    .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
             }
             .buttonStyle(PressableButtonStyle())
             Menu {
@@ -101,13 +96,13 @@ struct TradingChartView: View {
                 }
             } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: "waveform.path.ecg").font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "waveform.path.ecg").font(.system(size: 12, weight: .regular))
                     Text(indicator == .none ? "Индик." : indicator.title).font(BrandFont.micro)
                 }
                 .foregroundStyle(theme.textPrimary)
                 .padding(.horizontal, Spacing.sm)
                 .frame(height: 28)
-                .background(Capsule().fill(theme.elevated))
+                .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
             }
         }
     }
@@ -115,8 +110,9 @@ struct TradingChartView: View {
     private func deltaChip(_ pct: Double) -> some View {
         HStack(spacing: Spacing.xs) {
             Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
-                .font(.system(size: 10, weight: .bold))
-            Text("\(CryptoFormat.pct(pct)) · \(timeframe.title)").font(BrandFont.caption.weight(.medium))
+                .font(.system(size: 11, weight: .semibold))
+            Text("\(CryptoFormat.pct(pct)) за \(timeframe.title)").font(BrandFont.footnote.weight(.medium))
+                .monospacedDigit()
         }
         .foregroundStyle(pct >= 0 ? theme.success : theme.danger)
     }
@@ -128,7 +124,7 @@ struct TradingChartView: View {
         } else {
             let synthetic = candleSource == .synthetic
             HStack(spacing: 4) {
-                Image(systemName: synthetic ? "wand.and.stars" : "chart.bar.xaxis")
+                Image(systemName: synthetic ? "exclamationmark.triangle" : "chart.bar.xaxis")
                     .font(.system(size: 9, weight: .semibold))
                 Text(synthetic ? "синтетика" : "\(candleSource.caption) · свечи \(timeframe.title)")
                     .font(BrandFont.micro)
@@ -178,7 +174,7 @@ struct TradingChartView: View {
     private func macdPanel(_ candles: [PriceCandle]) -> some View {
         let points = TechnicalIndicators.macd(candles)
         let bw = barWidth(candles.count)
-        let accent = theme.accentCrypto.first ?? theme.accent
+        let accent = theme.textPrimary
         return Chart {
             ForEach(points) { p in
                 BarMark(x: .value("i", p.index),
@@ -193,7 +189,7 @@ struct TradingChartView: View {
             }
             ForEach(points) { p in
                 LineMark(x: .value("i", p.index), y: .value("signal", p.signal), series: .value("s", "Signal"))
-                    .foregroundStyle(theme.warning)
+                    .foregroundStyle(theme.accent)
                     .lineStyle(StrokeStyle(lineWidth: 1.4))
             }
         }

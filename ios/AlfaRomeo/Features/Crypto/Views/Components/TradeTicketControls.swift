@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Bybit-layout order-ticket controls for ``TradeOrderView`` (§9.6). Brand palette, not exchange
-/// orange: **green = Купить / buy / up**, **red = Продать / sell / down**, cold gradient for neutral
-/// emphasis. Text color on the green/red fills is chosen by ``Color/bestOnColor`` for AA contrast.
+/// orange: **green = Купить / buy / up**, **red = Продать / sell / down** (semantic state), neutrals
+/// for everything else. Text color on the green/red fills is chosen by ``Color/bestOnColor`` for AA contrast.
 
 /// Купить (green) / Продать (red) tab — the colored two-segment toggle at the top of the ticket.
 struct TradeSideToggle: View {
@@ -14,9 +14,8 @@ struct TradeSideToggle: View {
             segment("Купить", .buy, theme.success)
             segment("Продать", .sell, theme.danger)
         }
-        .padding(3)
-        .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+        .padding(2)
+        .background(theme.fill, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
     private func segment(_ title: String, _ value: CryptoSide, _ color: Color) -> some View {
@@ -25,10 +24,10 @@ struct TradeSideToggle: View {
             Text(title)
                 .font(BrandFont.headline)
                 .foregroundStyle(selected ? color.bestOnColor : theme.textSecondary)
-                .frame(maxWidth: .infinity, minHeight: 42)
+                .frame(maxWidth: .infinity, minHeight: 40)
                 .background {
                     if selected {
-                        RoundedRectangle(cornerRadius: Radius.sm, style: .continuous).fill(color)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous).fill(color)
                     }
                 }
         }
@@ -51,7 +50,7 @@ struct TicketField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
-            Text(label).font(BrandFont.micro.weight(.semibold)).foregroundStyle(theme.textSecondary)
+            Text(label).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             HStack(spacing: Spacing.sm) {
                 if step > 0 && enabled { stepButton("minus") { onStep(-step) } }
                 TextField(placeholder, text: $text)
@@ -61,24 +60,23 @@ struct TicketField: View {
                     .multilineTextAlignment((step > 0 && enabled) ? .center : .leading)
                     .disabled(!enabled)
                 if !unit.isEmpty {
-                    Text(unit).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text(unit).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
                 if step > 0 && enabled { stepButton("plus") { onStep(step) } }
             }
             .padding(.horizontal, Spacing.md)
             .frame(minHeight: 48)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
         }
     }
 
     private func stepButton(_ icon: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(theme.textPrimary)
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(theme.elevated))
+                .background(Circle().fill(theme.fill))
         }
         .buttonStyle(PressableButtonStyle())
     }
@@ -95,18 +93,16 @@ struct PercentSelector: View {
     var body: some View {
         VStack(spacing: Spacing.sm) {
             Slider(value: $fraction, in: 0...1)
-                .tint(theme.accentCrypto.first ?? theme.accent)
+                .tint(theme.accent)
             HStack(spacing: Spacing.sm) {
                 ForEach(stops, id: \.self) { s in
                     Button { fraction = s } label: {
-                        Text("\(Int(s * 100))%")
-                            .font(BrandFont.caption.weight(.semibold))
-                            .foregroundStyle(isOn(s) ? .white : theme.textSecondary)
+                        Text(MoneyFormat.percent(fraction: s, maxFractionDigits: 0))
+                            .font(BrandFont.footnote.weight(.medium))
+                            .foregroundStyle(isOn(s) ? theme.background : theme.textPrimary)
                             .frame(maxWidth: .infinity, minHeight: 32)
-                            .background {
-                                if isOn(s) { Capsule().fill(theme.cryptoGradient) }
-                                else { Capsule().fill(theme.elevated) }
-                            }
+                            .background(isOn(s) ? theme.textPrimary : theme.fill,
+                                        in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
                     }
                     .buttonStyle(PressableButtonStyle())
                 }
@@ -116,6 +112,7 @@ struct PercentSelector: View {
 }
 
 /// The large green (buy) / red (sell) action button used in the asset detail and the order ticket.
+/// Text only (docs/DESIGN.md §5): `icon` is accepted for source compatibility and ignored.
 struct TradeActionButton: View {
     let title: String
     var side: CryptoSide
@@ -133,8 +130,6 @@ struct TradeActionButton: View {
             HStack(spacing: Spacing.sm) {
                 if isLoading {
                     ProgressView().controlSize(.small).tint(color.bestOnColor)
-                } else if let icon {
-                    Image(systemName: icon).font(.system(size: 16, weight: .semibold))
                 }
                 Text(title).font(BrandFont.headline)
             }
@@ -143,7 +138,7 @@ struct TradeActionButton: View {
             .foregroundStyle(color.bestOnColor)
             .background(color)
             .opacity(isEnabled && !isLoading ? 1 : 0.45)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
         .disabled(isLoading || !isEnabled)

@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// A ЦФА instrument card for the catalog (§9.6 🆕). Surfaces эмитент + оператор (the registered ИС),
-/// price in ₽, доходность, and the legal stamp. The cold gradient ties it to the digital-asset family;
-/// the ``LegalBadge`` marks it as the regulated path (no crypto квал/неквал gating, §2.4).
+/// A ЦФА instrument row for the catalog (§9.6 🆕): category glyph, name, эмитент, price in ₽ and
+/// the day change; доходность and the holding (if any) as data in the subtitle. A grouped-list row
+/// (docs/DESIGN.md §4); the regulated status is stated once above the list (``LegalBadge``), and
+/// оператор ИС is on the detail screen.
 struct CDFACard: View {
     let cdfa: CDFA
     var holdingUnits: Double = 0
@@ -12,71 +13,51 @@ struct CDFACard: View {
 
     private var owned: Bool { holdingUnits > 0 }
 
-    var body: some View {
-        Button(action: onTap) {
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    HStack(spacing: Spacing.md) {
-                        AssetGlyph(symbol: cdfa.ticker, systemImage: cdfa.category.icon, size: 44)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(cdfa.name)
-                                .font(BrandFont.bodyM.weight(.semibold))
-                                .foregroundStyle(theme.textPrimary)
-                                .lineLimit(1)
-                            Text("\(cdfa.category.label) · \(cdfa.ticker)")
-                                .font(BrandFont.caption)
-                                .foregroundStyle(theme.textSecondary)
-                        }
-                        Spacer(minLength: Spacing.sm)
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(CryptoFormat.rub(cdfa.priceRub, fraction: 0))
-                                .font(BrandFont.amountS)
-                                .foregroundStyle(theme.textPrimary)
-                                .monospacedDigit()
-                            Text(CryptoFormat.pct(cdfa.dayChangePct))
-                                .font(BrandFont.micro.weight(.semibold))
-                                .foregroundStyle(cdfa.dayChangePct >= 0 ? theme.success : theme.danger)
-                        }
-                    }
-
-                    HStack(spacing: Spacing.sm) {
-                        infoChip(icon: "building.2", text: cdfa.issuer)
-                        infoChip(icon: "server.rack", text: cdfa.operatorName)
-                    }
-
-                    HStack(spacing: Spacing.sm) {
-                        LegalBadge(compact: true)
-                        if cdfa.yieldPct > 0 {
-                            Text(cdfa.yieldLabel)
-                                .font(BrandFont.caption.weight(.semibold))
-                                .foregroundStyle(theme.success)
-                        }
-                        Spacer()
-                        if owned {
-                            Text("В портфеле: \(CryptoFormat.qty(holdingUnits))")
-                                .font(BrandFont.micro.weight(.medium))
-                                .foregroundStyle(theme.accentCrypto.first ?? theme.accent)
-                        }
-                    }
-                }
-            }
-        }
-        .buttonStyle(PressableButtonStyle())
+    /// One fact after the issuer: the holding if owned, else the yield if any.
+    private var subtitle: String {
+        if owned { return "\(cdfa.issuer), в портфеле \(CryptoFormat.qty(holdingUnits))" }
+        if cdfa.yieldPct > 0 { return "\(cdfa.issuer), \(cdfa.yieldLabel)" }
+        return cdfa.issuer
     }
 
-    private func infoChip(icon: String, text: String) -> some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: icon).font(.system(size: 10, weight: .semibold))
-            Text(text).font(BrandFont.micro).lineLimit(1)
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: ListRow.glyphSpacing) {
+                AssetGlyph(symbol: cdfa.ticker, systemImage: cdfa.category.icon, size: ListRow.glyphSize)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(cdfa.name)
+                        .font(BrandFont.bodyM)
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Text(subtitle)
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: Spacing.sm)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(CryptoFormat.rub(cdfa.priceRub, fraction: 0))
+                        .font(BrandFont.bodyM)
+                        .foregroundStyle(theme.textPrimary)
+                        .monospacedDigit()
+                    Text(CryptoFormat.pct(cdfa.dayChangePct))
+                        .font(BrandFont.subheadline)
+                        .foregroundStyle(cdfa.dayChangePct >= 0 ? theme.success : theme.danger)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.vertical, Spacing.rowVertical)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .contentShape(Rectangle())
         }
-        .foregroundStyle(theme.textSecondary)
-        .padding(.horizontal, Spacing.sm).padding(.vertical, 3)
-        .background(theme.elevated, in: Capsule())
+        .buttonStyle(.row)
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
     }
 }
 
 #Preview {
-    CDFACard(cdfa: MockCryptoData.cdfas[1], holdingUnits: 40)
+    GroupedSection { CDFACard(cdfa: MockCryptoData.cdfas[1], holdingUnits: 40) }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.default.background)

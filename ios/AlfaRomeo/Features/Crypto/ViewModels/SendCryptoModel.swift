@@ -90,7 +90,7 @@ final class SendCryptoModel {
         switch mode {
         case .contact:
             guard let c = selectedContact else { return "Выберите контакт" }
-            return c.hasWallet ? (c.walletShort ?? c.phone) : "Пригласить · авто-кошелёк"
+            return c.hasWallet ? (c.walletShort ?? c.phone) : "Пригласить, кошелёк создастся автоматически"
         case .address: return addressText.isEmpty ? "Вставьте адрес кошелька" : shortAddress(addressText)
         case .qr:      return qrScanned ? (scannedAddress.map(shortAddress) ?? "Отсканирован") : "Наведите камеру на QR"
         }

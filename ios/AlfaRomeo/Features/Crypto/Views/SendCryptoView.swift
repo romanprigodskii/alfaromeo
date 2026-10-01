@@ -35,7 +35,7 @@ struct SendCryptoView: View {
                     }
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
@@ -83,7 +83,7 @@ struct SendCryptoView: View {
 
             AmountEntry(text: $model.amountText, symbol: model.asset,
                         secondary: model.insufficientFunds
-                            ? "Недостаточно средств · доступно \(CryptoFormat.qty(model.balance, symbol: model.asset))"
+                            ? "Недостаточно средств, доступно \(CryptoFormat.qty(model.balance, symbol: model.asset))"
                             : "≈ \(CryptoFormat.rub(model.rubAmount))",
                         secondaryIsWarning: model.insufficientFunds)
 
@@ -100,8 +100,9 @@ struct SendCryptoView: View {
         HStack(spacing: Spacing.md) {
             AssetGlyph(symbol: model.asset, size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Баланс").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Баланс").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 Text(CryptoFormat.qty(model.balance, symbol: model.asset)).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                    .monospacedDigit()
             }
             Spacer()
         }
@@ -121,32 +122,32 @@ struct SendCryptoView: View {
             .scrollClipDisabled()
         case .address:
             TextField("Адрес кошелька", text: $model.addressText)
-                .font(BrandFont.mono(15))
+                .font(BrandFont.code(15))
                 .foregroundStyle(theme.textPrimary)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
                 .padding(Spacing.md)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
         case .qr:
             Button { showScanner = true } label: {
                 VStack(spacing: Spacing.sm) {
-                    Image(systemName: model.qrScanned ? "checkmark.circle.fill" : "qrcode.viewfinder")
-                        .font(.system(size: 40, weight: .regular))
-                        .foregroundStyle(model.qrScanned ? theme.success : (theme.accentCrypto.first ?? theme.accent))
+                    Image(systemName: model.qrScanned ? "checkmark.circle" : "qrcode.viewfinder")
+                        .font(.system(size: 36, weight: .regular))
+                        .foregroundStyle(model.qrScanned ? theme.success : theme.textPrimary)
                     Text(model.qrScanned ? "QR отсканирован" : "Сканировать QR-адрес")
-                        .font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
+                        .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                     if model.qrScanned, let addr = model.scannedAddress {
                         Text(addr)
-                            .font(BrandFont.mono(12)).foregroundStyle(theme.textSecondary)
+                            .font(BrandFont.code(13)).foregroundStyle(theme.textSecondary)
                             .lineLimit(1).truncationMode(.middle)
                             .padding(.horizontal, Spacing.md)
                     } else {
-                        Text("Откроется камера · на симуляторе — фолбэк")
-                            .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                        Text("Откроется камера")
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(model.qrScanned ? theme.success : theme.border, lineWidth: 1))
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(PressableButtonStyle())
         }
@@ -157,12 +158,12 @@ struct SendCryptoView: View {
         return Button { model.selectedContact = contact } label: {
             VStack(spacing: Spacing.xs) {
                 ZStack {
-                    Circle().fill(selected ? AnyShapeStyle(theme.cryptoGradient) : AnyShapeStyle(theme.elevated))
+                    Circle().fill(selected ? theme.textPrimary : theme.fill)
                         .frame(width: 52, height: 52)
-                    Text(contact.initials).font(BrandFont.headline).foregroundStyle(selected ? .white : theme.textPrimary)
+                    Text(contact.initials).font(BrandFont.headline).foregroundStyle(selected ? theme.background : theme.textPrimary)
                 }
                 Text(contact.name.split(separator: " ").first.map(String.init) ?? contact.name)
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary).lineLimit(1)
+                    .font(BrandFont.footnote).foregroundStyle(selected ? theme.textPrimary : theme.textSecondary).lineLimit(1)
             }
             .frame(width: 64)
         }
@@ -187,15 +188,15 @@ struct SendCryptoView: View {
                 amount: model.assetAmount, amountSymbol: model.asset,
                 fee: model.feeRub, feeLabel: "Комиссия сети",
                 rubEquivalent: model.rubAmount,
-                sourceTitle: "Крипто-кошелёк", sourceSubtitle: "\(model.asset) · \(CryptoCatalog.chainLabel(model.asset))",
+                sourceTitle: "Крипто-кошелёк", sourceSubtitle: "\(model.asset), \(CryptoCatalog.chainLabel(model.asset))",
                 totalText: nil
             )
             if model.network?.congested == true {
-                Text("Выбрана перегруженная сеть — возможна задержка и высокая комиссия.")
-                    .font(BrandFont.caption.weight(.medium)).foregroundStyle(theme.warning)
+                Text("Сеть перегружена: возможна задержка и высокая комиссия.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.statusInk(.warning))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            PrimaryButton(title: "Отправить · Face ID", icon: "faceid", isLoading: model.authorizing) {
+            PrimaryButton(title: "Отправить", icon: "faceid", isLoading: model.authorizing) {
                 Task { await model.authorize() }
             }
             SecondaryButton(title: "Назад") { model.backToForm() }

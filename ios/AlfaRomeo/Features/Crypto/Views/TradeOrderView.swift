@@ -34,12 +34,12 @@ struct TradeOrderView: View {
                     }
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
         }
         .background(theme.background.ignoresSafeArea())
         .scrollIndicators(.hidden)
-        .navigationTitle("\(model.symbol) · ордер")
+        .navigationTitle("Ордер \(model.symbol)")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if model.step == .status { statusOverlay } }
         .task { await model.load(api: api, session: session) }
@@ -53,14 +53,13 @@ struct TradeOrderView: View {
     // MARK: Non-tradable guard (§2.4)
 
     private var notTradableNote: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "shield.lefthalf.filled").font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.warning)
-                    Text("Торговля недоступна").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                }
-                Text("\(model.symbol) нельзя торговать в РФ-режиме. Доступны BTC, ETH, TON и стейблкоины (§2.4). Актив можно держать и просматривать.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            Image(systemName: "exclamationmark.triangle").font(.system(size: 17, weight: .regular))
+                .foregroundStyle(theme.statusInk(.warning))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Торговля недоступна").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                Text("\(model.symbol) нельзя торговать в РФ-режиме. Доступны BTC, ETH, TON и стейблкоины. Актив можно держать и просматривать.")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -92,7 +91,7 @@ struct TradeOrderView: View {
             gateView
 
             if model.orderType == .market && model.spreadTier == .standard {
-                UpsellCard(title: "Pro: спред ниже",
+                UpsellCard(title: "Спред ниже на Pro",
                            message: "На Pro и Infinite спред на сделках меньше.",
                            recommendedTier: .pro)
             }
@@ -111,7 +110,8 @@ struct TradeOrderView: View {
             AssetGlyph(symbol: model.symbol, size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(CryptoCatalog.name(model.symbol)).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Live · \(CryptoFormat.rub(model.midPrice))").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text("Live: \(CryptoFormat.rub(model.midPrice))").font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
             }
             Spacer()
         }
@@ -132,8 +132,9 @@ struct TradeOrderView: View {
         Text(model.side == .buy
              ? "Доступно \(CryptoFormat.rub(model.rubAvailable))"
              : "Доступно \(CryptoFormat.qty(model.balance, symbol: model.symbol))")
-            .font(BrandFont.caption.weight(.medium))
-            .foregroundStyle(model.insufficientFunds ? theme.danger : theme.textSecondary)
+            .font(BrandFont.subheadline)
+            .foregroundStyle(model.insufficientFunds ? theme.statusInk(.danger) : theme.textSecondary)
+            .monospacedDigit()
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -172,31 +173,35 @@ struct TradeOrderView: View {
     // MARK: Advanced spot options (TP/SL · Post-Only · GTC) — visual order parameters, no leverage
 
     private var advancedOptions: some View {
-        SurfaceCard(padding: Spacing.sm) {
+        GroupedSection {
             VStack(spacing: Spacing.sm) {
                 optionToggle("Тейк-профит (TP)", isOn: $model.tpEnabled)
                 if model.tpEnabled {
                     TicketField(label: "Цена TP", text: $model.tpPriceText, unit: "₽")
                 }
-                Divider().overlay(theme.border)
+            }
+            .padding(.vertical, Spacing.sm)
+            VStack(spacing: Spacing.sm) {
                 optionToggle("Стоп-лосс (SL)", isOn: $model.slEnabled)
                 if model.slEnabled {
                     TicketField(label: "Цена SL", text: $model.slPriceText, unit: "₽")
                 }
-                if model.orderType == .limit {
-                    Divider().overlay(theme.border)
-                    optionToggle("Post-Only", isOn: $model.postOnly)
-                    optionToggle("GTC · до отмены", isOn: $model.goodTillCanceled)
-                }
+            }
+            .padding(.vertical, Spacing.sm)
+            if model.orderType == .limit {
+                optionToggle("Post-Only", isOn: $model.postOnly)
+                    .padding(.vertical, Spacing.sm)
+                optionToggle("GTC, до отмены", isOn: $model.goodTillCanceled)
+                    .padding(.vertical, Spacing.sm)
             }
         }
     }
 
     private func optionToggle(_ title: String, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) {
-            Text(title).font(BrandFont.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
+            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
         }
-        .tint(theme.accentCrypto.first ?? theme.accent)
+        .tint(theme.accent)
     }
 
     @ViewBuilder private var gateView: some View {
@@ -232,7 +237,7 @@ struct TradeOrderView: View {
                 rows: confirmRows
             )
             PrimaryButton(title: expired ? "Обновить курс" : model.confirmVerb,
-                          icon: expired ? "arrow.clockwise" : "faceid",
+                          icon: expired ? nil : "faceid",
                           isLoading: model.authorizing) {
                 Task { await model.authorize() }
             }
@@ -241,9 +246,9 @@ struct TradeOrderView: View {
     }
 
     private var buying: Bool { model.side == .buy }
-    private var payNumber: String { buying ? CryptoFormat.rub(model.rubAmount, fraction: 0).replacingOccurrences(of: " ₽", with: "") : CryptoFormat.qty(model.assetAmount) }
+    private var payNumber: String { buying ? MoneyFormat.number(model.rubAmount.rounded(), maxFractionDigits: 0) : CryptoFormat.qty(model.assetAmount) }
     private var payUnit: String { buying ? "₽" : model.symbol }
-    private var getNumber: String { buying ? CryptoFormat.qty(model.assetAmount) : CryptoFormat.rub(model.rubAmount, fraction: 0).replacingOccurrences(of: " ₽", with: "") }
+    private var getNumber: String { buying ? CryptoFormat.qty(model.assetAmount) : MoneyFormat.number(model.rubAmount.rounded(), maxFractionDigits: 0) }
     private var getUnit: String { buying ? model.symbol : "₽" }
 
     private var confirmRows: [CryptoConfirmRow] {
@@ -263,7 +268,7 @@ struct TradeOrderView: View {
             rows.append(CryptoConfirmRow(label: "Стоп-лосс", value: CryptoFormat.rub(CryptoFormat.parse(model.slPriceText))))
         }
         if model.orderType == .limit {
-            rows.append(CryptoConfirmRow(label: "Время действия", value: model.goodTillCanceled ? "GTC · до отмены" : "На день"))
+            rows.append(CryptoConfirmRow(label: "Время действия", value: model.goodTillCanceled ? "GTC, до отмены" : "На день"))
             if model.postOnly { rows.append(CryptoConfirmRow(label: "Post-Only", value: "Да")) }
         }
         return rows
@@ -285,7 +290,7 @@ struct TradeOrderView: View {
         return buying ? "Куплено" : "Продано"
     }
     private var successDetail: String {
-        if model.placedLimit { return "Лимитный ордер на \(CryptoFormat.qty(model.assetAmount, symbol: model.symbol)) по \(CryptoFormat.rub(model.execRate)) — в книге заявок." }
+        if model.placedLimit { return "Лимитный ордер на \(CryptoFormat.qty(model.assetAmount, symbol: model.symbol)) по \(CryptoFormat.rub(model.execRate)) в книге заявок." }
         return buying ? "Зачислено \(CryptoFormat.qty(model.assetAmount, symbol: model.symbol))." : "Зачислено \(CryptoFormat.rub(model.rubAmount))."
     }
 }

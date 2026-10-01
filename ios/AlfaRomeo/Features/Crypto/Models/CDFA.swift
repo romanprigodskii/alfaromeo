@@ -46,8 +46,8 @@ struct CDFA: Identifiable, Hashable, Sendable {
     let minUnits: Double
 
     /// The legal stamp shown across the ЦФА UI (§2.4).
-    var registryNote: String { "В реестре ЦБ · 259-ФЗ" }
-    var yieldLabel: String { yieldPct > 0 ? "\(CryptoFormat.pct(yieldPct, fraction: 1)) годовых" : "Цена актива" }
+    var registryNote: String { "В реестре ЦБ, 259-ФЗ" }
+    var yieldLabel: String { yieldPct > 0 ? "\(MoneyFormat.percent(yieldPct, maxFractionDigits: 1)) годовых" : "Цена актива" }
 }
 
 /// A user's position in a ЦФА (mock-executed, feature-local).
