@@ -12,23 +12,27 @@ struct RegistrationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Шаг \(model.step.rawValue + 1) из \(RegistrationModel.Step.allCases.count) · \(model.step.title)")
-                    .font(BrandFont.micro).tracking(1).foregroundStyle(theme.textSecondary)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text("Шаг \(model.step.rawValue + 1) из \(RegistrationModel.Step.allCases.count)")
+                    .font(BrandFont.footnote)
+                    .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
                 ProgressBar(value: model.progress)
             }
+            .padding(.horizontal, Spacing.screen)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.lg) {
                     stepContent
                     if let error = model.error {
-                        Text(error).font(BrandFont.caption).foregroundStyle(theme.danger)
+                        Text(error).font(BrandFont.footnote).foregroundStyle(theme.danger)
                     }
                 }
-                .padding(.vertical, Spacing.sm)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.bottom, Spacing.lg)
             }
         }
-        .padding(Spacing.lg)
+        .padding(.top, Spacing.sm)
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Регистрация")
         .navigationBarTitleDisplayMode(.inline)
@@ -57,16 +61,16 @@ struct RegistrationView: View {
     // MARK: Steps
 
     private var phoneStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Ваш телефон", subtitle: "Отправим SMS с кодом подтверждения.")
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "Телефон", subtitle: "Пришлём SMS с кодом подтверждения.")
             field($model.phone, keyboard: .phonePad, mono: true)
-            PrimaryButton(title: "Далее", icon: "arrow.right") { model.submitPhone() }
+            PrimaryButton(title: "Далее") { model.submitPhone() }
         }
     }
 
     private var otpStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Код из SMS", subtitle: "Для демо введите 1111.")
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "Код из SMS", subtitle: "Отправили на \(model.phone). Демо-код: 1111.")
             CodeEntryView(code: $model.code, length: 4)
             PrimaryButton(title: "Подтвердить") { model.submitOTP() }
                 .disabled(model.code.count != 4)
@@ -74,38 +78,44 @@ struct RegistrationView: View {
     }
 
     private var kycStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Верификация (KYC)", subtitle: "Выберите способ подтверждения личности.")
-            optionCard(icon: "doc.text.fill", title: "Паспорт + ИНН", subtitle: "Ввести вручную",
-                       selected: model.kycPath == .passport) { model.chooseKyc(.passport) }
-            optionCard(icon: "checkmark.seal.fill", title: "Госуслуги", subtitle: "OAuth-заглушка · авто-успех",
-                       selected: model.kycPath == .gosuslugi) { model.chooseKyc(.gosuslugi) }
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "Проверка личности", subtitle: "Выберите способ.")
+            GroupedSection {
+                optionRow(icon: "doc.text", title: "Паспорт и ИНН", subtitle: "Ввести вручную",
+                          selected: model.kycPath == .passport) { model.chooseKyc(.passport) }
+                optionRow(icon: "checkmark.seal", title: "Госуслуги", subtitle: "Демо: подтверждается автоматически",
+                          selected: model.kycPath == .gosuslugi) { model.chooseKyc(.gosuslugi) }
+            }
             if model.kycPath == .passport {
-                field($model.passportNumber, placeholder: "Серия и номер паспорта", keyboard: .numberPad)
-                field($model.innNumber, placeholder: "ИНН", keyboard: .numberPad)
-                PrimaryButton(title: "Далее", icon: "arrow.right") { model.submitPassport() }
+                GroupedSection {
+                    inputRow($model.passportNumber, placeholder: "Серия и номер паспорта")
+                    inputRow($model.innNumber, placeholder: "ИНН")
+                }
+                PrimaryButton(title: "Далее") { model.submitPassport() }
             }
         }
     }
 
     private var livenessStep: some View {
         VStack(spacing: Spacing.lg) {
-            AuthHeader(title: "Селфи для проверки", subtitle: "Liveness-проверка (демо: авто-успех).")
+            AuthHeader(title: "Селфи", subtitle: "Проверка, что перед камерой вы. В демо проходит автоматически.")
             ZStack {
                 Circle()
-                    .stroke(model.livenessPassed ? theme.success : theme.border, lineWidth: 3)
-                    .frame(width: 160, height: 160)
+                    .fill(theme.surface)
+                Circle()
+                    .stroke(model.livenessPassed ? theme.success : theme.border, lineWidth: 2)
                 Image(systemName: model.livenessPassed ? "checkmark" : "face.smiling")
-                    .font(.system(size: 64, weight: .semibold))
+                    .font(.system(size: 56, weight: .light))
                     .foregroundStyle(model.livenessPassed ? theme.success : theme.textSecondary)
             }
+            .frame(width: 160, height: 160)
             .frame(maxWidth: .infinity)
 
             if model.livenessRunning { StatusPill(status: .processing, text: "Проверка…") }
             else if model.livenessPassed { StatusPill(status: .success, text: "Проверка пройдена") }
 
             if model.livenessPassed {
-                PrimaryButton(title: "Далее", icon: "arrow.right") { model.submitLiveness() }
+                PrimaryButton(title: "Далее") { model.submitLiveness() }
             } else {
                 PrimaryButton(title: model.livenessRunning ? "Проверка…" : "Начать проверку") {
                     Task { await model.runLiveness() }
@@ -116,38 +126,47 @@ struct RegistrationView: View {
     }
 
     private var consentsStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Согласия", subtitle: "Подтвердите перед продолжением.")
-            ConsentRow(isOn: $model.consentData, text: "Согласие на обработку персональных данных")
-            ConsentRow(isOn: $model.consentTerms, text: "Условия обслуживания и тарифы")
-            ConsentRow(isOn: $model.consentKyc, text: "Согласие на проверку (KYC/AML)")
+        let accepted = [model.consentData, model.consentTerms, model.consentKyc].filter { $0 }.count
+        return VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "Согласия", subtitle: "Отмечено \(accepted) из 3")
+            GroupedSection {
+                ConsentRow(isOn: $model.consentData, text: "Обработка персональных данных")
+                ConsentRow(isOn: $model.consentTerms, text: "Условия обслуживания и тарифы")
+                ConsentRow(isOn: $model.consentKyc, text: "Проверка личности (KYC/AML)")
+            }
             PrimaryButton(title: "Принять и продолжить") { model.submitConsents() }
                 .disabled(!model.allConsents)
         }
     }
 
     private var pinStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Придумайте PIN", subtitle: "4 цифры для входа и подтверждений.")
-            fieldLabel("PIN")
-            CodeEntryView(code: $model.pin, length: 4, secure: true)
-            fieldLabel("Повторите PIN")
-            CodeEntryView(code: $model.pinConfirm, length: 4, secure: true, autofocus: false)
-            PrimaryButton(title: "Далее", icon: "arrow.right") { model.submitPIN() }
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "PIN-код", subtitle: "4 цифры для входа и подтверждения операций.")
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                fieldLabel("PIN-код")
+                CodeEntryView(code: $model.pin, length: 4, secure: true)
+            }
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                fieldLabel("Повторите PIN-код")
+                CodeEntryView(code: $model.pinConfirm, length: 4, secure: true, autofocus: false)
+            }
+            PrimaryButton(title: "Далее") { model.submitPIN() }
                 .disabled(model.pin.count != 4 || model.pinConfirm.count != 4)
         }
     }
 
     private var biometricsStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            AuthHeader(title: "Быстрый вход", subtitle: "Включите биометрию и passkey (опционально).")
-            toggleCard(icon: bio.systemImage, title: bio.label, enabled: model.faceIDEnabled, action: "Включить") {
-                Task { await model.enableFaceID() }
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            AuthHeader(title: "Быстрый вход", subtitle: "Необязательно. Включить можно позже в настройках.")
+            GroupedSection {
+                toggleRow(icon: bio.systemImage, title: bio.label, enabled: model.faceIDEnabled, action: "Включить") {
+                    Task { await model.enableFaceID() }
+                }
+                toggleRow(icon: "person.badge.key", title: "Passkey", enabled: model.passkeyCreated, action: "Создать") {
+                    Task { await model.createPasskey() }
+                }
             }
-            toggleCard(icon: "person.badge.key.fill", title: "Passkey", enabled: model.passkeyCreated, action: "Создать") {
-                Task { await model.createPasskey() }
-            }
-            PrimaryButton(title: "Готово · войти", icon: "checkmark") {
+            PrimaryButton(title: "Завершить и войти") {
                 Task { await model.finish(api: api, session: session) }
             }
         }
@@ -156,59 +175,68 @@ struct RegistrationView: View {
     // MARK: Helpers
 
     private func fieldLabel(_ text: String) -> some View {
-        Text(text.uppercased()).font(BrandFont.micro).tracking(1.5).foregroundStyle(theme.textSecondary)
+        Text(text).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
     }
 
     private func field(_ binding: Binding<String>, placeholder: String = "",
                        keyboard: UIKeyboardType = .default, mono: Bool = false) -> some View {
         TextField(placeholder, text: binding)
             .keyboardType(keyboard)
-            .font(mono ? BrandFont.mono(17) : BrandFont.body())
+            .font(mono ? BrandFont.mono(17) : BrandFont.bodyM)
             .foregroundStyle(theme.textPrimary)
-            .padding(Spacing.md)
-            .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            .padding(.horizontal, Spacing.md)
+            .frame(minHeight: Spacing.rowMinHeight)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
     }
 
-    private func optionCard(icon: String, title: String, subtitle: String,
-                            selected: Bool, action: @escaping () -> Void) -> some View {
+    /// A text input as a row of a ``GroupedSection`` (the section supplies the side padding).
+    private func inputRow(_ binding: Binding<String>, placeholder: String) -> some View {
+        TextField(placeholder, text: binding)
+            .keyboardType(.numberPad)
+            .font(BrandFont.bodyM.monospacedDigit())
+            .foregroundStyle(theme.textPrimary)
+            .frame(minHeight: Spacing.rowMinHeight)
+    }
+
+    private func optionRow(icon: String, title: String, subtitle: String,
+                           selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: icon).font(.system(size: 22, weight: .semibold)).foregroundStyle(theme.accent)
-                    .frame(width: 36)
+            HStack(spacing: 12) {
+                GlyphCircle(systemImage: icon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-                    Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Text(subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 }
-                Spacer()
-                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(selected ? theme.accent : theme.textSecondary)
+                Spacer(minLength: Spacing.sm)
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(selected ? theme.accent : theme.textTertiary)
             }
-            .padding(Spacing.md)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(selected ? theme.accent : theme.border, lineWidth: selected ? 2 : 1))
+            .padding(.vertical, Spacing.rowVertical)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
+        .groupedRowTextInset(48)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 
-    private func toggleCard(icon: String, title: String, enabled: Bool,
-                            action: String, onTap: @escaping () -> Void) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: icon).font(.system(size: 22, weight: .semibold)).foregroundStyle(theme.accent)
-                .frame(width: 36)
-            Text(title).font(BrandFont.bodyM.weight(.medium)).foregroundStyle(theme.textPrimary)
-            Spacer()
+    private func toggleRow(icon: String, title: String, enabled: Bool,
+                           action: String, onTap: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            GlyphCircle(systemImage: icon)
+            Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+            Spacer(minLength: Spacing.sm)
             if enabled {
                 StatusPill(status: .success, text: "Включено")
             } else {
                 Button(action, action: onTap)
-                    .font(BrandFont.callout.weight(.medium))
+                    .font(BrandFont.body(15, weight: .medium))
                     .foregroundStyle(theme.accent)
             }
         }
-        .padding(Spacing.md)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).stroke(theme.border, lineWidth: 1))
+        .padding(.vertical, Spacing.rowVertical)
+        .frame(minHeight: Spacing.rowMinHeight)
+        .groupedRowTextInset(48)
     }
 }

@@ -38,16 +38,16 @@ struct CodeEntryView: View {
     private func cell(_ index: Int) -> some View {
         let characters = Array(code)
         let isFilled = index < characters.count
-        let isCursor = index == characters.count
+        let isCursor = focused && index == characters.count
         let content = isFilled ? (secure ? "●" : String(characters[index])) : ""
         return Text(content)
-            .font(BrandFont.mono(22, weight: .semibold))
+            .font(BrandFont.mono(secure ? 15 : 22, weight: .semibold))
             .foregroundStyle(theme.textPrimary)
             .frame(width: 52, height: 60)
-            .background(theme.elevated, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(isCursor ? theme.accent : theme.border, lineWidth: isCursor ? 2 : 1)
+                RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
+                    .stroke(isCursor ? theme.accent : .clear, lineWidth: 1.5)
             )
     }
 }

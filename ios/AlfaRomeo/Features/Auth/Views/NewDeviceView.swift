@@ -11,32 +11,33 @@ struct NewDeviceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                AuthHeader(title: "Новое устройство",
-                           subtitle: "Подтвердите вход со старого устройства или по звонку (device binding).")
+                Text("Подтвердите вход на доверенном устройстве или по звонку.")
+                    .font(BrandFont.bodyM)
+                    .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Label("Запрос отправлен на доверенное устройство", systemImage: "iphone")
-                            .font(BrandFont.callout).foregroundStyle(theme.textPrimary)
-                        Text("Код подтверждения: 24–19")
-                            .font(BrandFont.mono(15)).foregroundStyle(theme.textSecondary)
-                    }
+                GroupedSection {
+                    ListRow(icon: "iphone", title: "Запрос отправлен",
+                            subtitle: "На доверенное устройство")
+                    ListRow(icon: "number", title: "Код подтверждения", value: "24–19")
                 }
 
                 if confirming { StatusPill(status: .processing, text: "Подтверждение…") }
 
-                PrimaryButton(title: "Я подтвердил со старого устройства", icon: "checkmark.shield") {
+                PrimaryButton(title: "Я подтвердил на старом устройстве") {
                     Task { await confirm() }
                 }
                 .disabled(confirming)
 
-                if let error { Text(error).font(BrandFont.caption).foregroundStyle(theme.danger) }
+                if let error { Text(error).font(BrandFont.footnote).foregroundStyle(theme.danger) }
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
+            .padding(.top, Spacing.sm)
+            .padding(.bottom, Spacing.lg)
         }
         .background(theme.background.ignoresSafeArea())
         .navigationTitle("Новое устройство")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private func confirm() async {

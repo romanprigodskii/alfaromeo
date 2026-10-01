@@ -8,14 +8,15 @@ struct AuthHeader: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(BrandFont.displayL)
+                .font(BrandFont.title1)
                 .foregroundStyle(theme.textPrimary)
             if let subtitle {
                 Text(subtitle)
-                    .font(BrandFont.body())
+                    .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

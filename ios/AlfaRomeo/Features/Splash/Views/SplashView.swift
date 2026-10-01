@@ -12,11 +12,11 @@ struct SplashView: View {
             theme.background.ignoresSafeArea()
             VStack(spacing: Spacing.lg) {
                 Spacer()
-                BrandMark()
+                BrandMark(subtitle: nil)
                 Spacer()
                 ProgressView()
                     .controlSize(.small)
-                    .tint(theme.accent)
+                    .tint(theme.textSecondary)
                     .padding(.bottom, Spacing.xxl)
             }
         }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Onboarding carousel (§9.0): AI copilot · one money · many profiles · security.
+/// Onboarding carousel (§9.0): AI copilot, one wallet, many profiles, security.
 struct OnboardingView: View {
     @Environment(AuthCoordinator.self) private var coordinator
     @Environment(\.theme) private var theme
@@ -10,22 +10,24 @@ struct OnboardingView: View {
         let symbol: String
         let title: String
         let subtitle: String
-        let cold: Bool // use the cold crypto/AI gradient
     }
 
     private let slides: [Slide] = [
-        Slide(symbol: "sparkles", title: "ИИ-второй-пилот",
-              subtitle: "Claude помогает с финансами: поддержка, коуч и действия — всегда с подтверждением.", cold: true),
-        Slide(symbol: "rublesign.circle.fill", title: "Одни деньги",
-              subtitle: "Рубли, цифровой рубль и крипта — в одном кошельке с мгновенной конвертацией.", cold: true),
-        Slide(symbol: "person.2.fill", title: "Много профилей",
-              subtitle: "Личный, бизнес, семейный и детский — под одним паспортом, переключение в один тап.", cold: false),
-        Slide(symbol: "lock.shield.fill", title: "Безопасность 2035",
-              subtitle: "Face ID, passkeys и подтверждение операций. Пароль — только резерв.", cold: false),
+        Slide(symbol: "text.bubble", title: "ИИ-помощник",
+              subtitle: "Claude отвечает на вопросы о финансах и готовит платежи. Каждое действие вы подтверждаете сами."),
+        Slide(symbol: "rublesign", title: "Один кошелёк",
+              subtitle: "Рубли, цифровой рубль и криптовалюта в одном месте. Конвертация мгновенная."),
+        Slide(symbol: "person.2", title: "Профили",
+              subtitle: "Личный, бизнес, семейный и детский по одному паспорту. Переключение в один тап."),
+        Slide(symbol: "lock.shield", title: "Безопасность",
+              subtitle: "Вход по Face ID и passkey, подтверждение каждой операции. Пароль остаётся резервом."),
     ]
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(alignment: .leading, spacing: 0) {
+            BrandMark(subtitle: nil)
+                .padding(.top, Spacing.md)
+
             TabView(selection: $page) {
                 ForEach(slides.indices, id: \.self) { index in
                     slideView(slides[index]).tag(index)
@@ -34,56 +36,47 @@ struct OnboardingView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
 
             dots
+                .padding(.bottom, Spacing.lg)
 
             VStack(spacing: Spacing.sm) {
-                PrimaryButton(title: "Создать аккаунт", icon: "arrow.right") { coordinator.push(.register) }
-                Button("Уже есть аккаунт? Войти") { coordinator.push(.login) }
-                    .font(BrandFont.callout.weight(.medium))
-                    .foregroundStyle(theme.accent)
+                PrimaryButton(title: "Создать аккаунт") { coordinator.push(.register) }
+                SecondaryButton(title: "Войти") { coordinator.push(.login) }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.lg)
+            .padding(.bottom, Spacing.sm)
         }
+        .padding(.horizontal, Spacing.screen)
         .background(theme.background.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
     }
 
     private func slideView(_ slide: Slide) -> some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             Spacer()
-            ZStack {
-                Circle()
-                    .fill(slide.cold ? AnyShapeStyle(theme.cryptoGradient)
-                                     : AnyShapeStyle(theme.accent.opacity(0.18)))
-                    .frame(width: 140, height: 140)
-                Image(systemName: slide.symbol)
-                    .font(.system(size: 58, weight: .semibold))
-                    .foregroundStyle(slide.cold ? .white : theme.accent)
-            }
-            VStack(spacing: Spacing.sm) {
+            GlyphCircle(systemImage: slide.symbol, size: 64)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text(slide.title)
-                    .font(BrandFont.displayL)
+                    .font(BrandFont.title1)
                     .foregroundStyle(theme.textPrimary)
-                    .multilineTextAlignment(.center)
                 Text(slide.subtitle)
-                    .font(BrandFont.body())
+                    .font(BrandFont.bodyM)
                     .foregroundStyle(theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Spacing.xl)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
         }
-        .padding(.horizontal, Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, Spacing.lg)
     }
 
     private var dots: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: 6) {
             ForEach(slides.indices, id: \.self) { index in
                 Capsule()
-                    .fill(index == page ? theme.accent : theme.border)
-                    .frame(width: index == page ? 22 : 8, height: 8)
+                    .fill(index == page ? theme.textPrimary : theme.textTertiary.opacity(0.5))
+                    .frame(width: index == page ? 18 : 6, height: 6)
                     .animation(Motion.snappy, value: page)
             }
         }
+        .accessibilityElement()
+        .accessibilityLabel("Экран \(page + 1) из \(slides.count)")
     }
 }

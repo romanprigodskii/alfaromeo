@@ -105,12 +105,12 @@ final class RegistrationModel {
 
     func enableFaceID() async {
         faceIDEnabled = await BiometricAuthenticator.authenticate(reason: "Включить вход по Face ID")
-        if !faceIDEnabled { error = "Биометрия недоступна — можно включить позже." }
+        if !faceIDEnabled { error = "Биометрия недоступна. Включить можно позже в настройках." }
     }
 
     func createPasskey() async {
         passkeyCreated = await passkeys.register(userName: phone)
-        if !passkeyCreated { error = "Passkey недоступен в демо — можно добавить позже." }
+        if !passkeyCreated { error = "Passkey недоступен в демо. Добавить можно позже." }
     }
 
     func finish(api: any APIClient, session: AppSession) async {
