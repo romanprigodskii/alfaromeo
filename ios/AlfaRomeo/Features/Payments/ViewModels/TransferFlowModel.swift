@@ -3,7 +3,7 @@ import Observation
 
 /// The engine behind ``TransferFlowView`` — one ``@Observable`` driving every rail of §10.3:
 /// recipient → сумма → подтверждение(биометрия) → статус. Computes the ₽-эквивалент of crypto by
-/// mock rate (``APIClient/prices(assets:)``), the комиссия, and the edge-case gates
+/// the live rate (``LivePriceService``), the комиссия, and the edge-case gates
 /// (недостаточно средств / лимит операции / неквал-инвестор), then simulates settlement.
 @MainActor
 @Observable
@@ -55,7 +55,6 @@ final class TransferFlowModel {
     var inputInRub = false                // crypto toggle: enter ₽ vs asset units
 
     // MARK: Pricing / tier
-    var prices: [String: Double] = [:]    // asset → ₽ per unit (mock)
     var freeAbroad = false
     var investorStatus: InvestorStatus = .unqualified
 
@@ -113,12 +112,9 @@ final class TransferFlowModel {
         // Default sources per rail.
         if kind.isCrypto {
             sourceWallet = sourceWallet ?? wallets.first
-            let assets = wallets.map(\.asset)
-            if let ticks = try? await api.prices(assets: assets.isEmpty ? ["BTC", "ETH", "USDT", "SOL"] : assets) {
-                // Keep the last tick per asset — `uniqueKeysWithValues` would TRAP on a duplicate
-                // asset (e.g. USDT on two chains), which `try?` can't catch.
-                prices = Dictionary(ticks.map { ($0.asset, $0.price) }, uniquingKeysWith: { _, new in new })
-            }
+            // Same live price book as Биржа (idempotent). Not awaited: `price(_:)` has a seed until the
+            // first snapshot lands, and the observed price updates the ₽-эквивалент on its own.
+            Task { await LivePriceService.shared.start() }
         } else {
             sourceAccount = sourceAccount ?? defaultFiatSource()
         }
@@ -169,7 +165,8 @@ final class TransferFlowModel {
 
     /// The asset (ticker) for the crypto rail.
     var asset: String { sourceWallet?.asset ?? "USDT" }
-    var assetPrice: Double { prices[asset] ?? 0 }
+    /// Live ₽ per unit, observed, so «≈ … ₽ по курсу» follows the market while the flow is open.
+    var assetPrice: Double { LivePriceService.shared.price(asset) }
 
     /// Amount in asset units (crypto rail).
     var assetAmount: Double {
