@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Главный — the personal dashboard (§9.1, §10.2).
+/// Главная: the personal dashboard (§9.1, §10.2).
 ///
-/// An AI-insight line, the unified ₽-equivalent, then product blocks (Карты / Счета / Крипто /
-/// Вклады / Кредиты), offer carousels, the Ромео Mobile teaser and «На карте» — all on the active
-/// profile's mock data, reloaded whenever the profile changes (`.task(id:)`, §5.3). Cards open their
-/// detail via the cross-module ``CardsRoute`` (§6.3); crypto / deposits / credits / mobile open
-/// ``HomeRoute`` stubs. States: skeletons (loading), onboarding (empty profile), cache + banner
-/// (refresh error) — §10.2.
+/// The unified ₽-equivalent with a one-line AI hint, then product blocks (Карты / Счета / Крипто /
+/// Вклады), «Сервисы» (кредит, выгода, Ромео Mobile) and offers, all on the active profile's data,
+/// reloaded whenever the profile changes (`.task(id:)`, §5.3). Cards open their detail via the
+/// cross-module ``CardsRoute`` (§6.3); the rest push ``HomeRoute``. States: skeletons (loading),
+/// onboarding (empty profile), cache + banner (refresh error), §10.2. Layout per DESIGN §4: 16pt
+/// margins, 28pt between sections, grouped lists instead of cards.
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(ShellState.self) private var shell
@@ -21,7 +21,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             content
-                .padding(.horizontal, Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
                 .padding(.top, Spacing.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -60,18 +60,20 @@ struct HomeView: View {
 
     @ViewBuilder
     private func loaded(_ dashboard: HomeDashboard) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            if model.refreshFailed {
-                RefreshErrorBanner { Task { await model.load(api: api, session: session) } }
-            }
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                if model.refreshFailed {
+                    RefreshErrorBanner { Task { await model.load(api: api, session: session) } }
+                }
 
-            // AI-инсайт — точка входа в копилот как «поиск-и-действие» (§9.1 / §10.9): открываем
-            // живой ``CopilotChatView`` поверх любого экрана через shell, а не отдельный экран поиска.
-            AIInsightBar(dashboard: dashboard, live: model.livePrices) {
-                shell.showCopilot(.search)
-            }
+                BalanceHero(dashboard: dashboard, live: model.livePrices)
 
-            BalanceHero(dashboard: dashboard, live: model.livePrices)
+                // AI-подсказка: точка входа в копилот как «поиск-и-действие» (§9.1 / §10.9). Открываем
+                // живой ``CopilotChatView`` поверх любого экрана через shell, а не отдельный экран поиска.
+                AIInsightBar(dashboard: dashboard, live: model.livePrices) {
+                    shell.showCopilot(.search)
+                }
+            }
 
             CardsCarousel(
                 cards: dashboard.cards,
@@ -94,27 +96,18 @@ struct HomeView: View {
                 SavingsBlock(dashboard: dashboard) { router.push(HomeRoute.deposits) }
             }
 
-            if let credit = dashboard.preApprovedCredit {
-                CreditsBlock(amount: credit) { router.push(HomeRoute.credits) }
-            }
+            // Кредит (§10.5), Выгода и кэшбек (§9.3, moved here off the tab bar) and Ромео Mobile (§9.7).
+            ServicesBlock(
+                preApprovedCredit: dashboard.preApprovedCredit,
+                mobilePlan: dashboard.mobilePlan,
+                onCredit: { router.push(HomeRoute.credits) },
+                onBenefits: { router.push(HomeRoute.benefits) },
+                onMobile: { router.push(HomeRoute.mobile) }
+            )
 
-            OffersCarousel { router.push(HomeRoute.openProduct) }
+            OffersBlock { router.push(HomeRoute.openProduct) }
 
-            // Выгода и кэшбек (§9.3) — moved off the personal tab bar («Биржа» took its slot) to this
-            // dashboard block. Opens the unchanged BenefitsView (все 3 экрана) via HomeRoute.benefits.
-            Button { router.push(HomeRoute.benefits) } label: {
-                SurfaceCard(padding: Spacing.sm) {
-                    ListRow(icon: "percent", title: "Выгода и кэшбек",
-                            subtitle: "Кэшбек, категории, партнёры и подписка", showsChevron: true)
-                }
-            }
-            .buttonStyle(.plain)
-
-            if let plan = dashboard.mobilePlan {
-                MobileBlock(plan: plan) { router.push(HomeRoute.mobile) }
-            }
-
-            // «На карте» (отделения/банкоматы, §9.1) скрыто в демо — реальной карты отделений нет,
+            // «На карте» (отделения/банкоматы, §9.1) скрыто в демо: реальной карты отделений нет,
             // честнее не показывать пустышку. Продуктовое решение, не баг. Компонент BranchesRow и
             // маршрут HomeRoute.branches остаются в коде для будущих фаз.
             // BranchesRow { router.push(HomeRoute.branches) }
@@ -132,7 +125,7 @@ private struct HomePreviewHost: View {
     let session: AppSession
     var body: some View {
         NavigationStack {
-            HomeView().navigationTitle("Главный")
+            HomeView().navigationTitle("Главная")
         }
         .themeProvider(profileType: session.activeProfile?.type)
         .environment(session)

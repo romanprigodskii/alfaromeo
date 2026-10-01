@@ -1,6 +1,6 @@
 import Foundation
 
-/// Aggregated, profile-scoped snapshot powering the Главный dashboard (§9.1, §10.2).
+/// Aggregated, profile-scoped snapshot powering the Главная dashboard (§9.1, §10.2).
 ///
 /// Built by ``HomeViewModel`` from a single fan-out of profile-scoped ``APIClient`` calls, then read
 /// by the dashboard sections. The derived ₽ figures fold in live ``LivePriceService`` ticks so the unified

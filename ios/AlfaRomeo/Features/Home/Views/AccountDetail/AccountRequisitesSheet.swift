@@ -20,13 +20,9 @@ struct AccountRequisitesSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    card
-                    Text(disclaimer)
-                        .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(Spacing.lg)
+                card
+                    .padding(.horizontal, Spacing.screen)
+                    .padding(.vertical, Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(theme.background.ignoresSafeArea())
@@ -44,74 +40,49 @@ struct AccountRequisitesSheet: View {
 
     private var disclaimer: String {
         requisites.isCrypto
-        ? "Демо-адрес. Реальный адрес для приёма выдаёт крипто-модуль с выбором сети (§10.8)."
-        : "Демо-данные. Не настоящие банковские реквизиты — для пополнения переводом по реквизитам."
+        ? "Демо-адрес. Настоящий адрес для приёма выдаёт раздел крипты, с выбором сети."
+        : "Демо-данные, не настоящие банковские реквизиты. Нужны для пополнения переводом по реквизитам."
     }
 
     private var card: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack {
-                    Label(accountTitle,
-                          systemImage: requisites.isCrypto ? "bitcoinsign.circle" : "building.columns")
-                        .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                    Spacer()
-                    revealButton
-                }
-
-                if requisites.isCrypto {
-                    valueRow("Адрес кошелька",
-                             revealed ? requisites.address : requisites.addressMasked,
-                             copyable: revealed ? requisites.address : nil, mono: true)
-                    divider
-                    valueRow("Сеть", requisites.network, copyable: nil, mono: false)
-                } else {
-                    valueRow("Номер счёта",
-                             revealed ? requisites.accountNumberFull : requisites.accountNumberMasked,
-                             copyable: revealed ? plain(requisites.accountNumberFull) : nil, mono: true)
-                    divider
-                    valueRow("Банк", requisites.bankName, copyable: nil, mono: false)
-                    divider
-                    valueRow("БИК", requisites.bik, copyable: requisites.bik, mono: true)
-                    divider
-                    valueRow("Корр. счёт", requisites.corrAccount, copyable: plain(requisites.corrAccount), mono: true)
-                    divider
-                    valueRow("Получатель", requisites.holder, copyable: requisites.holder, mono: false)
-                    divider
-                    valueRow("ИНН", requisites.inn, copyable: requisites.inn, mono: true)
-                }
+        GroupedSection(accountTitle,
+                       actionTitle: revealed ? "Скрыть" : "Показать",
+                       action: { withAnimation(Motion.snappy) { revealed.toggle() } },
+                       footer: disclaimer) {
+            if requisites.isCrypto {
+                valueRow("Адрес кошелька",
+                         revealed ? requisites.address : requisites.addressMasked,
+                         copyable: revealed ? requisites.address : nil, code: true)
+                valueRow("Сеть", requisites.network, copyable: nil, code: false)
+            } else {
+                valueRow("Номер счёта",
+                         revealed ? requisites.accountNumberFull : requisites.accountNumberMasked,
+                         copyable: revealed ? plain(requisites.accountNumberFull) : nil, code: true)
+                valueRow("Банк", requisites.bankName, copyable: nil, code: false)
+                valueRow("БИК", requisites.bik, copyable: requisites.bik, code: true)
+                valueRow("Корр. счёт", requisites.corrAccount, copyable: plain(requisites.corrAccount), code: true)
+                valueRow("Получатель", requisites.holder, copyable: requisites.holder, code: false)
+                valueRow("ИНН", requisites.inn, copyable: requisites.inn, code: true)
             }
         }
     }
 
-    private var divider: some View { Divider().overlay(theme.border) }
-
-    private var revealButton: some View {
-        Button { withAnimation(Motion.snappy) { revealed.toggle() } } label: {
-            Image(systemName: revealed ? "eye.slash" : "eye")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(theme.accent)
-                .frame(width: 36, height: 36)
-                .background(theme.elevated, in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(revealed ? "Скрыть реквизиты" : "Показать реквизиты")
-    }
-
-    private func valueRow(_ label: String, _ value: String, copyable: String?, mono: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            HStack(spacing: Spacing.sm) {
+    /// Requisites (счёт, БИК, корр. счёт, ИНН, адрес) in true monospace; names in SF Pro.
+    private func valueRow(_ label: String, _ value: String, copyable: String?, code: Bool) -> some View {
+        HStack(spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 Text(value)
-                    .font(mono ? BrandFont.mono(16, weight: .medium) : BrandFont.bodyM)
+                    .font(code ? BrandFont.code(16) : BrandFont.bodyM)
                     .foregroundStyle(theme.textPrimary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: Spacing.sm)
-                if let copyable { copyButton(label: label, value: copyable) }
             }
+            Spacer(minLength: Spacing.sm)
+            if let copyable { copyButton(label: label, value: copyable) }
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, Spacing.sm)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
     }
 
     @ViewBuilder private func copyButton(label: String, value: String) -> some View {
@@ -122,8 +93,10 @@ struct AccountRequisitesSheet: View {
             withAnimation(Motion.snappy) { copied = label }
         } label: {
             Image(systemName: copied == label ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(copied == label ? theme.success : theme.textSecondary)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(copied == label ? theme.statusInk(.success) : theme.accent)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Скопировать \(label)")

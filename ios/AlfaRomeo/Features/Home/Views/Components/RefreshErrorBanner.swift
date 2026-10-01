@@ -9,32 +9,28 @@ struct RefreshErrorBanner: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 14, weight: .bold)).foregroundStyle(theme.warning)
+                .font(.system(size: 15, weight: .regular)).foregroundStyle(theme.statusInk(.warning))
             VStack(alignment: .leading, spacing: 1) {
                 Text("Не удалось обновить")
-                    .font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
+                    .font(BrandFont.body(15, weight: .semibold)).foregroundStyle(theme.textPrimary)
                 Text("Показаны сохранённые данные")
-                    .font(BrandFont.micro).foregroundStyle(theme.textSecondary)
+                    .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
             }
             Spacer()
             Button(action: onRetry) {
-                Text("Повторить").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.accent)
+                Text("Повторить").font(BrandFont.body(15, weight: .medium)).foregroundStyle(theme.accent)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm)
+        .padding(.horizontal, Spacing.md).padding(.vertical, Spacing.sm + 2)
         .background(theme.warning.opacity(0.12),
-                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(theme.warning.opacity(0.3), lineWidth: 1)
-        )
+                    in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Не удалось обновить, показаны сохранённые данные")
     }
 }
 
-/// Full hard-failure card — first load with no cache to fall back on (§10.2).
+/// Full hard-failure card: first load with no cache to fall back on (§10.2).
 struct HomeErrorCard: View {
     var onRetry: () -> Void
     @Environment(\.theme) private var theme
@@ -42,13 +38,12 @@ struct HomeErrorCard: View {
     var body: some View {
         SurfaceCard {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.system(size: 28, weight: .semibold)).foregroundStyle(theme.textSecondary)
-                Text("Не удалось загрузить дашборд")
+                GlyphCircle(systemImage: "wifi.exclamationmark", size: 44)
+                Text("Не удалось загрузить главную")
                     .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
                 Text("Проверьте соединение и попробуйте ещё раз.")
                     .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-                PrimaryButton(title: "Повторить", icon: "arrow.clockwise", action: onRetry)
+                PrimaryButton(title: "Повторить", action: onRetry)
             }
         }
     }

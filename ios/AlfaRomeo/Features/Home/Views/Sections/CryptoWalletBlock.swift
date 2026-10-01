@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Crypto wallet block (§9.1): the live ₽ valuation of the portfolio (§11.4) with per-asset chips.
-/// Tapping opens the crypto hub stub (``HomeRoute.crypto``, §9.6).
+/// Crypto wallet block (§9.1): the live ₽ valuation of the portfolio (§11.4), then one row per asset
+/// with its real coin logo, quantity and ₽ value. Every row opens the crypto hub (``HomeRoute.crypto``).
 struct CryptoWalletBlock: View {
     let dashboard: HomeDashboard
     let live: [String: Double]
@@ -13,49 +13,66 @@ struct CryptoWalletBlock: View {
     private var valueRub: Double { dashboard.cryptoValueRub(live: live) }
 
     var body: some View {
-        DashboardSection(title: "Крипто-кошелёк", actionTitle: "Открыть", action: onTap) {
-            Button(action: onTap) {
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: Spacing.md) {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "bitcoinsign.circle.fill")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(theme.cryptoGradient)
-                            Text("Оценка портфеля").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                            Spacer()
-                            Text("LIVE")
-                                .font(BrandFont.micro)
-                                .foregroundStyle(theme.accentCrypto.last ?? theme.accent)
-                        }
-                        AmountText(amount: valueRub, size: 26)
-                            .animation(reduceMotion ? nil : Motion.snappy, value: valueRub)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: Spacing.sm) {
-                                ForEach(dashboard.wallets) { wallet in
-                                    assetChip(wallet)
-                                }
-                            }
-                        }
-                        .scrollClipDisabled()
-                    }
-                }
+        GroupedSection("Крипто-кошелёк") {
+            Button(action: onTap) { summary }
+                .buttonStyle(.row)
+            ForEach(dashboard.wallets) { wallet in
+                Button(action: onTap) { row(wallet) }
+                    .buttonStyle(.row)
             }
-            .buttonStyle(PressableButtonStyle())
         }
     }
 
-    private func assetChip(_ wallet: CryptoWallet) -> some View {
-        HStack(spacing: 6) {
-            Text(wallet.asset).font(BrandFont.mono(12, weight: .semibold)).foregroundStyle(theme.textPrimary)
-            Text(trimmed(wallet.balance)).font(BrandFont.mono(12)).foregroundStyle(theme.textSecondary)
+    private var summary: some View {
+        HStack(spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Оценка портфеля")
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                AmountText(amount: valueRub, size: 22)
+                    .animation(reduceMotion ? nil : Motion.snappy, value: valueRub)
+            }
+            Spacer(minLength: Spacing.sm)
+            if !live.isEmpty { liveMark }
+            chevron
         }
-        .padding(.horizontal, Spacing.sm).padding(.vertical, 6)
-        .background(theme.elevated, in: Capsule())
-        .overlay(Capsule().stroke(theme.border, lineWidth: 1))
+        .padding(.vertical, Spacing.rowVertical)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 
-    private func trimmed(_ value: Double) -> String {
-        value >= 100 ? String(format: "%.0f", value) : String(format: "%.4f", value)
+    private func row(_ wallet: CryptoWallet) -> some View {
+        HStack(spacing: ListRow.glyphSpacing) {
+            CoinLogo(symbol: wallet.asset, size: ListRow.glyphSize)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(wallet.asset)
+                    .font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                Text(MoneyFormat.crypto(wallet.balance, symbol: wallet.asset))
+                    .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            Spacer(minLength: Spacing.sm)
+            AmountText(amount: wallet.balance * dashboard.price(for: wallet.asset, live: live), size: 17)
+                .layoutPriority(1)
+            chevron
+        }
+        .padding(.vertical, Spacing.sm)
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
+        .contentShape(Rectangle())
+        .groupedRowTextInset(ListRow.glyphSize + ListRow.glyphSpacing)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Shown once a live tick has arrived, so the label never claims a stream that is not there.
+    private var liveMark: some View {
+        HStack(spacing: Spacing.xxs + 2) {
+            Circle().fill(theme.success).frame(width: 6, height: 6)
+            Text("live").font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.textTertiary)
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Top AI-insight line (§9.1, §10.2). Contextual but **static text this phase** — real Claude lands
-/// in Phase 3 (§11.7). Tapping opens AI search (§9.1).
+/// AI-подсказка под балансом (§9.1, §10.2, DESIGN §7): одна строка текста и ссылка «Спросить».
+/// Без иконок-искр и рамок. Текст детерминирован по контексту профиля; нажатие открывает копилот.
 struct AIInsightBar: View {
     let dashboard: HomeDashboard
     let live: [String: Double]
@@ -9,46 +9,40 @@ struct AIInsightBar: View {
 
     @Environment(\.theme) private var theme
 
-    /// Derived from the active profile context — deterministic, not a model call yet.
+    /// Derived from the active profile context, deterministic (not a model call).
     private var message: String {
         switch dashboard.profileType {
         case .child:
-            return "Карманные расходы под контролем — помогу спланировать накопления."
+            return "Карманные расходы под контролем. Помогу спланировать накопления."
         case .business:
-            return "Кэшфлоу стабилен. Спросите про кассовый разрыв или выставите счёт."
+            return "Кэшфлоу стабилен. Можно спросить про кассовый разрыв или выставить счёт."
         case .personal, .joint:
             if !dashboard.wallets.isEmpty {
-                return "Счета и портфель в плюсе. Спросите, как поднять кэшбек в июне."
+                return "Счета и портфель в плюсе. Как поднять кэшбек в июне?"
             }
-            return "Я ваш финансовый второй пилот — спросите что угодно о деньгах."
+            return "Отвечу на вопросы о деньгах: расходы, переводы, кэшбек."
         }
     }
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(theme.cryptoGradient)
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                 Text(message)
-                    .font(BrandFont.callout)
-                    .foregroundStyle(theme.textPrimary)
+                    .font(BrandFont.subheadline)
+                    .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
-                Spacer(minLength: Spacing.xs)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(theme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Спросить")
+                    .font(BrandFont.body(15, weight: .medium))
+                    .foregroundStyle(theme.accent)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm + 2)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(theme.cryptoGradient, lineWidth: 1).opacity(0.5)
-            )
+            .contentShape(Rectangle())
         }
-        .buttonStyle(PressableButtonStyle())
-        .accessibilityLabel("AI-инсайт. \(message)")
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Подсказка ассистента. \(message)")
+        .accessibilityHint("Открыть чат с ассистентом")
+        .accessibilityAddTraits(.isButton)
     }
 }

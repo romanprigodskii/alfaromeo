@@ -152,7 +152,7 @@ struct AccountQuickAction: Identifiable {
             return [
                 AccountQuickAction(id: "receive", title: "Принять",    icon: "arrow.down.circle.fill",   kind: .requisites),
                 AccountQuickAction(id: "send",    title: "Отправить",  icon: "arrow.up.right.circle.fill", kind: .transfer(.cryptoToContact)),
-                AccountQuickAction(id: "hub",     title: "Крипто-хаб", icon: "bitcoinsign.circle.fill",  kind: .cryptoHub),
+                AccountQuickAction(id: "hub",     title: "Биржа",      icon: "bitcoinsign.circle.fill",  kind: .cryptoHub),
             ]
         }
     }

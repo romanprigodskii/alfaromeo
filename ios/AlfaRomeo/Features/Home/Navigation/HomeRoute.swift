@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Navigation routes owned by the Главный section (§9.1). Pushed onto the section ``Router`` and
+/// Navigation routes owned by the Главная section (§9.1). Pushed onto the section ``Router`` and
 /// resolved by ``HomeView`` via `.navigationDestination`. Phase 1.1 owns this file.
 ///
 /// Cards live on the home dashboard (§9.1) but belong to the Cards module — those routes are
@@ -21,7 +21,7 @@ enum HomeRoute: Hashable {
         switch self {
         case .accountDetail: return "Счёт"
         case .openProduct:   return "Открытие продукта"
-        case .branches:      return "Отделения / банкоматы"
+        case .branches:      return "Отделения и банкоматы"
         case .crypto:        return "Крипто-кошелёк"
         case .deposits:      return "Вклады и стейкинг"
         case .credits:       return "Кредит"
@@ -34,13 +34,13 @@ enum HomeRoute: Hashable {
     fileprivate var stubNote: String {
         switch self {
         case .accountDetail: return "Детейл счёта соберёт следующий промпт (§9.1)."
-        case .openProduct:   return "Витрина продуктов — §9.1."
-        case .branches:      return "Отделения и банкоматы на карте — §9.1."
+        case .openProduct:   return "Витрина продуктов появится позже."
+        case .branches:      return "Карта отделений и банкоматов появится позже."
         case .crypto:        return "Крипто-хаб соберёт Фаза 2 (§9.6)."
         case .deposits:      return "Вклады и стейкинг соберёт Фаза 2 (§10.6)."
-        case .credits:       return "Кредиты с explainable-преквалификацией — §10.5."
+        case .credits:       return "Кредиты с объяснимой преквалификацией (§10.5)."
         case .mobile:        return "Ромео Mobile (MVNO) соберёт Фаза 2 (§9.7)."
-        case .benefits:      return "Выгода и кэшбек — §9.3."
+        case .benefits:      return "Выгода и кэшбек (§9.3)."
         }
     }
 }
