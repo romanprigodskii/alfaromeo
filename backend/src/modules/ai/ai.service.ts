@@ -36,7 +36,10 @@ const DEFAULT_PROFILE = 'profile-personal-demo';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger('AiService');
-  private readonly engine: AIEngine;
+  private readonly primary: AIEngine;
+  /** Circuit breaker for the live engine: while open, turns run on the offline engine. */
+  private liveDownUntil = 0;
+  private liveDownReason: string | null = null;
 
   constructor(
     private readonly anthropic: AnthropicEngine,
@@ -48,7 +51,7 @@ export class AiService {
     private readonly pricing: PricingService,
   ) {
     // Live Claude whenever a key is configured; otherwise the deterministic offline demo engine.
-    this.engine = this.anthropic.available ? this.anthropic : this.offline;
+    this.primary = this.anthropic.available ? this.anthropic : this.offline;
     if (this.anthropic.available) {
       this.logger.log(`AI online · engine=anthropic · ${this.anthropic.describe()} · limit=${this.guardrails.amountLimitRub}₽`);
     } else {
@@ -56,13 +59,23 @@ export class AiService {
     }
   }
 
+  /**
+   * Engine for the next turn: the live engine unless its breaker is open (e.g. the Anthropic account
+   * ran out of credits), then the offline engine, so the copilot keeps answering instead of erroring.
+   */
+  private get engine(): AIEngine {
+    return this.primary === this.anthropic && Date.now() < this.liveDownUntil ? this.offline : this.primary;
+  }
+
   /** Status for `GET /ai/health` — never includes the key. */
-  health(): { engine: string; live: boolean; models: string; agentAmountLimitRub: number } {
+  health(): { engine: string; live: boolean; models: string; agentAmountLimitRub: number; degraded?: string } {
+    const degraded = this.engine !== this.primary ? (this.liveDownReason ?? 'live engine unavailable') : undefined;
     return {
       engine: this.engine.label,
       live: this.engine.live,
       models: this.anthropic.available ? this.anthropic.describe() : 'offline-demo',
       agentAmountLimitRub: this.guardrails.amountLimitRub,
+      ...(degraded ? { degraded } : {}),
     };
   }
 
@@ -70,6 +83,15 @@ export class AiService {
 
   /** Stream a chat turn over SSE. `send` writes one event; `signal` aborts on client disconnect. */
   async streamChat(req: ChatRequest, send: SSESend, signal?: AbortSignal): Promise<void> {
+    const engine = this.engine;
+    // Track whether anything reached the client: a live-engine failure before the first event can be
+    // retried transparently on the offline engine; after that, the stream is already committed.
+    let emitted = false;
+    const upstream = send;
+    send = (e) => {
+      emitted = true;
+      upstream(e);
+    };
     const mode: AIMode = req.mode ?? 'support';
     const profileId = (req.profileId && req.profileId.trim()) || DEFAULT_PROFILE;
     const history = sanitizeHistory(req.messages);
@@ -79,7 +101,7 @@ export class AiService {
       profileId,
       mode,
       promptChars: lastUserChars(history),
-      outcome: `engine=${this.engine.label}`,
+      outcome: `engine=${engine.label}`,
     });
 
     // No usable user turn → answer locally instead of sending an empty request to the live API (400).
@@ -99,7 +121,7 @@ export class AiService {
       for (let turn = 0; turn < MAX_TURNS; turn++) {
         if (signal?.aborted) return;
 
-        const result = await this.engine.runTurn(
+        const result = await engine.runTurn(
           { profileId, mode, system, messages, tools },
           (text) => send({ event: 'token', data: { text } }),
           signal,
@@ -185,11 +207,30 @@ export class AiService {
       send({ event: 'done', data: { stopReason: 'end', escalated } });
     } catch (err) {
       if (signal?.aborted) return; // client hung up — not an error worth surfacing
+      if (engine === this.anthropic && !emitted) {
+        this.tripLiveBreaker(err);
+        this.audit.record({ event: 'error', profileId, mode, outcome: `${errorClass(err)} → offline fallback` });
+        return this.streamChat(req, upstream, signal);
+      }
       this.logger.error(`chat turn failed: ${(err as Error).message}`);
       this.audit.record({ event: 'error', profileId, mode, outcome: errorClass(err) });
       send({ event: 'token', data: { text: 'Извините, AI-сервис временно недоступен. Попробуйте позже или подключите оператора.' } });
       send({ event: 'done', data: { stopReason: 'error', escalated } });
     }
+  }
+
+  /**
+   * Open the live-engine breaker after a failure. Account-level errors (no credits, bad key, no
+   * access) won't fix themselves in seconds, so they back off longer than transient ones.
+   */
+  private tripLiveBreaker(err: unknown): void {
+    const message = (err as Error)?.message ?? String(err);
+    const status = (err as { status?: number })?.status;
+    const accountLevel = status === 401 || status === 403 || /credit balance|billing|api key/i.test(message);
+    const minutes = accountLevel ? 30 : 5;
+    this.liveDownUntil = Date.now() + minutes * 60_000;
+    this.liveDownReason = accountLevel ? 'anthropic account unavailable (credits/key)' : 'anthropic unreachable';
+    this.logger.warn(`live engine failed (${message.slice(0, 160)}); offline engine for ${minutes} min`);
   }
 
   // ── POST /ai/confirm-action ──────────────────────────────────────────────────
