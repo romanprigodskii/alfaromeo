@@ -1,0 +1,65 @@
+# Standalone Альфа-Ромео backend for a host that already runs other things (e.g. a VPN box where
+# :443 is taken). Everything is isolated on its own `alfa-romeo` network: app + its own Postgres +
+# its own Caddy. Caddy publishes only :80 (ACME HTTP-01 + redirect) and the HTTPS port
+# (default 4443), so the host's existing :443 / Caddy / containers are never touched.
+#
+#   cd /opt/alfa-romeo/backend/deploy/standalone && docker compose up -d --build
+#
+# Hostname defaults to the host's sslip.io name (real Let's Encrypt cert, no DNS setup needed);
+# override ALFA_API_HOST / ALFA_HTTPS_PORT in ../../.env once a real domain points here.
+name: alfa-romeo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alfa-romeo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alfa
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: alfa_romeo
+    volumes:
+      - alfa_pgdata:/var/lib/postgresql/data
+    networks: [alfa-romeo]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alfa -d alfa_romeo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ../..
+    image: alfa-romeo-api:latest
+    container_name: alfa-romeo-api
+    restart: unless-stopped
+    env_file: ../../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [alfa-romeo]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: alfa-romeo-caddy
+    restart: unless-stopped
+    environment:
+      ALFA_API_HOST: ${ALFA_API_HOST:-5-144-181-60.sslip.io}
+      ALFA_HTTPS_PORT: ${ALFA_HTTPS_PORT:-4443}
+    ports:
+      - "80:80"
+      - "${ALFA_HTTPS_PORT:-4443}:${ALFA_HTTPS_PORT:-4443}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - alfa_caddy_data:/data
+      - alfa_caddy_config:/config
+    depends_on: [api]
+    networks: [alfa-romeo]
+
+networks:
+  alfa-romeo:
+    name: alfa-romeo
+
+volumes:
+  alfa_pgdata:
+  alfa_caddy_data:
+  alfa_caddy_config:

@@ -1,0 +1,37 @@
+# Own Caddy for the standalone deploy (see docker-compose.yml). HTTPS on a non-443 port; the
+# Let's Encrypt cert is obtained via HTTP-01 on :80.
+{
+	https_port {$ALFA_HTTPS_PORT}
+}
+
+{$ALFA_API_HOST}:{$ALFA_HTTPS_PORT} {
+	# :443 on the host belongs to something else, so only HTTP-01 (on :80) can validate.
+	tls {
+		issuer acme {
+			disable_tlsalpn_challenge
+		}
+	}
+
+	encode zstd gzip
+
+	# WebSocket price stream (§11.4) — unbuffered so pushed ticks flush immediately.
+	handle /ws* {
+		reverse_proxy alfa-romeo-api:4000 {
+			flush_interval -1
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# REST + SSE (/ai/chat). flush_interval -1 keeps SSE tokens unbuffered.
+	handle {
+		reverse_proxy alfa-romeo-api:4000 {
+			flush_interval -1
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000"
+		X-Content-Type-Options "nosniff"
+	}
+}
