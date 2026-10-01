@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Tonal/outline secondary action — quieter than ``PrimaryButton``.
+/// Quieter action (docs/DESIGN.md §5): `fill` background, ink text, same metrics as ``PrimaryButton``.
+/// Text-only; `icon` is kept for source compatibility and not drawn.
 struct SecondaryButton: View {
     let title: String
     var icon: String? = nil
@@ -11,30 +12,52 @@ struct SecondaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
-                if let icon { Image(systemName: icon).font(.system(size: 16, weight: .semibold)) }
-                Text(title).font(BrandFont.headline)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 52)
-            .foregroundStyle(theme.textPrimary)
-            .background(theme.elevated)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .stroke(theme.border, lineWidth: 1)
-            )
-            .opacity(isEnabled ? 1 : 0.45)
+            Text(title)
+                .font(BrandFont.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, Spacing.md)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 52)
+                .foregroundStyle(isEnabled ? theme.textPrimary : theme.textTertiary)
+                .background(theme.fill)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel(title)
     }
 }
 
+/// Plain accent text action (docs/DESIGN.md §5), e.g. «Подробнее», «Отменить».
+struct TertiaryButton: View {
+    let title: String
+    var action: () -> Void
+
+    @Environment(\.theme) private var theme
+    @Environment(\.isEnabled) private var isEnabled
+
+    init(_ title: String, action: @escaping () -> Void) {
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(BrandFont.body(17, weight: .medium))
+                .foregroundStyle(isEnabled ? theme.accent : theme.textTertiary)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
+    }
+}
+
 #Preview {
     VStack(spacing: Spacing.md) {
-        SecondaryButton(title: "Подробнее", icon: "chevron.up.circle") {}
+        SecondaryButton(title: "Подробнее") {}
         SecondaryButton(title: "Недоступно") {}.disabled(true)
+        TertiaryButton("Отменить") {}
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)

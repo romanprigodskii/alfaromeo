@@ -11,7 +11,8 @@ private struct BottomSheetModifier<SheetBody: View>: ViewModifier {
     func body(content: Content) -> some View {
         content.sheet(isPresented: $isPresented) {
             sheetBody()
-                .padding(Spacing.lg)
+                .padding(.horizontal, Spacing.screen)
+                .padding(.vertical, Spacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .presentationDetents(detents)
                 .presentationDragIndicator(.visible)
@@ -38,13 +39,13 @@ extension View {
         var body: some View {
             ZStack {
                 Theme.default.background.ignoresSafeArea()
-                PrimaryButton(title: "Открыть BottomSheet") { shown = true }
+                PrimaryButton(title: "Открыть шторку") { shown = true }
                     .padding(Spacing.lg)
             }
             .bottomSheet(isPresented: $shown) {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     Text("BottomSheet").font(BrandFont.title).foregroundStyle(Theme.default.textPrimary)
-                    Text("Нативные detents + индикатор перетаскивания, тематический фон.")
+                    Text("Нативные detents, индикатор перетаскивания, фон темы.")
                         .font(BrandFont.body()).foregroundStyle(Theme.default.textSecondary)
                     StatusPill(status: .success, text: "Готово")
                 }

@@ -15,6 +15,12 @@ struct ScreenshotHost: View {
     @State private var receiptURL: URL?
     @State private var reportURL: URL?
 
+    /// Module shots added for the design passes; their screens load their own stores.
+    private static let selfLoadingShots: Set<String> = [
+        "cardsHub", "cardDetail", "mobileHub", "mobileTariffs", "savingsHub", "openDeposit",
+        "onboarding", "login", "splash", "copilotChat", "subscription", "transferFlow", "paymentsTemplates",
+    ]
+
     var body: some View {
         Group {
             if ready { content } else { ProgressView().controlSize(.large) }
@@ -170,6 +176,50 @@ struct ScreenshotHost: View {
         case "coins":
             CoinGalleryShot()   // brand coin logos (BTC/ETH/USDT/USDC/SOL/TON) + ЦФА/ticker fallbacks
 
+        // ── Дизайн-система (docs/DESIGN.md) + one entry per module for design passes ──
+        case "gallery":
+            DesignSystemGallery(profileType: .personal, scheme: .light)
+        case "galleryDark":
+            DesignSystemGallery(profileType: .personal, scheme: .dark)
+        case "galleryBusiness":
+            DesignSystemGallery(profileType: .business, scheme: .light)
+        case "galleryCards":
+            DesignSystemGallery(profileType: .personal, scheme: .light, scrollTo: .cards)
+        case "galleryNumbers":
+            DesignSystemGallery(profileType: .personal, scheme: .light, scrollTo: .numbers)
+        case "galleryButtons":
+            DesignSystemGallery(profileType: .personal, scheme: .light, scrollTo: .buttons)
+        case "galleryType":
+            DesignSystemGallery(profileType: .personal, scheme: .light, scrollTo: .type)
+        case "cardsHub":
+            NavigationStack { CardsView().navigationDestination(for: CardsRoute.self) { $0.destination } }
+        case "cardDetail":
+            NavigationStack { CardDetailView(cardId: "card_v") }
+        case "mobileHub":
+            NavigationStack { MobileHubView() }
+        case "mobileTariffs":
+            NavigationStack { TariffsView() }
+        case "savingsHub":
+            NavigationStack { SavingsHubView() }
+        case "openDeposit":
+            NavigationStack { OpenDepositView(productId: "dep_term") }
+        case "onboarding":
+            NavigationStack { OnboardingView() }.environment(AuthCoordinator())
+        case "login":
+            NavigationStack { LoginView() }.environment(AuthCoordinator())
+        case "splash":
+            SplashView()
+        case "copilotChat":
+            NavigationStack { CopilotChatView(launch: .standard, embedded: true) }
+        case "subscription":
+            NavigationStack { SubscriptionView() }
+        case "transferFlow":
+            NavigationStack { TransferFlowView(kind: .byPhone) }
+        case "paymentsTemplates":
+            NavigationStack {
+                TemplatesView().navigationDestination(for: PaymentsRoute.self) { $0.destination }
+            }
+
         default:
             Text("unknown shot: \(name)")
         }
@@ -190,6 +240,8 @@ struct ScreenshotHost: View {
             || name.hasPrefix("profile") || name.hasPrefix("home") || name.hasPrefix("security")
             || name.hasPrefix("notif") || name.hasPrefix("theme") || name.hasPrefix("biz")
             || name.hasPrefix("market") || name == "coins" { ready = true; return }
+        // Design-pass module shots: each screen loads its own store.
+        if Self.selfLoadingShots.contains(name) || name.hasPrefix("gallery") { ready = true; return }
 
         let pid = MockData.personalProfileId
         let store = HistoryStore.shared

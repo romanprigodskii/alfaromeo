@@ -1,20 +1,26 @@
 import SwiftUI
 
-/// Motion tokens (§13.1) — restrained, premium. Durations + reusable spring presets.
+/// Motion tokens (docs/DESIGN.md §9): 150–250 ms, ease-out, motion only conveys state. No bounces.
+/// The legacy spring names are kept for source compatibility and now resolve to ease-out curves.
 enum Motion {
     // ── Durations (seconds) ──
     static let instant: Double = 0.12
-    static let quick: Double = 0.2
-    static let standard: Double = 0.32
-    static let slow: Double = 0.5
+    static let quick: Double = 0.18
+    static let standard: Double = 0.25
+    static let slow: Double = 0.35
 
-    // ── Spring presets ──
-    /// Snappy, low overshoot — buttons, toggles, small state changes.
-    static let snappy = Animation.spring(response: 0.32, dampingFraction: 0.82)
-    /// Smooth — sheet / content transitions.
-    static let smooth = Animation.spring(response: 0.45, dampingFraction: 0.9)
-    /// Bouncy — playful emphasis (use sparingly).
-    static let bouncy = Animation.spring(response: 0.5, dampingFraction: 0.65)
+    /// Ease-out (quart-like): fast start, soft landing.
+    static func easeOut(_ duration: Double) -> Animation {
+        .timingCurve(0.25, 1, 0.5, 1, duration: duration)
+    }
+
+    // ── Presets ──
+    /// Small state changes: press, toggle, selection, value change.
+    static let snappy = easeOut(0.18)
+    /// Content and sheet transitions.
+    static let smooth = easeOut(0.25)
+    /// Legacy name. No bounces in this system; same as ``smooth``.
+    static let bouncy = easeOut(0.25)
     /// Progress fills (goals / limits / GB).
-    static let progress = Animation.spring(response: 0.6, dampingFraction: 0.95)
+    static let progress = easeOut(0.35)
 }

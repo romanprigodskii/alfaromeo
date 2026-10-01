@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Circular avatar showing initials or an SF Symbol, with an optional context ring.
+/// Circular avatar: initials or an SF Symbol on a neutral `fill` circle, with an optional context ring.
 struct Avatar: View {
     var initials: String? = nil
     var systemImage: String? = nil
@@ -11,11 +11,11 @@ struct Avatar: View {
 
     var body: some View {
         ZStack {
-            Circle().fill(theme.elevated)
+            Circle().fill(theme.fill)
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(theme.textSecondary)
+                    .font(.system(size: size * 0.42, weight: .regular))
+                    .foregroundStyle(theme.textPrimary)
             } else {
                 Text(initials ?? "")
                     .font(BrandFont.body(size * 0.36, weight: .semibold))
@@ -24,7 +24,7 @@ struct Avatar: View {
         }
         .frame(width: size, height: size)
         .overlay(
-            Circle().stroke(ringColor ?? .clear, lineWidth: ringColor == nil ? 0 : 2)
+            Circle().strokeBorder(ringColor ?? .clear, lineWidth: ringColor == nil ? 0 : 2)
         )
         .accessibilityLabel(initials ?? "Аватар")
     }

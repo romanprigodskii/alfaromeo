@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Compact status indicator for operation / delivery states (§13.1 animated statuses).
+/// Operation / delivery state (docs/DESIGN.md §5): caption 12 medium, radius 8. Tinted only by the
+/// state it reports: success green, declined red, pending / warning amber, processing neutral with a
+/// small spinner. No decorative icons.
 struct StatusPill: View {
     enum Status: String, CaseIterable, Sendable {
         case processing, success, declined, pending, warning
@@ -15,6 +17,7 @@ struct StatusPill: View {
             }
         }
 
+        /// Kept for callers that draw their own status glyph.
         var systemImage: String {
             switch self {
             case .processing: return "arrow.triangle.2.circlepath"
@@ -31,42 +34,47 @@ struct StatusPill: View {
 
     @Environment(\.theme) private var theme
 
-    // Foreground for the label + icon. In the light scheme the saturated status hues fail AA as
-    // text on the pale tinted capsule, so use darker "ink" variants there (§13.1 readability).
-    private var color: Color {
-        let dark = theme.isDark
+    private var role: Theme.StatusRole? {
         switch status {
-        case .processing, .pending: return theme.accent
-        case .success:              return dark ? theme.success : BrandColors.successInkLight
-        case .declined:             return dark ? theme.danger  : BrandColors.dangerInkLight
-        case .warning:              return dark ? theme.warning : BrandColors.warningInkLight
+        case .processing:         return nil
+        case .success:            return .success
+        case .declined:           return .danger
+        case .pending, .warning:  return .warning
+        }
+    }
+
+    private var foreground: Color { role.map { theme.statusInk($0) } ?? theme.textSecondary }
+
+    private var background: Color {
+        switch role {
+        case .success: return theme.success.opacity(theme.isDark ? 0.22 : 0.14)
+        case .danger:  return theme.danger.opacity(theme.isDark ? 0.22 : 0.12)
+        case .warning: return theme.warning.opacity(theme.isDark ? 0.22 : 0.16)
+        case nil:      return theme.fill
         }
     }
 
     var body: some View {
         HStack(spacing: Spacing.xs) {
             if status == .processing {
-                ProgressView().controlSize(.mini).tint(color)
-            } else {
-                Image(systemName: status.systemImage).font(.system(size: 11, weight: .bold))
+                ProgressView().controlSize(.mini).tint(foreground)
             }
-            Text(text ?? status.label).font(BrandFont.caption.weight(.semibold))
+            Text(text ?? status.label)
+                .font(BrandFont.micro)
+                .lineLimit(1)
         }
-        .foregroundStyle(color)
+        .foregroundStyle(foreground)
         .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background(color.opacity(0.14), in: Capsule())
+        .padding(.vertical, 3)
+        .background(background, in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous))
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(text ?? status.label)
     }
 }
 
 #Preview {
     VStack(spacing: Spacing.md) {
-        StatusPill(status: .processing)
-        StatusPill(status: .success)
-        StatusPill(status: .declined)
-        StatusPill(status: .pending)
-        StatusPill(status: .warning)
+        ForEach(StatusPill.Status.allCases, id: \.self) { StatusPill(status: $0) }
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)

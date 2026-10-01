@@ -1,6 +1,9 @@
 import SwiftUI
 
-/// Small badge: a count, a text label, or a dot. For unread counts, statuses, and tier tags.
+/// Small badge (docs/DESIGN.md §5): a count, a text tag, or a dot. Caption 12 medium, radius 8.
+///
+/// A text badge is tinted only when `tint` is a status color (success / danger / warning); any other
+/// tint (accent, legacy crypto) renders as a neutral `fill` tag, so tags never become decoration.
 struct Badge: View {
     enum Kind: Equatable {
         case count(Int)
@@ -13,28 +16,40 @@ struct Badge: View {
 
     @Environment(\.theme) private var theme
 
-    private var color: Color { tint ?? theme.danger }
-
     @ViewBuilder
     var body: some View {
         switch kind {
         case .dot:
-            Circle().fill(color).frame(width: 8, height: 8)
+            Circle().fill(tint ?? theme.danger).frame(width: 8, height: 8)
         case .count(let n):
+            let color = tint ?? theme.danger
             Text(n > 99 ? "99+" : "\(n)")
                 .font(BrandFont.micro)
-                .foregroundStyle(color.bestOnColor)   // contrast-safe on any tint (platinum/cyan too)
+                .monospacedDigit()
+                .foregroundStyle(color.bestOnColor)
                 .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .frame(minWidth: 18)
+                .frame(minWidth: 18, minHeight: 18)
                 .background(color, in: Capsule())
         case .text(let s):
+            let role = theme.statusRole(of: tint)
             Text(s)
                 .font(BrandFont.micro)
-                .foregroundStyle(color)
-                .padding(.horizontal, Spacing.sm)
-                .padding(.vertical, 3)
-                .background(color.opacity(0.16), in: Capsule())
+                .lineLimit(1)
+                .foregroundStyle(role.map { theme.statusInk($0) } ?? theme.textPrimary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    role.map { statusColor($0).opacity(theme.isDark ? 0.22 : 0.14) } ?? theme.fill,
+                    in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous)
+                )
+        }
+    }
+
+    private func statusColor(_ role: Theme.StatusRole) -> Color {
+        switch role {
+        case .success: return theme.success
+        case .danger:  return theme.danger
+        case .warning: return theme.warning
         }
     }
 }
@@ -43,7 +58,8 @@ struct Badge: View {
     HStack(spacing: Spacing.md) {
         Badge(kind: .count(3))
         Badge(kind: .count(128))
-        Badge(kind: .text("PRO"), tint: Theme.default.accent)
+        Badge(kind: .text("Pro"), tint: Theme.default.accent)
+        Badge(kind: .text("Live"), tint: Theme.default.success)
         Badge(kind: .dot, tint: Theme.default.success)
     }
     .padding()

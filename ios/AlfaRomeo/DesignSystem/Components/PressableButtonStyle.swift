@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Shared press feedback: subtle scale + opacity, restrained per §13.1. Honors Reduce Motion —
-/// when on, the scale and animation are dropped (opacity-only, instant).
+/// Shared press feedback: a slight scale + dim, ease-out, no bounce (docs/DESIGN.md §9). Honors
+/// Reduce Motion: the scale and animation are dropped (dim only, instant).
 struct PressableButtonStyle: ButtonStyle {
-    var pressedScale: CGFloat = 0.97
+    var pressedScale: CGFloat = 0.98
 
     func makeBody(configuration: Configuration) -> some View {
         Label(configuration: configuration, pressedScale: pressedScale)
@@ -17,7 +17,7 @@ struct PressableButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? pressedScale : 1))
-                .opacity(configuration.isPressed ? 0.9 : 1)
+                .opacity(configuration.isPressed ? 0.85 : 1)
                 .animation(reduceMotion ? nil : Motion.snappy, value: configuration.isPressed)
         }
     }
