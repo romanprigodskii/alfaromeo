@@ -5,15 +5,15 @@ import Charts
 /// timeframe tabs (15м / 1Ч / 4Ч / 1Д), a candles/line toggle, a live period-delta chip, and an
 /// optional bottom indicator panel (Объём / MACD) that shares the price panel's x-scale.
 ///
-/// `.d1` renders the **real** backend candles from ``AssetDetailModel`` (range `.day`); the intraday
-/// frames are synthesized around the **live** price (``SyntheticMarket``). Reads the ambient `theme.*`
-/// tokens (light, like the rest of the app).
+/// Every timeframe renders **real** exchange klines from ``AssetDetailModel`` (fetched per tab), with
+/// the last candle pinned to the live price so the chart agrees with the header. Only when no source
+/// answers does it fall back to ``SyntheticMarket`` around the live price — and the caption says
+/// «синтетика». Reads the ambient `theme.*` tokens (light, like the rest of the app).
 struct TradingChartView: View {
     let symbol: String
     var model: AssetDetailModel
 
     @Environment(\.theme) private var theme
-    @Environment(\.apiClient) private var api
     @State private var prices = LivePriceService.shared
 
     @State private var timeframe: Timeframe = .h1
@@ -24,9 +24,21 @@ struct TradingChartView: View {
     private let axisLabelWidth: CGFloat = 58
 
     private var series: [PriceCandle] {
-        if timeframe == .d1 { return model.candles }
-        return SyntheticMarket.intraday(symbol: symbol, timeframe: timeframe,
-                                        mid: prices.price(symbol), now: anchor)
+        let live = prices.price(symbol)
+        if var real = model.candles[timeframe], let last = real.last {
+            // Pin the forming candle to the live tick (only a real feed — never graft demo onto market data).
+            if prices.isLive, live > 0 {
+                real[real.count - 1] = PriceCandle(t: last.t, o: last.o, h: max(last.h, live),
+                                                   l: min(last.l, live), c: live, v: last.v)
+            }
+            return real
+        }
+        if model.loading.contains(timeframe) { return [] }   // brief placeholder, not a fake series
+        return SyntheticMarket.intraday(symbol: symbol, timeframe: timeframe, mid: live, now: anchor)
+    }
+
+    private var candleSource: CandleSource {
+        model.candles[timeframe] == nil ? .synthetic : model.candleSource(timeframe)
     }
 
     private func barWidth(_ count: Int) -> CGFloat { max(2, min(9, 250.0 / Double(max(count, 1)))) }
@@ -41,13 +53,17 @@ struct TradingChartView: View {
         let candles = series
         VStack(alignment: .leading, spacing: Spacing.sm) {
             controlsRow
-            if let pct = periodDelta { deltaChip(pct) }
+            HStack(spacing: Spacing.sm) {
+                if let pct = periodDelta { deltaChip(pct) }
+                Spacer(minLength: Spacing.xs)
+                sourceCaption
+            }
             CandleChart(candles: candles, style: style, axisLabelWidth: axisLabelWidth)
             if indicator != .none, !candles.isEmpty {
                 indicatorPanel(candles)
             }
         }
-        .task { await model.select(range: .day, api: api) }   // back the 1Д frame with real candles
+        .task(id: timeframe) { await model.loadChart(timeframe) }   // real klines per tab
     }
 
     // MARK: Controls
@@ -103,6 +119,25 @@ struct TradingChartView: View {
             Text("\(CryptoFormat.pct(pct)) · \(timeframe.title)").font(BrandFont.caption.weight(.medium))
         }
         .foregroundStyle(pct >= 0 ? theme.success : theme.danger)
+    }
+
+    /// Candle provenance: «Binance · 1Ч свечи» for market data, «синтетика» (amber) otherwise.
+    @ViewBuilder private var sourceCaption: some View {
+        if model.loading.contains(timeframe) && model.candles[timeframe] == nil {
+            ProgressView().controlSize(.mini)
+        } else {
+            let synthetic = candleSource == .synthetic
+            HStack(spacing: 4) {
+                Image(systemName: synthetic ? "wand.and.stars" : "chart.bar.xaxis")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(synthetic ? "синтетика" : "\(candleSource.caption) · свечи \(timeframe.title)")
+                    .font(BrandFont.micro)
+            }
+            .foregroundStyle(synthetic ? theme.warning : theme.textSecondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(synthetic ? "Синтетический график, нет рыночных свечей"
+                                          : "Свечи \(candleSource.caption), таймфрейм \(timeframe.title)")
+        }
     }
 
     // MARK: Indicator sub-panel (shares the price panel's x-scale + axis width)

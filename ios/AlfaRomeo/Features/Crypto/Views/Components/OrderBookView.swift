@@ -33,6 +33,8 @@ struct OrderBookView: View {
     private var header: some View {
         HStack {
             Text("Стакан").font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
+            // Depth is mocked around the live mid (§11.4) — say so, the price above it is real.
+            Text("демо-глубина").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
             Spacer()
             Text("Цена, ₽").font(BrandFont.micro).foregroundStyle(theme.textSecondary)
             Spacer()
@@ -107,10 +109,11 @@ struct OrderBookView: View {
         return change >= 0 ? theme.success : theme.danger
     }
 
+    // `CryptoFormat.rub` joins amount and ₽ with a NO-BREAK SPACE — strip that, or «≈ $84 646 ₽» leaks.
     private func priceStr(_ p: Double) -> String {
-        CryptoFormat.rub(p, fraction: p >= 1000 ? 0 : 2).replacingOccurrences(of: " ₽", with: "")
+        CryptoFormat.rub(p, fraction: p >= 1000 ? 0 : 2).replacingOccurrences(of: "\u{00A0}₽", with: "")
     }
     private var usdStr: String {
-        CryptoFormat.rub(usd, fraction: usd >= 1000 ? 0 : 2).replacingOccurrences(of: " ₽", with: "")
+        CryptoFormat.rub(usd, fraction: usd >= 1000 ? 0 : 2).replacingOccurrences(of: "\u{00A0}₽", with: "")
     }
 }

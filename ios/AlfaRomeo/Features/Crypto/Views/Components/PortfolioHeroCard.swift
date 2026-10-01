@@ -2,10 +2,13 @@ import SwiftUI
 
 /// The unified ₽-equivalent header for the digital-asset hub (§9.6: «единый ₽-эквивалент портфеля
 /// сверху»). One cold-gradient hero over крипта + ЦФА + внешние кошельки, with the live 24h delta and
-/// a LIVE indicator that pulses while ``LivePriceService`` streams. The total ticks as prices update.
+/// an honest price-source badge (``PriceSourceBadge``: «LIVE · Binance» pulsing while a real feed
+/// streams, «Демо-цены» offline). The total ticks as prices update.
 struct PortfolioHeroCard: View {
     let summary: PortfolioSummary
-    let isLive: Bool
+    /// Active leg of ``LivePriceService`` — drives the source badge.
+    let source: PriceSource
+    var isStale: Bool = false
     /// Display currency for the total + breakdowns (§9.6 ₽/$ toggle). The card hosts the toggle.
     @Binding var denomination: PortfolioDenomination
     /// Live USD/₽ rate used when `denomination == .usd` (``LivePriceService/usdRub``).
@@ -13,7 +16,6 @@ struct PortfolioHeroCard: View {
 
     @Environment(\.theme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse = false
 
     private var up: Bool { summary.change24hRub >= 0 }
 
@@ -24,7 +26,7 @@ struct PortfolioHeroCard: View {
                     .font(BrandFont.caption.weight(.medium))
                     .foregroundStyle(.white.opacity(0.85))
                 Spacer()
-                liveTag
+                PriceSourceBadge(source: source, isStale: isStale, style: .onGradient)
             }
 
             Text(CryptoFormat.money(summary.totalRub, denom: denomination, usdRub: usdRub, fraction: 0))
@@ -45,6 +47,8 @@ struct PortfolioHeroCard: View {
                     Text("\(CryptoFormat.money(abs(summary.change24hRub), denom: denomination, usdRub: usdRub, fraction: 0)) · \(CryptoFormat.pct(summary.change24hPct))")
                         .font(BrandFont.callout.weight(.semibold))
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)   // real 24h figures vary in width — never wrap the %
                     Text("за 24ч").font(BrandFont.caption).opacity(0.8)
                 }
                 .foregroundStyle(.white)
@@ -69,7 +73,6 @@ struct PortfolioHeroCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.cryptoGradient)
         .clipShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
-        .onAppear { pulse = true }
     }
 
     /// Bybit-style ₽/$ denomination switch — a small two-segment pill on the gradient. White-filled
@@ -102,23 +105,6 @@ struct PortfolioHeroCard: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private var liveTag: some View {
-        HStack(spacing: Spacing.xs) {
-            Circle()
-                .fill(.white)
-                .frame(width: 7, height: 7)
-                .opacity(isLive && pulse && !reduceMotion ? 0.35 : 1)
-                .animation(isLive && !reduceMotion ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : nil, value: pulse)
-            Text(isLive ? "LIVE" : "КЭШ")
-                .font(BrandFont.micro.weight(.bold))
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, 3)
-        .background(.white.opacity(0.18), in: Capsule())
-        .accessibilityLabel(isLive ? "Живые цены" : "Кэшированные цены")
-    }
-
     private func breakdown(_ title: String, _ value: Double) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(BrandFont.micro).foregroundStyle(.white.opacity(0.75))
@@ -137,7 +123,7 @@ struct PortfolioHeroCard: View {
     PortfolioHeroCard(
         summary: PortfolioSummary(totalRub: 2_184_300, cryptoRub: 1_820_000, cfaRub: 120_300,
                                   externalRub: 244_000, change24hRub: 31_200, change24hPct: 1.45),
-        isLive: true,
+        source: .exchange(.binance),
         denomination: .constant(.rub),
         usdRub: 92
     )

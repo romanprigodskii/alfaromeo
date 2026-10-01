@@ -28,7 +28,8 @@ struct LiveAPIClient: APIClient {
 
     // MARK: Pricing (§11.4) — first real backend data. ₽ equivalent is computed server-side.
 
-    /// `GET /prices?assets=BTC,ETH` → ₽ snapshot. The client never hits CoinGecko/Binance directly.
+    /// `GET /prices?assets=BTC,ETH` → ₽ snapshot. When the backend is unreachable, ``LivePriceService``
+    /// falls back to public exchanges directly (``ExchangeFeed``).
     func prices(assets: [String]) async throws -> [PriceTick] {
         let list = assets.joined(separator: ",")
         return try await get("prices", query: [URLQueryItem(name: "assets", value: list)])

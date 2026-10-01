@@ -160,6 +160,10 @@ struct ScreenshotHost: View {
             CryptoShot()                                   // light hub + ₽/$ toggle (needs live prices)
         case "marketHubConvert":
             CryptoShot(push: .convert(asset: "BTC"))       // Обмен flow pushed on the hub
+        case "marketAsset":
+            CryptoShot(push: .assetDetail(symbol: "BTC"))   // asset detail: source badge + real klines
+        case "marketAssetTON":
+            CryptoShot(push: .assetDetail(symbol: "TON"))   // TON priced via GRAMUSDT upstream
         case "marketHubMock":
             // Same hub, rendered without the live-price gate so it shows offline too (proves it's light).
             NavigationStack { CryptoHubView() }

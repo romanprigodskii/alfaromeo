@@ -16,7 +16,8 @@ struct CryptoAsset: Identifiable, Hashable, Sendable {
 }
 
 /// The canonical crypto registry the hub draws on. Prices come from ``LivePriceService`` (BTC/ETH/
-/// USDT/SOL/TON are backend-tracked; USDC is priced 1:1 against USDT, both ≈ $1).
+/// USDT/SOL/TON are backend-tracked; USDC uses its own exchange pair when on the exchange leg, else
+/// 1:1 against USDT, both ≈ $1). TON is quoted upstream as GRAM since the 2026 rebrand.
 enum CryptoCatalog {
 
     static let all: [CryptoAsset] = [

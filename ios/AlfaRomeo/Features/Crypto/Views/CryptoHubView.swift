@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// Крипто/Трейдинг хаб (§9.6). One unified ₽ portfolio over **bank crypto + ЦФА + watch-only external
-/// wallets**, valued on real live prices (REST snapshot + ``PriceSocket`` stream via
-/// ``LivePriceService``). The narrative split is two segments under one header: **Крипта** (под
-/// приходящий режим, с комплаенс-гейтингом) and **ЦФА** (259-ФЗ — легальный путь, без крипто-лимитов).
+/// wallets**, valued on real live prices via ``LivePriceService`` (our backend → a public exchange
+/// directly → demo walk; the hero badge names the active source). The narrative split is two
+/// segments under one header: **Крипта** (под приходящий режим, с комплаенс-гейтингом) and **ЦФА**
+/// (259-ФЗ — легальный путь, без крипто-лимитов).
 /// A ₽/$ denomination toggle on the hero re-expresses the whole portfolio (display-only).
 ///
 /// Reached two ways — as the **Биржа** tab root (``MainTabView``, wrapped by ``SectionScaffold``) or
@@ -34,7 +35,7 @@ struct CryptoHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                PortfolioHeroCard(summary: summary, isLive: prices.isLive,
+                PortfolioHeroCard(summary: summary, source: prices.source, isStale: prices.isStale,
                                   denomination: $denomination, usdRub: prices.usdRub)
                 quickActions
                 segmentPicker

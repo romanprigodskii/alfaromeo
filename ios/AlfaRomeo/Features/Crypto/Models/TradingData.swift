@@ -1,16 +1,16 @@
 import Foundation
 
 /// Pro-trading chart data for the crypto asset detail (§9.6 «график, таймфреймы»). Exchange-style
-/// timeframe tabs (15м / 1Ч / 4Ч / 1Д). The daily frame uses the **real** backend candles loaded by
-/// ``AssetDetailModel``; the intraday frames are deterministically synthesized around the **live**
-/// price (the same mock-around-real-price licence the order book uses, §11.4) so the chart feels
-/// like a venue without inventing a server endpoint. Pure value helpers — no view state.
+/// timeframe tabs (15м / 1Ч / 4Ч / 1Д). Every frame uses **real** exchange klines loaded by
+/// ``AssetDetailModel``; only when no source answers (offline, or USDT which has no USDT pair) is a
+/// series deterministically synthesized around the **live** price (the same mock-around-real-price
+/// licence the order book uses, §11.4) — and captioned «синтетика». Pure value helpers — no view state.
 
 // MARK: - Timeframe
 
 /// Bybit-style interval tabs for the trading chart. Lives in Features/Crypto (the Networking
-/// ``CandleRange`` is range-based and out of scope); `.d1` maps onto a real backend range.
-enum Timeframe: String, CaseIterable, Identifiable, Hashable {
+/// ``CandleRange`` is range-based); each tab maps 1:1 onto an exchange kline interval.
+enum Timeframe: String, CaseIterable, Identifiable, Hashable, Sendable {
     case m15, h1, h4, d1
     var id: String { rawValue }
 
@@ -23,8 +23,17 @@ enum Timeframe: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// `.d1` is the only frame backed by real candles (`CandleRange.day`); the rest are synthetic.
     var isIntraday: Bool { self != .d1 }
+
+    /// Binance kline interval token (case-sensitive: `1h`, not `1H`).
+    var klineInterval: String {
+        switch self {
+        case .m15: return "15m"
+        case .h1:  return "1h"
+        case .h4:  return "4h"
+        case .d1:  return "1d"
+        }
+    }
 
     var candleCount: Int {
         switch self {
@@ -152,9 +161,9 @@ enum SyntheticMarket {
 
 // MARK: - Indicators
 
-/// One bar of the volume sub-panel — magnitude derived from the candle body+range, colored by
-/// direction (зелёный вверх / красный вниз). Volume is not a backend field (§11.4 tracks price),
-/// so this is a plausible derived series for the pro view, not exchange tape.
+/// One bar of the volume sub-panel, colored by direction (зелёный вверх / красный вниз). Real traded
+/// volume when the candle came from exchange klines (``PriceCandle/v``); otherwise a plausible series
+/// derived from the candle body+range (backend / synthetic candles carry no volume).
 struct VolumeBar: Identifiable, Hashable {
     let index: Int
     let value: Double
@@ -178,7 +187,7 @@ enum TechnicalIndicators {
             let body = abs(c.c - c.o)
             let range = max(c.h - c.l, body)
             let jitter = 0.6 + DeterministicNoise.unit(seed, UInt64(i)) * 0.8
-            return VolumeBar(index: i, value: (range + body) * jitter, up: c.c >= c.o)
+            return VolumeBar(index: i, value: c.v ?? (range + body) * jitter, up: c.c >= c.o)
         }
     }
 

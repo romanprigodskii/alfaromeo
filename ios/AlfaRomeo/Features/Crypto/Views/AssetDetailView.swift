@@ -61,6 +61,8 @@ struct AssetDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(asset?.name ?? symbol).font(BrandFont.title).foregroundStyle(theme.textPrimary)
                 Text("\(symbol) · \(asset?.chain ?? "")").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                PriceSourceBadge(source: prices.source, isStale: prices.isStale)
+                    .padding(.top, 2)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
@@ -133,9 +135,28 @@ struct AssetDetailView: View {
                 Divider().overlay(theme.border)
                 infoRow("Тип", (asset?.isStablecoin == true) ? "Стейблкоин" : "Криптовалюта")
                 Divider().overlay(theme.border)
-                infoRow("Курс (live)", CryptoFormat.rub(price))
+                infoRow(prices.isLive ? "Курс (live)" : "Курс (демо)", CryptoFormat.rub(price))
+                Divider().overlay(theme.border)
+                infoRow("Источник цены", prices.source.detail)
+                if case .exchange = prices.source, let fx = prices.fx {
+                    Divider().overlay(theme.border)
+                    infoRow(fxLabel(fx), CryptoFormat.rub(fx.usdRub, fraction: 2))
+                }
             }
         }
+    }
+
+    /// «Курс ЦБ на 02.10» — names the rate's origin so the ₽ conversion is auditable.
+    private func fxLabel(_ fx: FxRateClient.Rate) -> String {
+        let origin: String
+        switch fx.origin {
+        case .cbr:      origin = "Курс ЦБ $"
+        case .market:   origin = "Рыночный курс USDT"
+        case .cached:   origin = "Курс ЦБ $ (сохр.)"
+        case .fallback: origin = "Курс $ (оценка)"
+        }
+        guard let date = fx.asOf, fx.origin != .market else { return origin }
+        return "\(origin) на \(date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))"
     }
 
     private func infoRow(_ label: String, _ value: String) -> some View {
