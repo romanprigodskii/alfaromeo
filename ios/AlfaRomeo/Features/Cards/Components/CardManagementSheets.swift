@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Management sheets for the card detail screen (§6.3): лимиты · смена дизайна · привязка · PIN ·
+// Management sheets for the card detail screen (§6.3): лимиты, смена дизайна, привязка, PIN,
 // Пополнить/Перевести. Each is presented via `.sheet` and reports back through a closure; the store
 // owns the actual mutation.
 
@@ -23,43 +23,44 @@ struct CardLimitsSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    SurfaceCard {
+                VStack(alignment: .leading, spacing: Spacing.section) {
+                    GroupedSection {
                         VStack(alignment: .leading, spacing: Spacing.sm) {
                             HStack {
-                                Text("Потрачено в этом месяце").font(BrandFont.caption)
+                                Text("Потрачено в этом месяце").font(BrandFont.subheadline)
                                     .foregroundStyle(theme.textSecondary)
                                 Spacer()
-                                Text("\(Int(limits.monthlyProgress * 100))%")
-                                    .font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textPrimary)
+                                Text(MoneyFormat.percent(fraction: limits.monthlyProgress, maxFractionDigits: 0))
+                                    .font(BrandFont.subheadline).monospacedDigit()
+                                    .foregroundStyle(theme.textPrimary)
                             }
+                            AmountText(amount: limits.monthlySpent, size: 22)
                             ProgressBar(value: limits.monthlyProgress)
-                            AmountText(amount: limits.monthlySpent, size: 17)
                         }
+                        .padding(.vertical, Spacing.rowVertical + 4)
+
+                        slider(title: "На операцию", value: $limits.perTransaction,
+                               range: 5_000...300_000, step: 5_000)
+                        slider(title: "В месяц", value: $limits.monthly,
+                               range: 10_000...2_000_000, step: 10_000)
                     }
 
-                    slider(title: "Лимит на операцию", value: $limits.perTransaction,
-                           range: 5_000...300_000, step: 5_000)
-                    slider(title: "Месячный лимит", value: $limits.monthly,
-                           range: 10_000...2_000_000, step: 10_000)
-
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            Toggle(isOn: $limits.onlineEnabled) {
-                                Label("Онлайн-платежи", systemImage: "globe").font(BrandFont.bodyM)
-                                    .foregroundStyle(theme.textPrimary)
-                            }.tint(theme.accent).padding(.vertical, Spacing.xs)
-                            Divider().overlay(theme.border)
-                            Toggle(isOn: $limits.contactlessEnabled) {
-                                Label("Бесконтакт (NFC)", systemImage: "wave.3.right").font(BrandFont.bodyM)
-                                    .foregroundStyle(theme.textPrimary)
-                            }.tint(theme.accent).padding(.vertical, Spacing.xs)
+                    GroupedSection("Способы оплаты") {
+                        Toggle(isOn: $limits.onlineEnabled) {
+                            Text("Онлайн-платежи").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
                         }
+                        .tint(theme.accent)
+                        .frame(minHeight: Spacing.rowMinHeight)
+                        Toggle(isOn: $limits.contactlessEnabled) {
+                            Text("Бесконтактная оплата").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        }
+                        .tint(theme.accent)
+                        .frame(minHeight: Spacing.rowMinHeight)
                     }
 
                     PrimaryButton(title: "Сохранить лимиты") { onSave(limits); dismiss() }
                 }
-                .padding(Spacing.lg)
+                .padding(Spacing.screen)
             }
             .background(theme.background.ignoresSafeArea())
             .navigationTitle("Лимиты")
@@ -71,16 +72,15 @@ struct CardLimitsSheet: View {
     }
 
     private func slider(title: String, value: Binding<Double>, range: ClosedRange<Double>, step: Double) -> some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
-                    Spacer()
-                    AmountText(amount: value.wrappedValue, size: 17)
-                }
-                Slider(value: value, in: range, step: step).tint(theme.accent)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack {
+                Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                Spacer()
+                AmountText(amount: value.wrappedValue, size: 17)
             }
+            Slider(value: value, in: range, step: step).tint(theme.accent)
         }
+        .padding(.vertical, Spacing.rowVertical)
     }
 }
 
@@ -105,35 +105,38 @@ struct CardDesignPickerSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.md) {
-                    ForEach(options) { design in
-                        Button { withAnimation(Motion.snappy) { selected = design.id } } label: {
-                            VStack(spacing: Spacing.sm) {
-                                CardFaceView(card: preview(design.id))
-                                    .frame(maxWidth: 240)
-                                HStack {
+                VStack(alignment: .leading, spacing: Spacing.lg) {
+                    CardFaceView(card: preview(selected))
+                        .frame(maxWidth: 300)
+                        .frame(maxWidth: .infinity)
+
+                    GroupedSection(separatorInset: 72) {
+                        ForEach(options) { design in
+                            Button { withAnimation(Motion.snappy) { selected = design.id } } label: {
+                                HStack(spacing: Spacing.sm + 4) {
+                                    CardFaceView(card: preview(design.id)).frame(width: 60)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(design.name).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                                        Text(design.blurb).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                                        Text(design.name).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                                        Text(design.blurb).font(BrandFont.subheadline)
+                                            .foregroundStyle(theme.textSecondary)
                                     }
-                                    Spacer()
-                                    Image(systemName: selected == design.id ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 20)).foregroundStyle(selected == design.id ? theme.accent : theme.border)
+                                    Spacer(minLength: Spacing.sm)
+                                    if selected == design.id {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(theme.accent)
+                                    }
                                 }
+                                .padding(.vertical, Spacing.sm + 2)
                             }
-                            .padding(Spacing.md)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                                .stroke(selected == design.id ? theme.accent : theme.border,
-                                        lineWidth: selected == design.id ? 2 : 1))
+                            .buttonStyle(.row)
                         }
-                        .buttonStyle(.plain)
                     }
 
                     PrimaryButton(title: "Применить дизайн") { onPick(selected); dismiss() }
                         .disabled(selected == card.designId)
                 }
-                .padding(Spacing.lg)
+                .padding(Spacing.screen)
             }
             .background(theme.background.ignoresSafeArea())
             .navigationTitle("Дизайн карты")
@@ -165,35 +168,26 @@ struct CardRebindSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    Text(isCrypto ? "Списывать с крипто-актива" : "Привязать к счёту")
-                        .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-
-                    SurfaceCard(padding: Spacing.sm) {
-                        VStack(spacing: 0) {
-                            if isCrypto {
-                                ForEach(Array(wallets.enumerated()), id: \.element.id) { i, w in
-                                    pickRow(title: "\(w.asset) · \(w.chain)",
-                                            subtitle: "\(w.balance) \(w.asset)",
-                                            selected: card.assetLink == w.asset) {
-                                        onPick(card.accountId, w.asset); dismiss()
-                                    }
-                                    if i < wallets.count - 1 { Divider().overlay(theme.border) }
-                                }
-                            } else {
-                                ForEach(Array(accounts.enumerated()), id: \.element.id) { i, a in
-                                    pickRow(title: accountTitle(a),
-                                            subtitle: "\(Int(a.balance)) \(a.currency)",
-                                            selected: card.accountId == a.id) {
-                                        onPick(a.id, card.assetLink); dismiss()
-                                    }
-                                    if i < accounts.count - 1 { Divider().overlay(theme.border) }
-                                }
+                GroupedSection(isCrypto ? "Списывать с актива" : "Счёт карты") {
+                    if isCrypto {
+                        ForEach(wallets) { w in
+                            pickRow(glyph: w.asset, title: "\(w.asset) · \(w.chain)",
+                                    subtitle: MoneyFormat.amount(w.balance, currency: w.asset),
+                                    selected: card.assetLink == w.asset) {
+                                onPick(card.accountId, w.asset); dismiss()
+                            }
+                        }
+                    } else {
+                        ForEach(accounts) { a in
+                            pickRow(glyph: a.currency, title: accountTitle(a),
+                                    subtitle: MoneyFormat.fiat(a.balance, currency: MoneyFormat.symbol(for: a.currency)),
+                                    selected: card.accountId == a.id) {
+                                onPick(a.id, card.assetLink); dismiss()
                             }
                         }
                     }
                 }
-                .padding(Spacing.lg)
+                .padding(Spacing.screen)
             }
             .background(theme.background.ignoresSafeArea())
             .navigationTitle("Привязка")
@@ -204,13 +198,12 @@ struct CardRebindSheet: View {
         }
     }
 
-    private func pickRow(title: String, subtitle: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func pickRow(glyph: String, title: String, subtitle: String, selected: Bool,
+                         action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            ListRow(icon: selected ? "checkmark.circle.fill" : "circle",
-                    iconTint: selected ? theme.accent : theme.textSecondary,
-                    title: title, subtitle: subtitle)
+            CardPickRow(glyph: glyph, title: title, subtitle: subtitle, selected: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.row)
     }
 
     private func accountTitle(_ a: Account) -> String {
@@ -237,18 +230,18 @@ struct CardPinSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Text("Задайте новый PIN из 4 цифр (демо).")
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                Text("Новый PIN из 4 цифр (демо).")
                     .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
                 pinField("Новый PIN", text: $pin)
                 pinField("Повторите PIN", text: $confirm)
                 if !confirm.isEmpty && pin != confirm {
-                    Text("PIN-коды не совпадают").font(BrandFont.caption).foregroundStyle(theme.danger)
+                    Text("PIN-коды не совпадают").font(BrandFont.footnote).foregroundStyle(theme.danger)
                 }
                 Spacer()
                 PrimaryButton(title: "Сохранить PIN") { onSave(); dismiss() }.disabled(!valid)
             }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
             .background(theme.background.ignoresSafeArea())
             .navigationTitle("Смена PIN")
             .navigationBarTitleDisplayMode(.inline)
@@ -260,12 +253,12 @@ struct CardPinSheet: View {
 
     private func pinField(_ label: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+            Text(label).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             SecureField("••••", text: text)
                 .keyboardType(.numberPad)
                 .font(BrandFont.mono(20, weight: .medium))
                 .padding(Spacing.md)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                 .onChange(of: text.wrappedValue) { _, newValue in
                     let digits = newValue.filter(\.isNumber)
                     text.wrappedValue = String(digits.prefix(4))
@@ -297,45 +290,49 @@ struct QuickMoveSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 if done {
                     successView
                 } else {
                     Text(kind == .topUp ? "Сумма пополнения" : "Сумма перевода")
                         .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
 
-                    AmountText(amount: amount, size: 34)
+                    AmountText(amount: amount, size: 40)
 
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: Spacing.sm)], spacing: Spacing.sm) {
                         ForEach(quickAmounts, id: \.self) { value in
                             Button { withAnimation(Motion.snappy) { amount += value } } label: {
-                                Text("+\(Int(value)) ₽").font(BrandFont.callout.weight(.semibold))
+                                Text(MoneyFormat.fiat(value, sign: .always)).font(BrandFont.body(15, weight: .medium))
+                                    .monospacedDigit()
                                     .frame(maxWidth: .infinity).frame(minHeight: 44)
                                     .foregroundStyle(theme.textPrimary)
-                                    .background(theme.elevated, in: Capsule())
+                                    .background(theme.fill, in: Capsule())
                             }.buttonStyle(PressableButtonStyle())
                         }
                     }
 
                     HStack {
-                        Text("Счёт списания/зачисления").font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                        Text(kind == .topUp ? "Счёт зачисления" : "Счёт списания")
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                         Spacer()
-                        Text("\(Int(account.balance)) \(account.currency)").font(BrandFont.callout)
+                        Text(MoneyFormat.fiat(account.balance, currency: MoneyFormat.symbol(for: account.currency)))
+                            .font(BrandFont.subheadline).monospacedDigit()
                             .foregroundStyle(theme.textPrimary)
                     }
+                    .padding(.top, Spacing.sm)
 
                     Spacer()
 
                     HStack(spacing: Spacing.sm) {
                         SecondaryButton(title: "Сброс") { withAnimation(Motion.snappy) { amount = 0 } }
-                        PrimaryButton(title: kind.verb, icon: kind.icon) {
+                        PrimaryButton(title: kind.verb) {
                             onConfirm(amount)
                             withAnimation(Motion.smooth) { done = true }
                         }.disabled(amount <= 0)
                     }
                 }
             }
-            .padding(Spacing.lg)
+            .padding(Spacing.screen)
             .background(theme.background.ignoresSafeArea())
             .navigationTitle(kind.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -348,14 +345,48 @@ struct QuickMoveSheet: View {
     private var successView: some View {
         VStack(spacing: Spacing.md) {
             Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 56)).foregroundStyle(theme.success)
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 56, weight: .light)).foregroundStyle(theme.success)
             Text(kind == .topUp ? "Счёт пополнен" : "Перевод выполнен")
-                .font(BrandFont.title).foregroundStyle(theme.textPrimary)
-            AmountText(amount: kind == .topUp ? amount : -amount, size: 24, showsSign: true, colorBySign: true)
+                .font(BrandFont.title1).foregroundStyle(theme.textPrimary)
+            AmountText(amount: kind == .topUp ? amount : -amount, size: 22, showsSign: true, colorBySign: true)
             Spacer()
             PrimaryButton(title: "Готово") { dismiss() }
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Pick row (account / asset)
+
+/// A selectable account or asset row: currency glyph, title, balance, accent checkmark when selected.
+/// Shared by the rebind sheet and the order wizard.
+struct CardPickRow: View {
+    let glyph: String
+    let title: String
+    let subtitle: String
+    let selected: Bool
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: Spacing.sm + 4) {
+            GlyphCircle(currency: glyph)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                Text(subtitle).font(BrandFont.subheadline).monospacedDigit()
+                    .foregroundStyle(theme.textSecondary)
+            }
+            Spacer(minLength: Spacing.sm)
+            if selected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(theme.accent)
+            }
+        }
+        .frame(minHeight: Spacing.rowMinHeightTwoLine)
+        .groupedRowTextInset(48)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

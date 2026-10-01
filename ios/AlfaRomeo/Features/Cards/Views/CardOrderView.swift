@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Заказ карты (§6.2) — a self-contained, multi-step wizard pushed as the single `.order` route:
+/// Заказ карты (§6.2): a self-contained, multi-step wizard pushed as the single `.order` route:
 ///
 /// `тип → дизайн + привязка → ВИРТУАЛЬНАЯ выпускается мгновенно → (опц.) пластик: адрес → способ →
 /// стоимость по тиру → подтверждение → трекинг → активация`. The disposable product branches to an
@@ -43,7 +43,8 @@ struct CardOrderView: View {
             header
             ScrollView {
                 stepContent
-                    .padding(Spacing.lg)
+                    .padding(.horizontal, Spacing.screen)
+                    .padding(.top, Spacing.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .id(step)
                     .transition(.opacity)
@@ -66,19 +67,21 @@ struct CardOrderView: View {
             HStack(spacing: Spacing.sm) {
                 if canGoBack {
                     Button { withAnimation(Motion.smooth) { goBack() } } label: {
-                        Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(theme.accent).frame(width: 32, height: 32)
-                            .background(theme.elevated, in: Circle())
-                    }.buttonStyle(.plain)
+                        Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(theme.textPrimary).frame(width: 32, height: 32)
+                            .background(theme.fill, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Назад")
                 }
-                Text(stepTitle).font(BrandFont.title).foregroundStyle(theme.textPrimary)
+                Text(stepTitle).font(BrandFont.title2).foregroundStyle(theme.textPrimary)
                 Spacer()
             }
             if let sub = stepSubtitle {
-                Text(sub).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                Text(sub).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
             }
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
         .padding(.top, Spacing.sm)
         .padding(.bottom, Spacing.sm)
     }
@@ -102,59 +105,56 @@ struct CardOrderView: View {
 
     // 1 ── Product
     private var productStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             if !canAddPrimaryNow {
                 UpsellCard(
                     title: "Лимит карт на тарифе \(effectiveTier.shortLabel)",
-                    message: "Доступно карт: \(ent.maxCardsLabel). Одноразовую можно выпустить всегда — она не занимает лимит. Для обычной карты повысьте тариф.",
+                    message: "Доступно карт: \(ent.maxCardsLabel). Одноразовую можно выпустить всегда, она не занимает лимит. Для обычной карты повысьте тариф.",
                     recommendedTier: recommendedTier)
             }
-            ForEach(CardProduct.allCases) { product in
-                selectableCard(
-                    icon: product.icon, title: product.title, subtitle: product.subtitle,
-                    selected: draft.product == product,
-                    locked: !canAddPrimaryNow && product != .disposable
-                ) { draft.product = product }
+            GroupedSection(footer: "Одноразовые карты не занимают лимит тарифа.") {
+                ForEach(CardProduct.allCases) { product in
+                    selectableRow(
+                        icon: product.icon, title: product.title, subtitle: product.subtitle,
+                        selected: draft.product == product,
+                        locked: !canAddPrimaryNow && product != .disposable
+                    ) { draft.product = product }
+                }
             }
-            Text("Одноразовые карты — эфемерные токены безопасности: не занимают лимит тарифа.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            PrimaryButton(title: "Далее", icon: "arrow.right") { advanceFromProduct() }
+            PrimaryButton(title: "Далее") { advanceFromProduct() }
                 .disabled(draft.product != .disposable && !canAddPrimaryNow)
         }
     }
 
     // 2 ── Design + binding
     private var designStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            sectionLabel("Дизайн / тир")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.md) {
-                    ForEach(CardDesign.options(for: draft.product, tier: effectiveTier)) { design in
-                        Button { withAnimation(Motion.snappy) { draft.designId = design.id } } label: {
-                            VStack(spacing: Spacing.xs) {
-                                CardFaceView(card: previewCard(design.id)).frame(width: 210)
-                                Text(design.name).font(BrandFont.caption.weight(.semibold))
-                                    .foregroundStyle(theme.textPrimary)
-                            }
-                            .padding(Spacing.sm)
-                            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                                .stroke(draft.designId == design.id ? theme.accent : .clear, lineWidth: 2))
-                        }.buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            VStack(alignment: .leading, spacing: Spacing.sm + 2) {
+                SectionHeader("Дизайн")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.sm + 4) {
+                        ForEach(CardDesign.options(for: draft.product, tier: effectiveTier)) { design in
+                            designOption(design)
+                        }
                     }
+                    .padding(.vertical, 3)
+                    .padding(.horizontal, 3)
                 }
+                .scrollClipDisabled()
             }
 
             if draft.product.bindsToCrypto {
-                sectionLabel("Списывать с актива")
-                bindingList(store.wallets.map { ($0.asset, "\($0.asset) · \($0.chain)", "\($0.balance) \($0.asset)") },
+                bindingList("Списывать с актива",
+                            store.wallets.map { ($0.asset, $0.asset, "\($0.asset) · \($0.chain)",
+                                                 MoneyFormat.amount($0.balance, currency: $0.asset)) },
                             selectedId: draft.asset) { draft.asset = $0 }
             } else {
-                sectionLabel("Привязать к счёту")
-                bindingList(store.accounts.map { ($0.id, accountTitle($0), "\(Int($0.balance)) \($0.currency)") },
+                bindingList("Привязать к счёту",
+                            store.accounts.map { ($0.id, $0.currency, accountTitle($0), fiat($0)) },
                             selectedId: draft.accountId) { draft.accountId = $0 }
             }
 
-            PrimaryButton(title: "Выпустить виртуальную мгновенно", icon: "bolt.fill") { issueVirtual() }
+            PrimaryButton(title: "Выпустить виртуальную карту") { issueVirtual() }
         }
     }
 
@@ -163,20 +163,20 @@ struct CardOrderView: View {
     private var issuedStep: some View {
         if let card = issuedCard {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                StatusPill(status: .success, text: "Выпущена мгновенно · доступна для оплат")
+                StatusPill(status: .success, text: "Доступна для оплат")
                 CardFaceView(card: card).frame(maxWidth: 300).frame(maxWidth: .infinity)
                 CardRequisitesCard(card: card, revealed: $revealed)
                 walletButton(card)
 
                 if draft.product.allowsPlastic {
                     if canAddPrimaryNow {
-                        PrimaryButton(title: "Заказать пластик", icon: "shippingbox") {
+                        PrimaryButton(title: "Заказать пластик") {
                             withAnimation(Motion.smooth) { step = .address }
                         }
                     } else {
                         UpsellCard(
-                            title: "Пластик — на тарифе выше",
-                            message: "На \(effectiveTier.displayName) доступно карт: \(ent.maxCardsLabel). Виртуальная уже у вас — для пластика повысьте тариф.",
+                            title: "Пластик на тарифе выше",
+                            message: "На \(effectiveTier.displayName) доступно карт: \(ent.maxCardsLabel). Виртуальная уже у вас, для пластика повысьте тариф.",
                             recommendedTier: recommendedTier)
                     }
                 }
@@ -187,58 +187,47 @@ struct CardOrderView: View {
 
     // 4a ── Address
     private var addressStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionLabel("Куда доставить")
+        VStack(alignment: .leading, spacing: Spacing.sm + 4) {
             TextField("Город, улица, дом, квартира", text: $draft.address, axis: .vertical)
                 .lineLimit(2...4)
                 .font(BrandFont.bodyM)
                 .padding(Spacing.md)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
-            Button {
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
+            TertiaryButton("Определить по геолокации (демо)") {
                 withAnimation(Motion.snappy) { draft.address = "Москва, Пресненская наб., 8, кв. 142" }
-            } label: {
-                Label("Определить по геолокации (демо)", systemImage: "location.fill")
-                    .font(BrandFont.callout).foregroundStyle(theme.accent)
-            }.buttonStyle(.plain)
+            }
             Spacer(minLength: Spacing.lg)
-            PrimaryButton(title: "Далее", icon: "arrow.right") { withAnimation(Motion.smooth) { step = .method } }
+            PrimaryButton(title: "Далее") { withAnimation(Motion.smooth) { step = .method } }
                 .disabled(draft.address.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
 
     // 4b ── Method (cost by tier)
     private var methodStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionLabel("Способ доставки")
-            ForEach(DeliveryMethod.allCases) { method in
-                selectableCard(
-                    icon: method.icon, title: method.label,
-                    subtitle: method.detail, trailing: method.priceLabel(for: effectiveTier),
-                    selected: draft.method == method
-                ) { draft.method = method }
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            GroupedSection(footer: "Стоимость зависит от тарифа: на Pro со скидкой, на Infinite бесплатно.") {
+                ForEach(DeliveryMethod.allCases) { method in
+                    selectableRow(
+                        icon: method.icon, title: method.label,
+                        subtitle: method.detail, trailing: method.priceLabel(for: effectiveTier),
+                        selected: draft.method == method
+                    ) { draft.method = method }
+                }
             }
-            Text("Стоимость зависит от тарифа: Pro — со скидкой, Infinite — бесплатно.")
-                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-            PrimaryButton(title: "Далее", icon: "arrow.right") { withAnimation(Motion.smooth) { step = .confirm } }
+            PrimaryButton(title: "Далее") { withAnimation(Motion.smooth) { step = .confirm } }
         }
     }
 
     // 4c ── Confirm
     private var confirmStep: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    summaryRow("Карта", CardDesign.design(for: draft.designId).name)
-                    Divider().overlay(theme.border)
-                    summaryRow("Доставка", "\(draft.method.label) · \(draft.method.detail)")
-                    Divider().overlay(theme.border)
-                    summaryRow("Адрес", draft.address)
-                    Divider().overlay(theme.border)
-                    summaryRow("Стоимость", draft.method.priceLabel(for: effectiveTier), emphasised: true)
-                }
+            GroupedSection {
+                summaryRow("Карта", CardDesign.design(for: draft.designId).name)
+                summaryRow("Доставка", "\(draft.method.label) · \(draft.method.detail)")
+                summaryRow("Адрес", draft.address)
+                summaryRow("Стоимость", draft.method.priceLabel(for: effectiveTier), emphasised: true)
             }
-            PrimaryButton(title: "Подтвердить и заказать", icon: "checkmark") { confirmPlastic() }
+            PrimaryButton(title: "Подтвердить и заказать") { confirmPlastic() }
         }
     }
 
@@ -252,28 +241,33 @@ struct CardOrderView: View {
 
     // B1 ── Burner config
     private var burnerStep: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            sectionLabel("Режим")
-            ForEach(BurnerMode.allCases) { mode in
-                selectableCard(icon: mode.icon, title: mode.title, subtitle: mode.detail,
-                               selected: draft.burnerMode == mode) { draft.burnerMode = mode }
+        VStack(alignment: .leading, spacing: Spacing.section) {
+            GroupedSection("Режим") {
+                ForEach(BurnerMode.allCases) { mode in
+                    selectableRow(icon: mode.icon, title: mode.title, subtitle: mode.detail,
+                                  selected: draft.burnerMode == mode) { draft.burnerMode = mode }
+                }
             }
-            if draft.burnerMode == .merchantLock {
-                sectionLabel("Мерчант")
-                TextField("Например, Steam", text: $draft.burnerMerchant)
-                    .font(BrandFont.bodyM).padding(Spacing.md)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(theme.border, lineWidth: 1))
+            GroupedSection("Параметры") {
+                if draft.burnerMode == .merchantLock {
+                    TextField("Мерчант, например Steam", text: $draft.burnerMerchant)
+                        .font(BrandFont.bodyM)
+                        .frame(minHeight: Spacing.rowMinHeight)
+                }
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    HStack {
+                        Text("Лимит").font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                        Spacer()
+                        AmountText(amount: draft.burnerLimit, size: 17)
+                    }
+                    Slider(value: $draft.burnerLimit, in: 1_000...100_000, step: 1_000).tint(theme.accent)
+                }
+                .padding(.vertical, Spacing.rowVertical)
             }
-            sectionLabel("Лимит")
-            HStack {
-                Slider(value: $draft.burnerLimit, in: 1_000...100_000, step: 1_000).tint(theme.accent)
-                AmountText(amount: draft.burnerLimit, size: 17).frame(width: 110, alignment: .trailing)
-            }
-            sectionLabel("Счёт списания")
-            bindingList(store.accounts.map { ($0.id, accountTitle($0), "\(Int($0.balance)) \($0.currency)") },
+            bindingList("Счёт списания",
+                        store.accounts.map { ($0.id, $0.currency, accountTitle($0), fiat($0)) },
                         selectedId: draft.accountId ?? store.accounts.first?.id) { draft.accountId = $0 }
-            PrimaryButton(title: "Сгенерировать одноразовую", icon: "bolt.fill") { createBurner() }
+            PrimaryButton(title: "Сгенерировать одноразовую") { createBurner() }
                 .disabled(draft.burnerMode == .merchantLock && draft.burnerMerchant.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
@@ -287,13 +281,11 @@ struct CardOrderView: View {
                 CardFaceView(card: card).frame(maxWidth: 300).frame(maxWidth: .infinity)
                 CardRequisitesCard(card: card, revealed: $revealed)
                 if let burner = card.burner {
-                    SurfaceCard {
-                        VStack(alignment: .leading, spacing: Spacing.xs) {
-                            Label(burner.statusLabel, systemImage: "flame")
-                                .font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.warning)
-                            Text("Лимит \(Int(burner.limit)) ₽. \(burner.mode.detail).")
-                                .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
-                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(burner.statusLabel).font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+                        Text("Лимит \(MoneyFormat.fiat(burner.limit)). \(burner.mode.detail).")
+                            .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 SecondaryButton(title: "Готово") { router.pop() }
@@ -316,74 +308,97 @@ struct CardOrderView: View {
                     }
                     .font(BrandFont.headline).foregroundStyle(BrandColors.white)
                     .frame(maxWidth: .infinity).frame(minHeight: 52)
-                    .background(BrandColors.black, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    .background(BrandColors.black, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
                 }.buttonStyle(PressableButtonStyle())
             }
         }
     }
 
-    private func selectableCard(icon: String, title: String, subtitle: String,
-                                trailing: String? = nil, selected: Bool, locked: Bool = false,
-                                action: @escaping () -> Void) -> some View {
+    /// A selectable list row: monochrome glyph, title, subtitle; trailing lock, price or accent check.
+    private func selectableRow(icon: String, title: String, subtitle: String,
+                               trailing: String? = nil, selected: Bool, locked: Bool = false,
+                               action: @escaping () -> Void) -> some View {
         Button(action: { if !locked { withAnimation(Motion.snappy, action) } }) {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: icon).font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(selected ? theme.onAccent : theme.accent)
-                    .frame(width: 40, height: 40)
-                    .background(selected ? AnyShapeStyle(theme.accent) : AnyShapeStyle(theme.accent.opacity(0.14)),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            HStack(spacing: Spacing.sm + 4) {
+                GlyphCircle(systemImage: icon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(BrandFont.bodyM.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                    Text(subtitle).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+                    Text(title).font(BrandFont.bodyM).foregroundStyle(theme.textPrimary)
+                    Text(subtitle).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Spacing.sm)
                 if locked {
-                    Image(systemName: "lock.fill").foregroundStyle(theme.textSecondary)
-                } else if let trailing {
-                    Text(trailing).font(BrandFont.callout.weight(.semibold)).foregroundStyle(theme.textPrimary)
-                } else if selected {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.accent)
+                    Image(systemName: "lock").font(.system(size: 15)).foregroundStyle(theme.textTertiary)
+                } else {
+                    if let trailing {
+                        Text(trailing).font(BrandFont.bodyM).monospacedDigit().foregroundStyle(theme.textPrimary)
+                    }
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.accent)
+                        .opacity(selected ? 1 : 0)
                 }
             }
-            .padding(Spacing.md)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(selected ? theme.accent : theme.border, lineWidth: selected ? 2 : 1))
-            .opacity(locked ? 0.55 : 1)
+            .padding(.vertical, Spacing.sm + 2)
+            .frame(minHeight: Spacing.rowMinHeightTwoLine)
+            .groupedRowTextInset(48)
+            .opacity(locked ? 0.45 : 1)
+        }
+        .buttonStyle(.row)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// Design option in the horizontal picker: the card art with an accent ring when selected.
+    private func designOption(_ design: CardDesign) -> some View {
+        let isSelected = draft.designId == design.id
+        return Button { withAnimation(Motion.snappy) { draft.designId = design.id } } label: {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                CardFaceView(card: previewCard(design.id))
+                    .frame(width: 200)
+                    .padding(3)
+                    .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .strokeBorder(isSelected ? theme.accent : .clear, lineWidth: 2))
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(design.name).font(BrandFont.subheadline.weight(.medium))
+                        .foregroundStyle(theme.textPrimary)
+                    Text(design.blurb).font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                }
+                .padding(.horizontal, 3)
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    private func bindingList(_ items: [(String, String, String)], selectedId: String?,
+    /// Account / asset list: (id, currency for the glyph, title, formatted balance).
+    private func bindingList(_ title: String, _ items: [(String, String, String, String)], selectedId: String?,
                              onPick: @escaping (String) -> Void) -> some View {
-        SurfaceCard(padding: Spacing.sm) {
-            VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.offset) { i, item in
-                    Button { withAnimation(Motion.snappy) { onPick(item.0) } } label: {
-                        ListRow(icon: selectedId == item.0 ? "checkmark.circle.fill" : "circle",
-                                iconTint: selectedId == item.0 ? theme.accent : theme.textSecondary,
-                                title: item.1, subtitle: item.2)
-                    }.buttonStyle(.plain)
-                    if i < items.count - 1 { Divider().overlay(theme.border) }
+        GroupedSection(title) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                Button { withAnimation(Motion.snappy) { onPick(item.0) } } label: {
+                    CardPickRow(glyph: item.1, title: item.2, subtitle: item.3, selected: selectedId == item.0)
                 }
+                .buttonStyle(.row)
             }
         }
-    }
-
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text).font(BrandFont.caption.weight(.semibold)).foregroundStyle(theme.textSecondary)
     }
 
     private func summaryRow(_ label: String, _ value: String, emphasised: Bool = false) -> some View {
-        HStack(alignment: .top) {
-            Text(label).font(BrandFont.caption).foregroundStyle(theme.textSecondary)
+        HStack(alignment: .firstTextBaseline) {
+            Text(label).font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
                 .frame(width: 96, alignment: .leading)
             Text(value)
-                .font(emphasised ? BrandFont.headline : BrandFont.callout)
-                .foregroundStyle(emphasised ? theme.accent : theme.textPrimary)
+                .font(emphasised ? BrandFont.headline : BrandFont.bodyM)
+                .monospacedDigit()
+                .foregroundStyle(theme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.vertical, Spacing.rowVertical)
+    }
+
+    private func fiat(_ a: Account) -> String {
+        MoneyFormat.fiat(a.balance, currency: MoneyFormat.symbol(for: a.currency))
     }
 
     private func previewCard(_ designId: String) -> CardItem {
@@ -437,11 +452,8 @@ struct CardOrderView: View {
 
     private var stepSubtitle: String? {
         switch step {
-        case .product:  return "Дебет / кредит / крипто / одноразовая (§6.2)"
-        case .design:   return "Виртуальная выпустится мгновенно"
-        case .issued:   return "Доступна для оплат прямо сейчас"
+        case .design:   return "Виртуальная карта выпускается сразу"
         case .confirm:  return "Проверьте детали заказа"
-        case .burner:   return "Мгновенная генерация, авто-сжигание"
         default:        return nil
         }
     }

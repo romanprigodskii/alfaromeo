@@ -50,7 +50,7 @@ enum DeliveryMethod: String, CaseIterable, Identifiable, Sendable {
 
     func priceLabel(for tier: Tier) -> String {
         let p = price(for: tier)
-        return p == 0 ? "Бесплатно" : "\(Int(p)) ₽"
+        return p == 0 ? "Бесплатно" : MoneyFormat.fiat(p)
     }
 }
 
@@ -80,8 +80,8 @@ extension DeliveryOrder {
             cardType: order.cardType,
             designId: order.designId ?? CardDesign.base.id,
             status: order.physicalStatus == .none ? .ordered : order.physicalStatus,
-            tracking: order.tracking ?? "—",
-            address: order.address ?? "—",
+            tracking: order.tracking ?? "Не присвоен",
+            address: order.address ?? "Не указан",
             method: .courier,
             orderedAt: nil
         )
@@ -96,7 +96,7 @@ extension PhysicalCardStatus {
 
     var title: String {
         switch self {
-        case .none:      return "—"
+        case .none:      return "Нет заказа"
         case .ordered:   return "Оформлена"
         case .printing:  return "Печать"
         case .shipping:  return "В пути"

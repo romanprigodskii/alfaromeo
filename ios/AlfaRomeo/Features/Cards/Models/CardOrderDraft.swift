@@ -20,8 +20,8 @@ enum CardProduct: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .debit:      return "Виртуальная мгновенно, привязка к счёту"
         case .credit:     return "Льготный период, виртуальная сразу"
-        case .crypto:     return "Платишь криптой — мерчанту фиат"
-        case .disposable: return "Под покупку · авто-сжигание"
+        case .crypto:     return "Оплата криптой, продавец получает рубли"
+        case .disposable: return "Под одну покупку, сгорает сама"
         }
     }
 

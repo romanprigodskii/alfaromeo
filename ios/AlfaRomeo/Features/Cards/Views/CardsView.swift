@@ -16,7 +16,7 @@ struct CardsView: View {
     /// based and has no intrinsic size, so it must be given a definite width).
     @State private var contentWidth: CGFloat = 360
 
-    private var cardWidth: CGFloat { max(contentWidth - Spacing.lg * 2, 0) }
+    private var cardWidth: CGFloat { max(contentWidth - Spacing.screen * 2, 0) }
     private var profileId: String { session.activeProfile?.id ?? "" }
     private var effectiveTier: Tier { session.currentTier(for: profileId, fallback: store.baseTier) }
     private var ent: Entitlements { Entitlements.make(for: effectiveTier) }
@@ -30,24 +30,21 @@ struct CardsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                limitLine
-
+            VStack(alignment: .leading, spacing: Spacing.section) {
                 if store.cards.isEmpty {
                     if store.loadFailed { errorState }
                     else if store.didLoad { emptyState }
                 } else {
-                    carousel
-                    if store.cards.count > 1 { pageDots }
+                    VStack(spacing: Spacing.md) {
+                        carousel
+                        if store.cards.count > 1 { pageDots }
+                    }
                 }
 
                 inFlightSection
                 orderActions
-
-                Text("Одноразовые карты не занимают лимит тарифа — это эфемерные токены безопасности.")
-                    .font(BrandFont.caption).foregroundStyle(theme.textSecondary)
             }
-            .padding(.vertical, Spacing.lg)
+            .padding(.top, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { geo in
                 Color.clear.preference(key: CardsWidthKey.self, value: geo.size.width)
@@ -68,19 +65,11 @@ struct CardsView: View {
         }
     }
 
-    // MARK: Header
-
-    private var limitLine: some View {
-        Text("Лимит карт на тарифе \(effectiveTier.displayName): \(ent.maxCardsLabel). Сейчас: \(primaryCount).")
-            .font(BrandFont.body()).foregroundStyle(theme.textSecondary)
-            .padding(.horizontal, Spacing.lg)
-    }
-
     // MARK: Carousel
 
     private var carousel: some View {
         ScrollView(.horizontal) {
-            LazyHStack(spacing: Spacing.md) {
+            LazyHStack(spacing: Spacing.sm + 4) {
                 ForEach(store.cards) { card in
                     Button { router.push(CardsRoute.detail(cardId: card.id)) } label: {
                         CardFaceView(card: card).frame(width: cardWidth)
@@ -92,18 +81,18 @@ struct CardsView: View {
             .scrollTargetLayout()
         }
         .frame(height: cardWidth / 1.586)
-        .contentMargins(.horizontal, Spacing.lg, for: .scrollContent)
+        .contentMargins(.horizontal, Spacing.screen, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $visibleCardId)
     }
 
     private var pageDots: some View {
-        HStack(spacing: Spacing.xs) {
+        HStack(spacing: 6) {
             ForEach(store.cards) { card in
                 Circle()
-                    .fill(card.id == visibleCardId ? theme.accent : theme.border)
-                    .frame(width: 7, height: 7)
+                    .fill(card.id == visibleCardId ? theme.textPrimary : theme.border)
+                    .frame(width: 6, height: 6)
             }
         }
         .frame(maxWidth: .infinity)
@@ -116,37 +105,32 @@ struct CardsView: View {
     private var inFlightSection: some View {
         let orders = store.inFlightOrders
         if !orders.isEmpty {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("В доставке").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                SurfaceCard(padding: Spacing.sm) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(orders.enumerated()), id: \.element.id) { i, order in
-                            Button { router.push(CardsRoute.tracking(orderId: order.id)) } label: {
-                                HStack {
-                                    ListRow(icon: "shippingbox.fill",
-                                            title: "Пластиковая карта",
-                                            subtitle: "Трек \(order.tracking)")
-                                    StatusPill(status: order.status == .delivered ? .success : .processing,
-                                               text: order.status.title)
-                                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(theme.textSecondary)
-                                }
-                            }.buttonStyle(.plain)
-                            if i < orders.count - 1 { Divider().overlay(theme.border) }
+            GroupedSection("В доставке") {
+                ForEach(orders) { order in
+                    Button { router.push(CardsRoute.tracking(orderId: order.id)) } label: {
+                        HStack(spacing: Spacing.sm) {
+                            ListRow(icon: "shippingbox",
+                                    title: "Пластиковая карта",
+                                    subtitle: "Трек \(order.tracking)")
+                            StatusPill(status: order.status == .delivered ? .success : .processing,
+                                       text: order.status.title)
+                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(theme.textTertiary)
                         }
                     }
+                    .buttonStyle(.row)
                 }
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Spacing.screen)
         }
     }
 
     // MARK: Order actions
 
     private var orderActions: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.sm + 4) {
             if canAdd {
-                PrimaryButton(title: "Заказать карту", icon: "plus") {
+                PrimaryButton(title: "Заказать карту") {
                     router.push(CardsRoute.order)
                 }
             } else {
@@ -155,43 +139,45 @@ struct CardsView: View {
                     message: "На \(effectiveTier.displayName) доступно карт: \(ent.maxCardsLabel). Повысьте тариф, чтобы заказать ещё.",
                     recommendedTier: recommendedTier)
             }
-            SecondaryButton(title: "Выпустить одноразовую", icon: "flame") {
+            SecondaryButton(title: "Выпустить одноразовую") {
                 store.orderPreset = .disposable
                 router.push(CardsRoute.order)
             }
+            Text("Лимит карт на тарифе \(effectiveTier.displayName): \(ent.maxCardsLabel), сейчас \(primaryCount). Одноразовые карты не занимают лимит.")
+                .font(BrandFont.footnote).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, Spacing.md)
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
     }
 
     // MARK: Empty
 
     private var emptyState: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Image(systemName: "creditcard").font(.system(size: 28)).foregroundStyle(theme.accent)
-                Text("У вас пока нет карт").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Закажите карту — виртуальная выпускается мгновенно и сразу доступна для оплат.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-            }
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            GlyphCircle(systemImage: "creditcard", size: 44)
+            Text("Карт пока нет").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            Text("Виртуальная карта выпускается сразу после заказа и доступна для оплат.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
     }
 
     // MARK: Error (criterion 7 «ошибки»)
 
     private var errorState: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Label("Не удалось загрузить карты", systemImage: "exclamationmark.triangle")
-                    .font(BrandFont.headline).foregroundStyle(theme.textPrimary)
-                Text("Проверьте соединение и попробуйте снова.")
-                    .font(BrandFont.callout).foregroundStyle(theme.textSecondary)
-                SecondaryButton(title: "Повторить", icon: "arrow.clockwise") {
-                    Task { await store.load(api: api, profileId: profileId, force: true) }
-                }
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            GlyphCircle(systemImage: "exclamationmark.triangle", size: 44)
+            Text("Не удалось загрузить карты").font(BrandFont.headline).foregroundStyle(theme.textPrimary)
+            Text("Проверьте соединение и попробуйте снова.")
+                .font(BrandFont.subheadline).foregroundStyle(theme.textSecondary)
+            SecondaryButton(title: "Повторить") {
+                Task { await store.load(api: api, profileId: profileId, force: true) }
             }
+            .padding(.top, Spacing.xs)
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, Spacing.screen)
     }
 }
 

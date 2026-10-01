@@ -9,82 +9,51 @@ struct CardDesign: Identifiable, Hashable, Sendable {
     let id: String
     /// Human label for the design picker.
     let name: String
-    /// One-line description shown under the name in the picker.
+    /// One-line fact shown under the name in the picker (who can pick it).
     let blurb: String
-    /// Face gradient stops (top-leading → bottom-trailing).
-    let gradient: [Color]
-    /// Big low-opacity watermark glyph drawn on the face.
-    let monogram: String
-    /// Edge / accent hairline color.
-    let accent: Color
-    /// On-face primary text color.
+    /// Flat face colour (docs/DESIGN.md §5 card art: flat, ≤4% vertical shade, no gloss).
+    let face: Color
+    /// On-face text colour.
     let textColor: Color
-    /// Metal / embossed treatment (Infinite) — adds a brushed sheen.
-    let isMetal: Bool
-    /// Cold crypto/AI sheen overlay (crypto card, §13.1 cold gradient).
-    let usesCryptoSheen: Bool
     /// Minimum tier required to *select* this design in the order/redesign picker.
     let requiredTier: Tier
 }
 
 extension CardDesign {
-    // ── Brand-fixed card palette (local to the artwork layer) ──
-    private static let graphiteTop  = Color(hex: 0x23262D)
-    private static let graphiteBot  = Color(hex: 0x0C0D11)
-    private static let proTop       = Color(hex: 0x2E1417)
-    private static let proBot       = Color(hex: 0x100A0C)
-    private static let metalTop     = Color(hex: 0x32363F)
-    private static let metalBot     = Color(hex: 0x0B0C0F)
-    private static let cryptoTop    = Color(hex: 0x123A4E)
-    private static let cryptoBot    = Color(hex: 0x0B1E36)
-    private static let bizTop       = Color(hex: 0x202C3A)
-    private static let bizBot       = Color(hex: 0x0D131C)
-    private static let childTop     = Color(hex: 0x3C2E78)
-    private static let childBot     = Color(hex: 0x201747)
-    private static let burnerTop    = Color(hex: 0x24262B)
-    private static let burnerBot    = Color(hex: 0x111216)
+    // Brand-fixed card faces, aligned with ``CardArt`` so a card reads the same on Home and here:
+    // personal red, business graphite, premium / crypto ink, child violet.
+    private static let warmGraphite = Color(hex: 0x3A3634)
+    private static let graphite     = Color(hex: 0x2E333B)
+    private static let ink          = Color(hex: 0x1A1818)
+    private static let ash          = Color(hex: 0x4A4645)
 
     static let base = CardDesign(
-        id: "base", name: "Графит", blurb: "Матовый графит · монограмма «A»",
-        gradient: [graphiteTop, graphiteBot], monogram: "A",
-        accent: BrandColors.heritageRed, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: false, requiredTier: .base)
+        id: "base", name: "Графит", blurb: "Любой тариф",
+        face: warmGraphite, textColor: BrandColors.white, requiredTier: .base)
 
     static let pro = CardDesign(
-        id: "pro", name: "Pro", blurb: "Насыщенный · акцент-кант",
-        gradient: [proTop, proBot], monogram: "A",
-        accent: BrandColors.heritageRed, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: false, requiredTier: .pro)
+        id: "pro", name: "Pro", blurb: "С тарифа Pro",
+        face: BrandColors.heritageRedLight, textColor: BrandColors.white, requiredTier: .pro)
 
     static let infinite = CardDesign(
-        id: "infinite", name: "Infinite металл", blurb: "Металл · тиснение «∞»",
-        gradient: [metalTop, metalBot], monogram: "∞",
-        accent: BrandColors.businessPlatinum, textColor: BrandColors.white,
-        isMetal: true, usesCryptoSheen: false, requiredTier: .infinite)
+        id: "infinite", name: "Infinite", blurb: "С тарифа Infinite",
+        face: ink, textColor: BrandColors.white, requiredTier: .infinite)
 
     static let crypto = CardDesign(
-        id: "crypto", name: "Crypto", blurb: "Холодный градиент · крипто-контур",
-        gradient: [cryptoTop, cryptoBot], monogram: "₿",
-        accent: BrandColors.cryptoCyan, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: true, requiredTier: .base)
+        id: "crypto", name: "Crypto", blurb: "Крипто-карта, любой тариф",
+        face: ink, textColor: BrandColors.white, requiredTier: .base)
 
     static let biz = CardDesign(
-        id: "biz", name: "Бизнес", blurb: "Графит · поле сотрудника",
-        gradient: [bizTop, bizBot], monogram: "R",
-        accent: BrandColors.businessPlatinum, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: false, requiredTier: .base)
+        id: "biz", name: "Бизнес", blurb: "Бизнес-профиль",
+        face: graphite, textColor: BrandColors.white, requiredTier: .base)
 
     static let child = CardDesign(
-        id: "child", name: "Детская", blurb: "Мягкий акцент · родительский контроль",
-        gradient: [childTop, childBot], monogram: "★",
-        accent: BrandColors.childViolet, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: false, requiredTier: .base)
+        id: "child", name: "Детская", blurb: "Детский профиль",
+        face: BrandColors.childVioletLight, textColor: BrandColors.white, requiredTier: .base)
 
     static let burner = CardDesign(
-        id: "burner", name: "Одноразовая", blurb: "Эфемерный токен · авто-сжигание",
-        gradient: [burnerTop, burnerBot], monogram: "#",
-        accent: BrandColors.warningDark, textColor: BrandColors.white,
-        isMetal: false, usesCryptoSheen: false, requiredTier: .base)
+        id: "burner", name: "Одноразовая", blurb: "Сгорает после использования",
+        face: ash, textColor: BrandColors.white, requiredTier: .base)
 
     /// Every design, in catalog order.
     static let all: [CardDesign] = [base, pro, infinite, crypto, biz, child, burner]

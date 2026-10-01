@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Animated delivery progress (§6.2 "оформлена → печать → в пути → доставлена", as a StatusPill-style
-/// flow). Completed stages get a check, the current stage pulses, the connecting track fills.
+/// Delivery progress (§6.2 оформлена, печать, в пути, доставлена). Completed stages get a check, the
+/// current stage is filled, the connecting track fills as the status advances.
 struct DeliveryStepper: View {
     let status: PhysicalCardStatus
 
@@ -9,7 +9,7 @@ struct DeliveryStepper: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let stages = PhysicalCardStatus.deliveryStages
-    private let nodeSize: CGFloat = 38
+    private let nodeSize: CGFloat = 32
 
     private var current: Int { status.stageIndex }
 
@@ -34,16 +34,14 @@ struct DeliveryStepper: View {
         return VStack(spacing: Spacing.sm) {
             ZStack {
                 Circle()
-                    .fill(active ? theme.accent : theme.elevated)
+                    .fill(active ? theme.accent : theme.fill)
                     .frame(width: nodeSize, height: nodeSize)
-                    .overlay(Circle().strokeBorder(active ? .clear : theme.border, lineWidth: 1.5))
-                Image(systemName: isDone ? "checkmark" : stage.icon)
-                    .font(.system(size: 15, weight: .bold))
+                Image(systemName: isDone ? "checkmark" : GlyphCircle.outlineSymbol(stage.icon))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(active ? theme.onAccent : theme.textSecondary)
-                    .symbolEffect(.pulse, options: .repeating, isActive: isCurrent && !reduceMotion)
             }
             Text(stage.title)
-                .font(BrandFont.caption.weight(active ? .semibold : .regular))
+                .font(BrandFont.footnote.weight(isCurrent ? .medium : .regular))
                 .foregroundStyle(active ? theme.textPrimary : theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -53,23 +51,23 @@ struct DeliveryStepper: View {
 
     private func connector(filled: Bool) -> some View {
         ZStack(alignment: .leading) {
-            Capsule().fill(theme.border)
+            Capsule().fill(theme.fill)
             Capsule().fill(theme.accent).scaleEffect(x: filled ? 1 : 0, anchor: .leading)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 4)
+        .frame(height: 2)
         .frame(height: nodeSize) // center the track vertically against the node row
     }
 }
 
 #Preview {
-    VStack(spacing: Spacing.xl) {
+    VStack(spacing: Spacing.section) {
         DeliveryStepper(status: .ordered)
         DeliveryStepper(status: .printing)
         DeliveryStepper(status: .shipping)
         DeliveryStepper(status: .delivered)
     }
-    .padding(Spacing.lg)
+    .padding(Spacing.screen)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.default.background)
     .environment(\.theme, .default)
