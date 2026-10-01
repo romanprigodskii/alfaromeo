@@ -77,6 +77,28 @@ final class TransferFlowModel {
         }
     }
 
+    /// Launched from a saved template (§9.2 «Шаблоны»): recipient and amount come prefilled, the flow
+    /// opens on the amount step. Back still leads to the recipient step to change the payee.
+    convenience init(template: PaymentTemplate) {
+        self.init(kind: template.kind)
+        if let amount = template.amount { amountText = Self.plain(amount) }
+        if let id = template.contactId,
+           let contact = PaymentsMockData.contacts.first(where: { $0.id == id }) {
+            kind.isCrypto ? selectContactCrypto(contact) : selectContactSBP(contact)
+        } else if let phone = template.phone {
+            self.phone = phone
+            recipientPhone = MockData.normalizePhone(phone)
+            recipient = Recipient(name: template.recipientName ?? template.title, detail: phone,
+                                  icon: "person.fill", bank: "СБП")
+            step = .amount
+        } else if let account = template.account {
+            receiverName = template.recipientName ?? template.title
+            self.account = account
+            bik = template.bik ?? ""
+            commitRequisites()
+        }
+    }
+
     // MARK: - Loading
 
     func load(api: any APIClient, session: AppSession) async {

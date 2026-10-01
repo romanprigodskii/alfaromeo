@@ -17,6 +17,10 @@ struct TransferFlowView: View {
         _model = State(initialValue: TransferFlowModel(kind: kind, biller: biller))
     }
 
+    init(template: PaymentTemplate) {
+        _model = State(initialValue: TransferFlowModel(template: template))
+    }
+
     var body: some View {
         Group {
             switch model.step {

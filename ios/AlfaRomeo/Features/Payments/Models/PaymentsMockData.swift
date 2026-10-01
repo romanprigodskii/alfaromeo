@@ -82,9 +82,12 @@ enum PaymentsMockData {
     // MARK: Templates / autopayments
 
     static let templates: [PaymentTemplate] = [
-        PaymentTemplate(id: "t1", title: "Маме на телефон", detail: "СБП · +7 916 200-11-22", kind: .byPhone, amount: 1_000),
-        PaymentTemplate(id: "t2", title: "Аренда квартиры", detail: "По реквизитам", kind: .byRequisites, amount: 65_000),
-        PaymentTemplate(id: "t3", title: "USDT Артёму", detail: "Крипто-перевод контакту", kind: .cryptoToContact, amount: nil),
+        PaymentTemplate(id: "t1", title: "Маме на телефон", detail: "СБП · +7 916 200-11-22", kind: .byPhone, amount: 1_000,
+                        recipientName: "Мама", phone: "+7 916 200-11-22"),
+        PaymentTemplate(id: "t2", title: "Аренда квартиры", detail: "По реквизитам", kind: .byRequisites, amount: 65_000,
+                        recipientName: "Смирнова Анна Викторовна", account: "40817810400012345678", bik: "044525593"),
+        PaymentTemplate(id: "t3", title: "USDT Артёму", detail: "Крипто-перевод контакту", kind: .cryptoToContact, amount: nil,
+                        contactId: "c3"),
     ]
 
     static let autopayments: [Autopayment] = [

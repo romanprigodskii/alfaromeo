@@ -37,7 +37,7 @@ struct TemplatesView: View {
     private var templatesSection: some View {
         GroupedSection("Шаблоны") {
             ForEach(templates) { template in
-                Button { router.push(PaymentsRoute.transfer(template.kind)) } label: {
+                Button { router.push(PaymentsRoute.template(template)) } label: {
                     ListRow(icon: template.icon, title: template.title,
                             subtitle: template.detail,
                             value: template.amount.map { MoneyFormat.fiat($0) }, showsChevron: true)

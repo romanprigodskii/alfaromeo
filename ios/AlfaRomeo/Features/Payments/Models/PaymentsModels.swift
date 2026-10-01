@@ -114,6 +114,12 @@ struct PaymentTemplate: Identifiable, Hashable {
     let detail: String
     let kind: TransferKind
     var amount: Double? = nil
+    /// Saved payee, so a tap opens the rail with the recipient already filled in.
+    var recipientName: String? = nil
+    var phone: String? = nil              // СБП / by-card rails
+    var account: String? = nil            // by requisites
+    var bik: String? = nil
+    var contactId: String? = nil          // crypto-перевод: a ``PaymentsMockData/contacts`` id
     var icon: String { kind.icon }
 }
 
