@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Шаблоны / Автоплатежи (§9.2). Saved templates launch their rail in one tap; autopayments list
-/// with an on/off toggle. «+» opens ``NewTemplateView``. Demo state is in-memory.
+/// with an on/off toggle kept in ``AutopaymentsStore``. «+» opens ``NewTemplateView``.
 struct TemplatesView: View {
     @Environment(Router.self) private var router
     @Environment(\.theme) private var theme
 
-    @State private var autopayments = PaymentsMockData.autopayments
+    @State private var autopayments = AutopaymentsStore.shared
     private let templates = PaymentsMockData.templates
 
     var body: some View {
@@ -51,14 +51,15 @@ struct TemplatesView: View {
 
     private var autopaymentsSection: some View {
         GroupedSection("Автоплатежи") {
-            ForEach($autopayments) { $auto in
-                autoRow($auto)
+            ForEach(autopayments.items) { auto in
+                autoRow(auto)
             }
         }
     }
 
-    private func autoRow(_ auto: Binding<Autopayment>) -> some View {
-        let item = auto.wrappedValue
+    private func autoRow(_ item: Autopayment) -> some View {
+        let isOn = Binding(get: { item.isOn },
+                           set: { autopayments.setOn($0, id: item.id) })
         return HStack(spacing: ListRow.glyphSpacing) {
             GlyphCircle(systemImage: item.icon)
             VStack(alignment: .leading, spacing: 2) {
@@ -69,7 +70,7 @@ struct TemplatesView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: Spacing.sm)
-            Toggle(item.title, isOn: auto.isOn).labelsHidden().tint(theme.accent)
+            Toggle(item.title, isOn: isOn).labelsHidden().tint(theme.accent)
         }
         .padding(.vertical, Spacing.sm)
         .frame(minHeight: Spacing.rowMinHeightTwoLine)
