@@ -56,7 +56,7 @@ struct CryptoHubView: View {
         .background(theme.background.ignoresSafeArea())
         .scrollIndicators(.hidden)
         .contentMargins(.bottom, 96, for: .scrollContent)
-        .navigationTitle("Крипто и ЦФА")
+        .navigationTitle("Биржа")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: CryptoRoute.self) { $0.destination }
         .toolbar {
