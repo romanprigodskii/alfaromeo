@@ -4,13 +4,14 @@ import Foundation
 /// комплаенс-гейтингом) and ЦФА (259-ФЗ — легальный «белый» путь уже сейчас). Shown as segments under
 /// one unified ₽ portfolio header.
 enum PortfolioSegment: String, CaseIterable, Identifiable, Hashable {
-    case crypto, cfa
+    case crypto, cfa, stocks
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .crypto: return "Крипта"
         case .cfa:    return "ЦФА"
+        case .stocks: return "Акции"
         }
     }
 
@@ -18,6 +19,7 @@ enum PortfolioSegment: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .crypto: return "BTC, ETH, TON, стейблкоины и внешние кошельки"
         case .cfa:    return "Токенизированные активы по 259-ФЗ"
+        case .stocks: return "Акции, ОФЗ и золото Московской биржи"
         }
     }
 }

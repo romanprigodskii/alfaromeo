@@ -173,6 +173,9 @@ struct ScreenshotHost: View {
         case "marketHubMock":
             // Same hub, rendered without the live-price gate so it shows offline too (proves it's light).
             NavigationStack { CryptoHubView() }
+        case "marketStocks":
+            // «Акции» segment: live MOEX ISS quotes (shares TQBR, ОФЗ TQOB, gold CETS) + source badge.
+            NavigationStack { CryptoHubView(segment: .stocks) }
         case "coins":
             CoinGalleryShot()   // brand coin logos (BTC/ETH/USDT/USDC/SOL/TON) + ЦФА/ticker fallbacks
 

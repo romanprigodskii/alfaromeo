@@ -14,6 +14,7 @@ enum CryptoRoute: Hashable {
     case staking(symbol: String)            // стейкинг — вход из детейла (полная реализация 2.2)
     case investorStatus                     // статус инвестора / лимиты / тест (крипта)
     case tradeHistory                       // история сделок
+    case stockDetail(secid: String)         // бумага Мосбиржи (MOEX ISS): график, котировка, «Купить» → скоро
 }
 
 extension CryptoRoute {
@@ -26,6 +27,7 @@ extension CryptoRoute {
         case .trade(let symbol, let side, let price):
             TradeOrderView(symbol: symbol, side: side, prefilledPrice: price)
         case .tradeHistory:                 TradeHistoryView()
+        case .stockDetail(let secid):       StockDetailView(secid: secid)
         case .investorStatus:               InvestorStatusView()
         case .cfaDetail(let id):            CDFADetailView(cdfaId: id)
         case .linkExternalWallet:           ExternalWalletLinkView()

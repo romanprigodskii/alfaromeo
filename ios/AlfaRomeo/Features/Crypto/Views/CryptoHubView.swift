@@ -23,6 +23,10 @@ struct CryptoHubView: View {
     /// ₽/$ display toggle for the whole portfolio (§9.6). Local to the hub — display-only.
     @State private var denomination: PortfolioDenomination = .rub
 
+    init(segment: PortfolioSegment = .crypto) {
+        _segment = State(initialValue: segment)
+    }
+
     private var profileId: String { session.activeProfile?.id ?? "" }
     private var investorStatus: InvestorStatus { session.currentUser?.investorStatus ?? .unqualified }
     private var defaultAsset: String { store.bankWallets.first?.asset ?? "BTC" }
@@ -39,7 +43,11 @@ struct CryptoHubView: View {
                                   denomination: $denomination, usdRub: prices.usdRub)
                 quickActions
                 segmentPicker
-                if segment == .crypto { cryptoSection } else { cfaSection }
+                switch segment {
+                case .crypto: cryptoSection
+                case .cfa:    cfaSection
+                case .stocks: MoexStocksSection()
+                }
             }
             .padding(.horizontal, Spacing.screen)
             .padding(.top, Spacing.sm)
