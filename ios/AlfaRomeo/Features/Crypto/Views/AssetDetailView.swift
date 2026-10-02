@@ -39,6 +39,8 @@ struct AssetDetailView: View {
                 }
                 tradeActions
                 holdingSection
+                PriceAlertsSection(asset: symbol, market: .crypto, assetTitle: asset?.name ?? symbol,
+                                   currentPrice: price, isLive: prices.isLive)
                 infoSection
             }
             .padding(.horizontal, Spacing.screen)

@@ -19,6 +19,7 @@ struct ScreenshotHost: View {
     private static let selfLoadingShots: Set<String> = [
         "cardsHub", "cardDetail", "mobileHub", "mobileTariffs", "savingsHub", "openDeposit",
         "onboarding", "login", "splash", "copilotChat", "subscription", "transferFlow", "paymentsTemplates",
+        "priceAlerts",
     ]
 
     var body: some View {
@@ -177,7 +178,10 @@ struct ScreenshotHost: View {
             // «Акции» segment: live MOEX ISS quotes (shares TQBR, ОФЗ TQOB, gold CETS) + source badge.
             NavigationStack { CryptoHubView(segment: .stocks) }
         case "coins":
-            CoinGalleryShot()   // brand coin logos (BTC/ETH/USDT/USDC/SOL/TON) + ЦФА/ticker fallbacks
+            CoinGalleryShot()
+        case "priceAlerts":
+            // Ценовые алерты: seeded list (2 active + 1 fired), the in-app banner, the create sheet open.
+            PriceAlertsShot()   // brand coin logos (BTC/ETH/USDT/USDC/SOL/TON) + ЦФА/ticker fallbacks
 
         // ── Дизайн-система (docs/DESIGN.md) + one entry per module for design passes ──
         case "gallery":
@@ -373,6 +377,50 @@ private struct CoinGalleryShot: View {
 /// positions render fully, then optionally pushes one ``CryptoRoute`` on top. The hub is light like the
 /// rest of the app (no chrome). It owns the `NavigationStack`, so routes resolve exactly as in the app.
 /// Reuses the harness-injected AppSession / Router / mock client / theme. Market-shot only.
+private struct PriceAlertsShot: View {
+    @State private var ready = false
+    @State private var prices = LivePriceService.shared
+
+    var body: some View {
+        Group {
+            if ready {
+                NavigationStack {
+                    ScrollView {
+                        PriceAlertsSection(asset: "BTC", market: .crypto, assetTitle: "Bitcoin",
+                                           currentPrice: prices.price("BTC"), isLive: prices.isLive,
+                                           startCreating: true)
+                            .padding(.horizontal, Spacing.screen)
+                            .padding(.top, Spacing.sm)
+                    }
+                    .background(Theme.default.background.ignoresSafeArea())
+                    .navigationTitle("Bitcoin")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+                .priceAlertHost()
+            } else {
+                ProgressView().controlSize(.large)
+            }
+        }
+        .task {
+            await LivePriceService.shared.start()
+            let p = LivePriceService.shared.price("BTC")
+            func round(_ x: Double) -> Double { (x / 1000).rounded() * 1000 }
+            let now = Date()
+            let fired = PriceAlert(asset: "BTC", direction: .above, thresholdRub: round(p * 0.995),
+                                   createdAt: now.addingTimeInterval(-3 * 86_400), isActive: false,
+                                   triggeredAt: now.addingTimeInterval(-300), triggeredPrice: p * 0.998)
+            PriceAlertsStore.shared.debugReplace([
+                PriceAlert(asset: "BTC", direction: .above, thresholdRub: round(p * 1.08),
+                           createdAt: now.addingTimeInterval(-7_200)),
+                PriceAlert(asset: "BTC", direction: .below, thresholdRub: round(p * 0.9),
+                           createdAt: now.addingTimeInterval(-86_400)),
+                fired,
+            ], banner: fired)
+            ready = true
+        }
+    }
+}
+
 private struct CryptoShot: View {
     var push: CryptoRoute? = nil
 

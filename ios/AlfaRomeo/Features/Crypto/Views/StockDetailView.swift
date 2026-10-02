@@ -31,6 +31,8 @@ struct StockDetailView: View {
                 header(inst, quote)
                 chart(inst)
                 facts(inst, quote)
+                PriceAlertsSection(asset: inst.secid, market: .moex, assetTitle: inst.title,
+                                   currentPrice: quote?.price, isLive: feed.isLive)
                 PrimaryButton(title: "Купить") { showBuy = true }
             }
             .padding(.horizontal, Spacing.screen)

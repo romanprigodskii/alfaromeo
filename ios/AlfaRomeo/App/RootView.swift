@@ -17,6 +17,7 @@ struct RootView: View {
                 PreAuthFlowView()
             case .authenticated:
                 AppShell()
+                    .priceAlertHost()
             }
         }
     }

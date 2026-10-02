@@ -5,6 +5,7 @@ import SwiftUI
 struct NotificationsSettingsView: View {
     @Environment(\.theme) private var theme
     @State private var settings = SettingsStore.shared
+    @State private var alerts = PriceAlertsStore.shared
 
     var body: some View {
         ScrollView {
@@ -25,6 +26,8 @@ struct NotificationsSettingsView: View {
                                       subtitle: "Кэшбек, тарифы, партнёры", isOn: $settings.notifyMarketing)
                         .disabled(!settings.notifyPush)
                 }
+
+                priceAlerts
             }
             .padding(.horizontal, Spacing.screen)
             .padding(.vertical, Spacing.md)
@@ -34,6 +37,25 @@ struct NotificationsSettingsView: View {
         .navigationTitle("Уведомления")
         .navigationBarTitleDisplayMode(.inline)
         .animation(Motion.snappy, value: settings.notifyPush)
+    }
+
+    /// Ценовые алерты from «Биржа» (crypto and Мосбиржа), all assets; swipe left to delete.
+    private var priceAlerts: some View {
+        let list = alerts.allSorted
+        return GroupedSection("Ценовые алерты",
+                              footer: list.isEmpty ? nil : "Срабатывают только по живым ценам. Смахните алерт влево, чтобы удалить.") {
+            if list.isEmpty {
+                ListRow(icon: "bell", title: "Алертов пока нет",
+                        subtitle: "Создайте на странице актива в «Бирже»")
+            } else {
+                ForEach(list) { alert in
+                    SwipeToDeleteRow { alerts.delete(alert.id) } content: {
+                        PriceAlertRow(alert: alert, showsAsset: true)
+                    }
+                }
+            }
+        }
+        .animation(Motion.snappy, value: list.map(\.id))
     }
 }
 
