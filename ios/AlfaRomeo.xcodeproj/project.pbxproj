@@ -6,6 +6,10 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AAFA0000000000000000F02A /* AlfaRomeoWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AAFA0000000000000000F021 /* AlfaRomeoWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AAFA0000000000000000F016 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,16 +18,49 @@
 			remoteGlobalIDString = AAFA0000000000000000F005;
 			remoteInfo = AlfaRomeo;
 		};
+		AAFA0000000000000000F02B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AAFA0000000000000000F001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AAFA0000000000000000F020;
+			remoteInfo = AlfaRomeoWidget;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AAFA0000000000000000F029 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AAFA0000000000000000F02A /* AlfaRomeoWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AAFA0000000000000000F006 /* AlfaRomeo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlfaRomeo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAFA0000000000000000F010 /* AlfaRomeoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlfaRomeoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAFA0000000000000000F021 /* AlfaRomeoWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AlfaRomeoWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AAFA0000000000000000F02D /* Exceptions for "AlfaRomeoWidget" folder in "AlfaRomeoWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AAFA0000000000000000F020 /* AlfaRomeoWidget */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AAFA0000000000000000F004 /* AlfaRomeo */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AlfaRomeo; sourceTree = "<group>"; };
 		AAFA0000000000000000F011 /* AlfaRomeoTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AlfaRomeoTests; sourceTree = "<group>"; };
+		AAFA0000000000000000F022 /* AlfaRomeoWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AAFA0000000000000000F02D /* Exceptions for "AlfaRomeoWidget" folder in "AlfaRomeoWidget" target */, ); explicitFileTypes = {}; explicitFolders = (); path = AlfaRomeoWidget; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +78,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AAFA0000000000000000F024 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -49,6 +93,7 @@
 			children = (
 				AAFA0000000000000000F004 /* AlfaRomeo */,
 				AAFA0000000000000000F011 /* AlfaRomeoTests */,
+				AAFA0000000000000000F022 /* AlfaRomeoWidget */,
 				AAFA0000000000000000F003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -58,6 +103,7 @@
 			children = (
 				AAFA0000000000000000F006 /* AlfaRomeo.app */,
 				AAFA0000000000000000F010 /* AlfaRomeoTests.xctest */,
+				AAFA0000000000000000F021 /* AlfaRomeoWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,10 +118,12 @@
 				AAFA0000000000000000F007 /* Sources */,
 				AAFA0000000000000000F008 /* Frameworks */,
 				AAFA0000000000000000F009 /* Resources */,
+				AAFA0000000000000000F029 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AAFA0000000000000000F02C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AAFA0000000000000000F004 /* AlfaRomeo */,
@@ -106,6 +154,26 @@
 			productReference = AAFA0000000000000000F010 /* AlfaRomeoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		AAFA0000000000000000F020 /* AlfaRomeoWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AAFA0000000000000000F026 /* Build configuration list for PBXNativeTarget "AlfaRomeoWidget" */;
+			buildPhases = (
+				AAFA0000000000000000F023 /* Sources */,
+				AAFA0000000000000000F024 /* Frameworks */,
+				AAFA0000000000000000F025 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AAFA0000000000000000F022 /* AlfaRomeoWidget */,
+			);
+			name = AlfaRomeoWidget;
+			productName = AlfaRomeoWidget;
+			productReference = AAFA0000000000000000F021 /* AlfaRomeoWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -122,6 +190,9 @@
 					AAFA0000000000000000F012 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = AAFA0000000000000000F005;
+					};
+					AAFA0000000000000000F020 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -141,6 +212,7 @@
 			targets = (
 				AAFA0000000000000000F005 /* AlfaRomeo */,
 				AAFA0000000000000000F012 /* AlfaRomeoTests */,
+				AAFA0000000000000000F020 /* AlfaRomeoWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -154,6 +226,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AAFA0000000000000000F015 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AAFA0000000000000000F025 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -177,6 +256,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AAFA0000000000000000F023 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -184,6 +270,11 @@
 			isa = PBXTargetDependency;
 			target = AAFA0000000000000000F005 /* AlfaRomeo */;
 			targetProxy = AAFA0000000000000000F016 /* PBXContainerItemProxy */;
+		};
+		AAFA0000000000000000F02C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AAFA0000000000000000F020 /* AlfaRomeoWidget */;
+			targetProxy = AAFA0000000000000000F02B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -312,6 +403,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AlfaRomeo/AlfaRomeo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = HVFQ9X332Z;
@@ -343,6 +435,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AlfaRomeo/AlfaRomeo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = HVFQ9X332Z;
@@ -407,6 +500,60 @@
 			};
 			name = Release;
 		};
+		AAFA0000000000000000F027 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AlfaRomeoWidget/AlfaRomeoWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HVFQ9X332Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AlfaRomeoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Альфа-Ромео";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "bank.alfa-romeo.demo.widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AAFA0000000000000000F028 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AlfaRomeoWidget/AlfaRomeoWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HVFQ9X332Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AlfaRomeoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Альфа-Ромео";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "bank.alfa-romeo.demo.widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -433,6 +580,15 @@
 			buildConfigurations = (
 				AAFA0000000000000000F019 /* Debug */,
 				AAFA0000000000000000F01A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AAFA0000000000000000F026 /* Build configuration list for PBXNativeTarget "AlfaRomeoWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AAFA0000000000000000F027 /* Debug */,
+				AAFA0000000000000000F028 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

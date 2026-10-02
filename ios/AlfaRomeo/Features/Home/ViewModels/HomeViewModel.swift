@@ -110,6 +110,7 @@ final class HomeViewModel {
             dashboard = built
             phase = .loaded
             refreshFailed = false
+            saveWidgetSnapshot()
         } catch {
             if Task.isCancelled { return }          // superseded by a newer load — leave state alone
             if dashboard == nil {
@@ -129,5 +130,12 @@ final class HomeViewModel {
         async let fx: Void = FXRateService.shared.start()
         await LivePriceService.shared.start()
         await fx
+        saveWidgetSnapshot()   // first live prices + курс ЦБ → refresh the widget's total
+    }
+
+    /// Home-screen widget: hand the personal ₽ total to the App Group (``WidgetSnapshot``).
+    private func saveWidgetSnapshot() {
+        guard let dashboard, dashboard.profileType == .personal else { return }
+        WidgetSnapshot.save(totalRub: dashboard.unifiedTotalRub(live: livePrices))
     }
 }
