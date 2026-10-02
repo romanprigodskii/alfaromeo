@@ -88,9 +88,10 @@ enum MoneyFormat {
     static func compact(_ amount: Double, currency: String? = "₽") -> String {
         let m = abs(amount)
         let scaled: (Double, String)?
+        // Thresholds sit at the rounding edge (999,5 of the smaller unit), so 999 999 reads «1 млн», never «1 000 тыс.».
         switch m {
-        case 1_000_000_000...: scaled = (m / 1_000_000_000, "млрд")
-        case 1_000_000...:     scaled = (m / 1_000_000, "млн")
+        case 999_500_000...:   scaled = (m / 1_000_000_000, "млрд")
+        case 999_500...:       scaled = (m / 1_000_000, "млн")
         case 10_000...:        scaled = (m / 1_000, "тыс.")
         default:               scaled = nil
         }
